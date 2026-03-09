@@ -27,8 +27,8 @@ export function LevelUpModal({ client, onClose, onLevelUp }) {
 
   return (
     <Modal title={`⬆️ Aggiorna — ${client.name}`} onClose={onClose}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <p style={{ margin: 0, color: 'rgba(255,255,255,0.5)', fontSize: 13, fontFamily: "'Rajdhani', sans-serif" }}>
+      <div className="flex flex-col gap-3.5">
+        <p className="m-0 text-white/50 text-[13px] font-body">
           Modifica i parametri per aggiornare il progresso del cliente.
         </p>
 
@@ -49,11 +49,7 @@ export function LevelUpModal({ client, onClose, onLevelUp }) {
           onChange={e => setNote(e.target.value)}
         />
 
-        {error && (
-          <p style={{ margin: 0, color: '#f87171', fontFamily: "'Rajdhani', sans-serif", fontSize: 13 }}>
-            {error}
-          </p>
-        )}
+        {error && <p className="m-0 text-red-400 font-body text-[13px]">{error}</p>}
 
         <Button variant="danger" loading={loading} onClick={handleConfirm}>
           🚀 CONFERMA AGGIORNAMENTO
@@ -63,19 +59,18 @@ export function LevelUpModal({ client, onClose, onLevelUp }) {
   )
 }
 
-// ─── StatSlider ───────────────────────────────────────────────────────────────
 function StatSlider({ icon, label, currentValue, delta, onChange }) {
-  const deltaColor =
-    delta > 0  ? '#6ee7b7' :
-    delta < 0  ? '#f87171' :
-    'rgba(255,255,255,0.3)'
+  const deltaColorClass =
+    delta > 0 ? 'text-emerald-300' :
+    delta < 0 ? 'text-red-400'     :
+    'text-white/30'
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-      <span style={{ width: 110, color: 'rgba(255,255,255,0.6)', fontSize: 13, fontFamily: "'Rajdhani', sans-serif" }}>
+    <div className="flex items-center gap-3">
+      <span className="w-[110px] text-white/60 text-[13px] font-body">
         {icon} {label}
       </span>
-      <span style={{ width: 28, color: '#fff', fontSize: 13, fontFamily: "'Orbitron', monospace", textAlign: 'right' }}>
+      <span className="w-7 text-white text-[13px] font-display text-right">
         {currentValue}
       </span>
       <input
@@ -84,9 +79,9 @@ function StatSlider({ icon, label, currentValue, delta, onChange }) {
         max={20}
         value={delta}
         onChange={e => onChange(Number(e.target.value))}
-        style={{ flex: 1, accentColor: '#60a5fa' }}
+        className="flex-1"
       />
-      <span style={{ width: 40, textAlign: 'right', color: deltaColor, fontFamily: "'Orbitron', monospace", fontSize: 12 }}>
+      <span className={`w-10 text-right font-display text-[12px] ${deltaColorClass}`}>
         {delta > 0 ? `+${delta}` : delta}
       </span>
     </div>

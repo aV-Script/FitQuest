@@ -1,11 +1,31 @@
-*, *::before, *::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap');
+@import "tailwindcss";
+@theme {
+  --font-display: 'Orbitron', monospace;
+  --font-body: 'Rajdhani', sans-serif;
 }
 
-body {
-  background: #070b14;
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; background: #070b14; color: #fff; font-family: 'Rajdhani', sans-serif; }
+
+.font-display { font-family: 'Orbitron', monospace; }
+.font-body    { font-family: 'Rajdhani', sans-serif; }
+
+.input-base {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 0.625rem;
+  padding: 0.625rem 0.875rem;
   color: #fff;
-  min-height: 100vh;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.9375rem;
+  outline: none;
+  box-sizing: border-box;
 }
+.input-base::placeholder { color: rgba(255,255,255,0.3); }
+.input-base:focus { border-color: rgba(96,165,250,0.5); }
+
+::-webkit-scrollbar       { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 99px; }
+input[type=range] { height: 4px; accent-color: #60a5fa; }

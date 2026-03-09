@@ -5,7 +5,6 @@ import { AddClientModal } from '../modals/AddClientModal'
 import { Input, Button } from '../ui'
 import { RANK_COLORS } from '../../constants'
 import { logout } from '../../firebase/services'
-import { tokens } from '../ui'
 
 export function TrainerArea({ trainerId }) {
   const { clients, loading, error, handleAddClient, selectClient } = useClients(trainerId)
@@ -18,36 +17,36 @@ export function TrainerArea({ trainerId }) {
   }, [handleAddClient])
 
   return (
-    <div style={{ padding: '40px 32px', maxWidth: 600, margin: '0 auto' }}>
+    <div className="px-8 py-10 max-w-xl mx-auto">
+
       {/* Header */}
-      <div style={{ marginBottom: 32, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+      <div className="flex justify-between items-end mb-8">
         <div>
-          <p style={{ margin: '0 0 8px', fontFamily: tokens.fontDisplay, fontSize: 11, color: '#60a5fa', letterSpacing: 3 }}>
+          <p className="font-display text-[11px] text-blue-400 tracking-[3px] m-0 mb-2">
             PERSONAL TRAINER DASHBOARD
           </p>
-          <h1 style={{ margin: 0, fontFamily: tokens.fontDisplay, fontSize: 28, color: '#fff', fontWeight: 900 }}>
+          <h1 className="font-display text-[28px] text-white font-black m-0">
             I Tuoi Clienti
           </h1>
         </div>
         <button
           onClick={logout}
-          style={{ background: 'none', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '8px 16px', color: tokens.muted, fontFamily: tokens.fontBody, fontSize: 13, cursor: 'pointer' }}
+          className="bg-transparent border border-white/10 rounded-xl px-4 py-2 text-white/40 font-body text-[13px] cursor-pointer hover:text-white/60 hover:border-white/20 transition-all"
         >
           Logout
         </button>
       </div>
 
       {/* Search + Add */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
+      <div className="grid grid-cols-[1fr_auto] gap-3 mb-6">
         <Input
-          style={{ flex: 1 }}
           placeholder="🔍 Cerca cliente..."
           value={query}
           onChange={e => setQuery(e.target.value)}
         />
         <Button
           variant="primary"
-          style={{ width: 'auto', padding: '10px 20px', whiteSpace: 'nowrap' }}
+          className="px-5 whitespace-nowrap"
           onClick={() => setShowAddModal(true)}
         >
           + AGGIUNGI
@@ -56,18 +55,16 @@ export function TrainerArea({ trainerId }) {
 
       {/* Error */}
       {error && (
-        <p style={{ color: '#f87171', fontFamily: tokens.fontBody, fontSize: 13, marginBottom: 16 }}>
-          ⚠️ {error}
-        </p>
+        <p className="text-red-400 font-body text-[13px] mb-4">⚠️ {error}</p>
       )}
 
-      {/* Client list */}
+      {/* List */}
       {loading ? (
         <EmptyState message="Caricamento..." />
       ) : filtered.length === 0 ? (
         <EmptyState message={clients.length === 0 ? 'Nessun cliente. Aggiungine uno! 👆' : 'Nessun risultato.'} />
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div className="flex flex-col gap-3">
           {filtered.map(client => (
             <ClientRow key={client.id} client={client} onClick={() => selectClient(client)} />
           ))}
@@ -81,41 +78,34 @@ export function TrainerArea({ trainerId }) {
   )
 }
 
-// ─── ClientRow ────────────────────────────────────────────────────────────────
 function ClientRow({ client, onClick }) {
   const color = RANK_COLORS[client.rank] ?? '#60a5fa'
 
   return (
     <button
       onClick={onClick}
-      style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, padding: '16px 20px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 16, textAlign: 'left', transition: 'all 0.2s', width: '100%' }}
-      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.borderColor = color + '66' }}
-      onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)' }}
+      className="bg-white/[.03] border border-white/[.07] rounded-2xl px-5 py-4 cursor-pointer flex items-center gap-4 text-left w-full transition-all duration-200 hover:bg-white/[.07] group"
+      style={{ '--hover-border': color + '66' }}
+      onMouseEnter={e => e.currentTarget.style.borderColor = color + '66'}
+      onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'}
     >
-      <span style={{ fontSize: 36 }}>{client.avatar}</span>
-      <div style={{ flex: 1 }}>
-        <div style={{ fontFamily: tokens.fontBody, fontWeight: 700, fontSize: 18, color: '#fff' }}>
-          {client.name}
-        </div>
-        <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
-          <span style={{ background: color + '22', color, borderRadius: 99, padding: '2px 10px', fontSize: 11, fontFamily: tokens.fontDisplay }}>
+      <span className="text-[36px]">{client.avatar}</span>
+      <div className="flex-1">
+        <div className="font-body font-bold text-[18px] text-white">{client.name}</div>
+        <div className="flex gap-2.5 mt-1">
+          <span className="rounded-full px-2.5 py-0.5 text-[11px] font-display" style={{ background: color + '22', color }}>
             LVL {client.level}
           </span>
-          <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, fontFamily: tokens.fontBody }}>
-            {client.rank}
-          </span>
+          <span className="text-white/40 text-[12px] font-body">{client.rank}</span>
         </div>
       </div>
-      <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 20 }}>›</span>
+      <span className="text-white/20 text-[20px]">›</span>
     </button>
   )
 }
 
-// ─── EmptyState ───────────────────────────────────────────────────────────────
 function EmptyState({ message }) {
   return (
-    <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontFamily: tokens.fontBody, padding: 40 }}>
-      {message}
-    </div>
+    <div className="text-center text-white/30 font-body py-10">{message}</div>
   )
 }

@@ -2,46 +2,45 @@ import { useState, useCallback } from 'react'
 import { useClients } from '../../hooks/useClients'
 import { LevelUpModal } from '../modals/LevelUpModal'
 import { Pentagon } from '../ui/Pentagon'
-import { Card, XPBar, Badge, SectionLabel, tokens } from '../ui'
+import { Card, XPBar, Badge, SectionLabel } from '../ui'
 import { RANK_COLORS, STATS } from '../../constants'
 
 export function ClientDashboard({ client }) {
   const { handleProgressUpdate, deselectClient } = useClients()
   const [showLevelUp, setShowLevelUp] = useState(false)
-
   const color = RANK_COLORS[client.rank] ?? '#60a5fa'
 
   const handleLevelUp = useCallback(async (deltas, note) => {
     await handleProgressUpdate(client, deltas, note)
-    // UI aggiornata automaticamente via context (optimistic update)
   }, [client, handleProgressUpdate])
 
   return (
-    <div style={{ padding: '28px 20px', maxWidth: 700, margin: '0 auto' }}>
+    <div className="px-5 py-7 max-w-2xl mx-auto">
+
       {/* Back */}
       <button
         onClick={deselectClient}
-        style={{ background: 'none', border: 'none', color: tokens.muted, fontFamily: tokens.fontBody, fontSize: 14, cursor: 'pointer', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 6 }}
+        className="bg-transparent border-none text-white/40 font-body text-[14px] cursor-pointer mb-5 flex items-center gap-1.5 hover:text-white/70 transition-colors"
       >
         ‹ Torna alla lista
       </button>
 
       {/* TOP ROW */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+      <div className="grid grid-cols-2 gap-4 mb-4">
         <ClientInfoCard client={client} color={color} />
-        <Card style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Card className="flex items-center justify-center">
           <Pentagon stats={client.stats} color={color} />
         </Card>
       </div>
 
       {/* CENTER */}
-      <Card style={{ display: 'flex', alignItems: 'center', padding: '32px 20px', marginBottom: 16, gap: 32 }}>
+      <Card className="flex items-center gap-8 px-5 py-8 mb-4">
         <AvatarBlock client={client} color={color} />
         <StatsBlock client={client} color={color} />
       </Card>
 
       {/* BOTTOM ROW */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
+      <div className="grid grid-cols-2 gap-4 mb-5">
         <ActivityLog log={client.log} />
         <BadgeList badges={client.badges} />
       </div>
@@ -49,36 +48,33 @@ export function ClientDashboard({ client }) {
       {/* CTA */}
       <button
         onClick={() => setShowLevelUp(true)}
-        style={{ width: '100%', background: `linear-gradient(135deg, ${color}cc, ${color}44)`, border: `1px solid ${color}66`, borderRadius: 16, padding: 18, color: '#fff', fontFamily: tokens.fontDisplay, fontSize: 14, fontWeight: 700, cursor: 'pointer', letterSpacing: 2, boxShadow: `0 0 30px ${color}33` }}
+        className="w-full rounded-2xl py-[18px] text-white font-display text-[14px] font-bold tracking-widest cursor-pointer transition-opacity hover:opacity-90"
+        style={{
+          background: `linear-gradient(135deg, ${color}cc, ${color}44)`,
+          border:     `1px solid ${color}66`,
+          boxShadow:  `0 0 30px ${color}33`,
+        }}
       >
         ⬆️ AGGIORNA PROGRESSO
       </button>
 
       {showLevelUp && (
-        <LevelUpModal
-          client={client}
-          onClose={() => setShowLevelUp(false)}
-          onLevelUp={handleLevelUp}
-        />
+        <LevelUpModal client={client} onClose={() => setShowLevelUp(false)} onLevelUp={handleLevelUp} />
       )}
     </div>
   )
 }
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
 function ClientInfoCard({ client, color }) {
   return (
     <Card>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-        <span style={{ fontSize: 40 }}>{client.avatar}</span>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontFamily: tokens.fontBody, fontWeight: 700, fontSize: 20, color: '#fff' }}>
-            {client.name}
-          </div>
-          <div style={{ display: 'flex', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
+      <div className="flex items-center gap-3.5">
+        <span className="text-[40px]">{client.avatar}</span>
+        <div className="flex-1">
+          <div className="font-body font-bold text-[20px] text-white">{client.name}</div>
+          <div className="flex gap-2 mt-1 flex-wrap">
             <Badge color={color}>LVL {client.level}</Badge>
-            <span style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.6)', borderRadius: 99, padding: '2px 10px', fontSize: 11, fontFamily: tokens.fontBody }}>
+            <span className="bg-white/[.06] text-white/60 rounded-full px-2.5 py-0.5 text-[11px] font-body">
               {client.rank}
             </span>
           </div>
@@ -91,13 +87,16 @@ function ClientInfoCard({ client, color }) {
 
 function AvatarBlock({ client, color }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, minWidth: 90 }}>
-      <div style={{ width: 90, height: 90, borderRadius: '50%', border: `3px solid ${color}`, background: 'rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 44, boxShadow: `0 0 30px ${color}55` }}>
+    <div className="flex flex-col items-center gap-2 min-w-[90px]">
+      <div
+        className="w-[90px] h-[90px] rounded-full bg-white/[.04] flex items-center justify-center text-[44px]"
+        style={{ border: `3px solid ${color}`, boxShadow: `0 0 30px ${color}55` }}
+      >
         {client.avatar}
       </div>
-      <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontFamily: tokens.fontBody, letterSpacing: 2 }}>RANK</div>
-        <div style={{ color, fontFamily: tokens.fontDisplay, fontSize: 15, fontWeight: 700 }}>{client.rank}</div>
+      <div className="text-center">
+        <div className="text-[11px] text-white/40 font-body tracking-[2px]">RANK</div>
+        <div className="font-display text-[15px] font-bold" style={{ color }}>{client.rank}</div>
       </div>
     </div>
   )
@@ -105,18 +104,19 @@ function AvatarBlock({ client, color }) {
 
 function StatsBlock({ client, color }) {
   return (
-    <div style={{ flex: 1 }}>
+    <div className="flex-1">
       <SectionLabel>STATISTICHE</SectionLabel>
       {STATS.map(({ key, icon, label }) => (
-        <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-          <span style={{ width: 16, fontSize: 14 }}>{icon}</span>
-          <span style={{ width: 90, color: 'rgba(255,255,255,0.5)', fontFamily: tokens.fontBody, fontSize: 13 }}>
-            {label}
-          </span>
-          <div style={{ flex: 1, background: 'rgba(255,255,255,0.06)', borderRadius: 99, height: 5 }}>
-            <div style={{ width: `${client.stats[key]}%`, height: '100%', background: `linear-gradient(90deg, ${color}, ${color}aa)`, borderRadius: 99, transition: 'width 0.6s ease' }} />
+        <div key={key} className="flex items-center gap-2.5 mb-2.5">
+          <span className="w-4 text-[14px]">{icon}</span>
+          <span className="w-[90px] text-white/50 font-body text-[13px]">{label}</span>
+          <div className="flex-1 bg-white/[.06] rounded-full h-[5px]">
+            <div
+              className="h-full rounded-full transition-[width] duration-500"
+              style={{ width: `${client.stats[key]}%`, background: `linear-gradient(90deg, ${color}, ${color}aa)` }}
+            />
           </div>
-          <span style={{ width: 30, textAlign: 'right', fontFamily: tokens.fontDisplay, fontSize: 11, color }}>
+          <span className="w-[30px] text-right font-display text-[11px]" style={{ color }}>
             {client.stats[key]}
           </span>
         </div>
@@ -130,25 +130,15 @@ function ActivityLog({ log = [] }) {
     <Card>
       <SectionLabel>📋 Attività Recenti</SectionLabel>
       {log.slice(0, 4).map((entry, i) => (
-        <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 10 }}>
-          <span style={{ color: 'rgba(255,255,255,0.2)', fontFamily: tokens.fontBody, fontSize: 11, whiteSpace: 'nowrap', marginTop: 1 }}>
-            {entry.date}
-          </span>
+        <div key={i} className="flex gap-2.5 items-start mb-2.5">
+          <span className="text-white/20 font-body text-[11px] whitespace-nowrap mt-0.5">{entry.date}</span>
           <div>
-            <div style={{ color: 'rgba(255,255,255,0.7)', fontFamily: tokens.fontBody, fontSize: 13 }}>
-              {entry.action}
-            </div>
-            <div style={{ color: '#6ee7b7', fontFamily: tokens.fontDisplay, fontSize: 10 }}>
-              +{entry.xp} XP
-            </div>
+            <div className="text-white/70 font-body text-[13px]">{entry.action}</div>
+            <div className="text-emerald-300 font-display text-[10px]">+{entry.xp} XP</div>
           </div>
         </div>
       ))}
-      {log.length === 0 && (
-        <p style={{ margin: 0, color: 'rgba(255,255,255,0.2)', fontFamily: tokens.fontBody, fontSize: 13 }}>
-          Nessuna attività ancora.
-        </p>
-      )}
+      {log.length === 0 && <p className="m-0 text-white/20 font-body text-[13px]">Nessuna attività ancora.</p>}
     </Card>
   )
 }
@@ -158,15 +148,9 @@ function BadgeList({ badges = [] }) {
     <Card>
       <SectionLabel>🏅 Badge Conquistati</SectionLabel>
       {badges.map((b, i) => (
-        <div key={i} style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 10, padding: '8px 12px', fontFamily: tokens.fontBody, fontSize: 14, color: 'rgba(255,255,255,0.8)', marginBottom: 8 }}>
-          {b}
-        </div>
+        <div key={i} className="bg-white/[.04] rounded-xl px-3 py-2 font-body text-[14px] text-white/80 mb-2">{b}</div>
       ))}
-      {badges.length === 0 && (
-        <p style={{ margin: 0, color: 'rgba(255,255,255,0.2)', fontFamily: tokens.fontBody, fontSize: 13 }}>
-          Nessun badge ancora.
-        </p>
-      )}
+      {badges.length === 0 && <p className="m-0 text-white/20 font-body text-[13px]">Nessun badge ancora.</p>}
     </Card>
   )
 }

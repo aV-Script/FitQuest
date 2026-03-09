@@ -1,25 +1,9 @@
 import { useEffect } from 'react'
 
-// ─── Design tokens ────────────────────────────────────────────────────────────
-export const tokens = {
-  fontDisplay: "'Orbitron', monospace",
-  fontBody:    "'Rajdhani', sans-serif",
-  glass:       'rgba(255,255,255,0.03)',
-  glassBorder: 'rgba(255,255,255,0.07)',
-  muted:       'rgba(255,255,255,0.4)',
-  subtle:      'rgba(255,255,255,0.08)',
-}
-
 // ─── Card ─────────────────────────────────────────────────────────────────────
-export function Card({ style, children }) {
+export function Card({ className = '', children }) {
   return (
-    <div style={{
-      background:   tokens.glass,
-      border:       `1px solid ${tokens.glassBorder}`,
-      borderRadius: 20,
-      padding:      20,
-      ...style,
-    }}>
+    <div className={`bg-white/[.03] border border-white/[.07] rounded-2xl p-5 ${className}`}>
       {children}
     </div>
   )
@@ -28,14 +12,7 @@ export function Card({ style, children }) {
 // ─── SectionLabel ─────────────────────────────────────────────────────────────
 export function SectionLabel({ children }) {
   return (
-    <div style={{
-      fontFamily:    tokens.fontDisplay,
-      fontSize:      10,
-      color:         'rgba(255,255,255,0.3)',
-      letterSpacing: 3,
-      marginBottom:  14,
-      textTransform: 'uppercase',
-    }}>
+    <div className="font-display text-[10px] text-white/30 tracking-[3px] uppercase mb-3.5">
       {children}
     </div>
   )
@@ -43,7 +20,6 @@ export function SectionLabel({ children }) {
 
 // ─── Modal ────────────────────────────────────────────────────────────────────
 export function Modal({ title, onClose, children }) {
-  // Chiudi con ESC
   useEffect(() => {
     const handler = e => { if (e.key === 'Escape') onClose() }
     window.addEventListener('keydown', handler)
@@ -52,16 +28,21 @@ export function Modal({ title, onClose, children }) {
 
   return (
     <div
-      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center"
       onClick={onClose}
     >
       <div
-        style={{ background: '#111827', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20, padding: 32, width: 420, maxWidth: '90vw', maxHeight: '90vh', overflowY: 'auto' }}
+        className="bg-gray-900 border border-white/10 rounded-2xl p-8 w-[420px] max-w-[90vw] max-h-[90vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-          <h3 style={{ margin: 0, fontFamily: tokens.fontDisplay, color: '#fff', fontSize: 16 }}>{title}</h3>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: tokens.muted, fontSize: 20, cursor: 'pointer', lineHeight: 1 }}>✕</button>
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="font-display text-white text-base m-0">{title}</h3>
+          <button
+            onClick={onClose}
+            className="bg-transparent border-none text-white/40 text-xl cursor-pointer leading-none hover:text-white/70 transition-colors"
+          >
+            ✕
+          </button>
         </div>
         {children}
       </div>
@@ -70,78 +51,38 @@ export function Modal({ title, onClose, children }) {
 }
 
 // ─── Input ────────────────────────────────────────────────────────────────────
-export function Input({ style, ...props }) {
-  return (
-    <input
-      style={{
-        width:       '100%',
-        background:  'rgba(255,255,255,0.05)',
-        border:      '1px solid rgba(255,255,255,0.1)',
-        borderRadius: 10,
-        padding:     '10px 14px',
-        color:       '#fff',
-        fontFamily:  tokens.fontBody,
-        fontSize:    15,
-        boxSizing:   'border-box',
-        outline:     'none',
-        ...style,
-      }}
-      {...props}
-    />
-  )
+export function Input({ className = '', ...props }) {
+  return <input className={`input-base ${className}`} {...props} />
 }
 
 // ─── Textarea ─────────────────────────────────────────────────────────────────
-export function Textarea({ style, ...props }) {
+export function Textarea({ className = '', ...props }) {
   return (
     <textarea
-      style={{
-        width:       '100%',
-        background:  'rgba(255,255,255,0.05)',
-        border:      '1px solid rgba(255,255,255,0.1)',
-        borderRadius: 10,
-        padding:     '10px 14px',
-        color:       '#fff',
-        fontFamily:  tokens.fontBody,
-        fontSize:    15,
-        boxSizing:   'border-box',
-        outline:     'none',
-        resize:      'vertical',
-        minHeight:   60,
-        ...style,
-      }}
+      className={`input-base resize-y min-h-[60px] ${className}`}
       {...props}
     />
   )
 }
 
 // ─── Button ───────────────────────────────────────────────────────────────────
-export function Button({ variant = 'primary', loading, disabled, style, children, ...props }) {
-  const variants = {
-    primary:  { background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)' },
-    danger:   { background: 'linear-gradient(135deg, #f59e0b, #ef4444)' },
-    ghost:    { background: 'none', border: '1px solid rgba(255,255,255,0.1)' },
-  }
+const VARIANT_CLASSES = {
+  primary: 'bg-gradient-to-br from-blue-500 to-violet-500 border-0',
+  danger:  'bg-gradient-to-br from-amber-500 to-red-500 border-0',
+  ghost:   'bg-transparent border border-white/10',
+}
 
+export function Button({ variant = 'primary', loading, disabled, className = '', children, ...props }) {
   return (
     <button
       disabled={loading || disabled}
-      style={{
-        border:        'none',
-        borderRadius:  12,
-        padding:       '14px',
-        color:         '#fff',
-        fontFamily:    tokens.fontDisplay,
-        fontSize:      13,
-        fontWeight:    700,
-        letterSpacing: 1,
-        cursor:        loading || disabled ? 'not-allowed' : 'pointer',
-        opacity:       loading || disabled ? 0.6 : 1,
-        width:         '100%',
-        transition:    'opacity 0.2s',
-        ...variants[variant],
-        ...style,
-      }}
+      className={`
+        rounded-xl py-3.5 px-4 text-white font-display text-[13px] font-bold tracking-wider
+        cursor-pointer transition-opacity duration-200
+        ${loading || disabled ? 'opacity-60 cursor-not-allowed' : 'hover:opacity-90'}
+        ${VARIANT_CLASSES[variant]}
+        ${className}
+      `}
       {...props}
     >
       {loading ? 'ATTENDERE...' : children}
@@ -154,13 +95,16 @@ export function XPBar({ xp, xpNext, color }) {
   const pct = Math.min(100, Math.round(((xp ?? 0) / (xpNext ?? 1)) * 100))
 
   return (
-    <div style={{ marginTop: 8 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'rgba(255,255,255,0.5)', marginBottom: 4, fontFamily: tokens.fontBody }}>
+    <div className="mt-2">
+      <div className="flex justify-between text-[11px] text-white/50 mb-1 font-body">
         <span>XP {xp?.toLocaleString('it-IT')}</span>
         <span>{xpNext?.toLocaleString('it-IT')}</span>
       </div>
-      <div style={{ background: tokens.subtle, borderRadius: 99, height: 6, overflow: 'hidden' }}>
-        <div style={{ width: `${pct}%`, height: '100%', background: `linear-gradient(90deg, ${color}, #fff8)`, borderRadius: 99, transition: 'width 0.8s ease' }} />
+      <div className="bg-white/[.08] rounded-full h-1.5 overflow-hidden">
+        <div
+          className="h-full rounded-full transition-[width] duration-700 ease-out"
+          style={{ width: `${pct}%`, background: `linear-gradient(90deg, ${color}, #fff8)` }}
+        />
       </div>
     </div>
   )
@@ -169,14 +113,10 @@ export function XPBar({ xp, xpNext, color }) {
 // ─── Badge ────────────────────────────────────────────────────────────────────
 export function Badge({ color, children }) {
   return (
-    <span style={{
-      background:   color + '22',
-      color,
-      borderRadius: 99,
-      padding:      '2px 12px',
-      fontSize:     11,
-      fontFamily:   tokens.fontDisplay,
-    }}>
+    <span
+      className="rounded-full px-3 py-0.5 text-[11px] font-display"
+      style={{ background: color + '22', color }}
+    >
       {children}
     </span>
   )
