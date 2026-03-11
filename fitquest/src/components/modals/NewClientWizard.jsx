@@ -4,7 +4,7 @@ import { CATEGORIE, STATS } from '../../constants'
 import { calcPercentile, calcStatMedia } from '../../utils/percentile'
 import { getRankFromMedia } from '../../constants'
 
-const TOTAL_STEPS = 6 // 1 anagrafica + 5 test (no avatar step)
+const TOTAL_STEPS = 7 // anagrafica + 5 test + account
 const EMPTY_ANAGRAFICA = { name: '', eta: '', sesso: 'M', peso: '', altezza: '', categoria: 'Amatoriale' }
 const EMPTY_TESTS = { forza: '', mobilita: '', equilibrio: '', esplosivita: '', resistenza: '' }
 
@@ -12,6 +12,7 @@ export function NewClientWizard({ onClose, onAdd }) {
   const [step,       setStep]       = useState(0)
   const [anagrafica, setAnagrafica] = useState(EMPTY_ANAGRAFICA)
   const [tests,      setTests]      = useState(EMPTY_TESTS)
+  const [account,    setAccount]    = useState({ email: '', password: '' })
   const [loading,    setLoading]    = useState(false)
   const [errors,     setErrors]     = useState({})
 
@@ -52,6 +53,14 @@ export function NewClientWizard({ onClose, onAdd }) {
     return true
   }
 
+  const validateAccount = () => {
+    const e = {}
+    if (!account.email.trim() || !account.email.includes('@')) e.email = 'Email non valida'
+    if (!account.password || account.password.length < 6) e.password = 'Password minimo 6 caratteri'
+    setErrors(e)
+    return Object.keys(e).length === 0
+  }
+
   const next = () => {
     if (step === 0 && !validateStep0()) return
     if (step >= 1 && step <= 5 && !validateStatStep()) return
@@ -59,18 +68,24 @@ export function NewClientWizard({ onClose, onAdd }) {
   }
 
   const handleSubmit = async () => {
+    if (!validateAccount()) return
     setLoading(true)
     try {
       await onAdd({
         ...anagrafica,
-        eta:      parseInt(anagrafica.eta),
-        peso:     parseFloat(anagrafica.peso),
-        altezza:  parseFloat(anagrafica.altezza),
+        eta:        parseInt(anagrafica.eta),
+        peso:       parseFloat(anagrafica.peso),
+        altezza:    parseFloat(anagrafica.altezza),
         testValues: { ...tests },
-        stats:    allStats,
+        stats:      allStats,
+        email:      account.email.trim(),
+        password:   account.password,
       })
       onClose()
-    } catch { setLoading(false) }
+    } catch (err) {
+      setErrors({ email: err.message })
+      setLoading(false)
+    }
   }
 
   const isLastStep  = step === TOTAL_STEPS - 1
@@ -95,7 +110,10 @@ export function NewClientWizard({ onClose, onAdd }) {
           onChange={v => setTests(p => ({ ...p, [statStep.key]: v }))}
           percentile={livePercentile} error={errors[statStep.key]} />
       )}
-      {isLastStep && <SummaryStep anagrafica={anagrafica} stats={allStats} />}
+      {step === 6 && (
+        <AccountStep data={account} onChange={(k, v) => setAccount(p => ({ ...p, [k]: v }))}
+          errors={errors} stats={allStats} anagrafica={anagrafica} />
+      )}
 
       <div className={`flex gap-3 mt-6 ${step === 0 ? 'justify-end' : 'justify-between'}`}>
         {step > 0 && (
@@ -106,12 +124,14 @@ export function NewClientWizard({ onClose, onAdd }) {
         )}
         {!isLastStep
           ? <Button variant="primary" className="flex-1" onClick={next}>AVANTI ›</Button>
-          : <Button variant="primary" className="flex-1" loading={loading} onClick={handleSubmit}>SALVA CLIENTE</Button>
+          : <Button variant="primary" className="flex-1" loading={loading} onClick={handleSubmit}>CREA CLIENTE</Button>
         }
       </div>
     </Modal>
   )
 }
+
+// ─── Steps ────────────────────────────────────────────────────────────────────
 
 function AnagraficaStep({ data, onChange, errors }) {
   return (
@@ -187,34 +207,33 @@ function TestStep({ stat, value, onChange, percentile, error }) {
   )
 }
 
-function SummaryStep({ anagrafica, stats }) {
-  if (!stats) return null
-  const media   = calcStatMedia(stats)
+function AccountStep({ data, onChange, errors, stats, anagrafica }) {
+  const media   = calcStatMedia(stats ?? {})
   const rankObj = getRankFromMedia(media)
   return (
     <div className="flex flex-col gap-4">
       {/* Rank preview */}
-      <div className="rounded-2xl p-5 border text-center" style={{ borderColor: rankObj.color + '44', background: rankObj.color + '11' }}>
-        <div className="font-display text-[11px] text-white/30 tracking-[3px] mb-2">RANK ASSEGNATO</div>
-        <div className="font-display text-[52px] font-black" style={{ color: rankObj.color }}>{rankObj.label}</div>
-        <div className="font-body text-[13px] text-white/40 mt-1">Media: {media}/100</div>
+      <div className="rounded-2xl p-4 border text-center" style={{ borderColor: rankObj.color + '44', background: rankObj.color + '11' }}>
+        <div className="font-display text-[11px] text-white/30 tracking-[3px] mb-1">RANK ASSEGNATO</div>
+        <div className="font-display text-[40px] font-black" style={{ color: rankObj.color }}>{rankObj.label}</div>
+        <div className="font-body text-[12px] text-white/30 mt-0.5">Media: {media}/100</div>
       </div>
-      {/* Stats */}
-      <div className="flex flex-col gap-2">
-        {STATS.map(s => {
-          const val   = stats?.[s.key] ?? 0
-          const color = val >= 75 ? '#6ee7b7' : val >= 40 ? '#f59e0b' : '#f87171'
-          return (
-            <div key={s.key} className="flex items-center gap-3">
-              <span className="w-4 text-[14px]">{s.icon}</span>
-              <span className="w-24 font-body text-[13px] text-white/60">{s.label}</span>
-              <div className="flex-1 bg-white/[.06] rounded-full h-[5px]">
-                <div className="h-full rounded-full" style={{ width: `${val}%`, background: color }} />
-              </div>
-              <span className="w-8 text-right font-display text-[11px]" style={{ color }}>{val}</span>
-            </div>
-          )
-        })}
+
+      <div className="border-t border-white/[.06] pt-4">
+        <div className="font-display text-[11px] text-white/30 tracking-[2px] mb-3">ACCOUNT CLIENTE</div>
+        <div className="flex flex-col gap-3">
+          <Field label="Email cliente" error={errors.email}>
+            <Input type="email" placeholder="email@esempio.com" value={data.email}
+              onChange={e => onChange('email', e.target.value)} autoFocus />
+          </Field>
+          <Field label="Password temporanea" error={errors.password}>
+            <Input type="password" placeholder="Minimo 6 caratteri" value={data.password}
+              onChange={e => onChange('password', e.target.value)} />
+          </Field>
+          <p className="m-0 text-white/30 font-body text-[12px]">
+            Il cliente potrà cambiare la password al primo accesso.
+          </p>
+        </div>
       </div>
     </div>
   )
@@ -233,7 +252,7 @@ function Field({ label, error, children }) {
 function stepTitle(step) {
   if (step === 0) return '👤 Dati Anagrafici'
   if (step <= 5)  return `📊 Test ${STATS[step - 1].label}`
-  return '✅ Riepilogo'
+  return '🔑 Account Cliente'
 }
 
 function scoreLabel(pct) {

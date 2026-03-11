@@ -2,7 +2,6 @@ import { useState, useCallback } from 'react'
 import { useClients } from '../../hooks/useClients'
 import { useMissions } from '../../hooks/useMissions'
 import { CampionamentoModal } from '../modals/CampionamentoModal'
-import { AddXPModal } from '../modals/AddXPModal'
 import { MissionsPanel } from './MissionsPanel'
 import { StatsChart } from './StatsChart'
 import { Pentagon } from '../ui/Pentagon'
@@ -12,15 +11,14 @@ import { calcStatMedia } from '../../utils/percentile'
 import { getRankFromMedia } from '../../constants'
 
 export function ClientDashboard({ client, trainerId }) {
-  const { handleCampionamento, handleAddXP, deselectClient, updateLocalClient } = useClients()
+  const { handleCampionamento, deselectClient, updateLocalClient } = useClients()
   const [showCampionamento, setShowCampionamento] = useState(false)
-  const [showAddXP,         setShowAddXP]         = useState(false)
 
   const media   = calcStatMedia(client.stats ?? {})
   const rankObj = getRankFromMedia(media)
   const color   = client.rankColor ?? rankObj.color
 
-  const { missions, customTemplates, handleAddMission, handleCompleteMission } =
+  const { missions, customTemplates, handleAddMission, handleCompleteMission, handleDeleteMission } =
     useMissions(client, trainerId, updateLocalClient)
 
   return (
@@ -30,10 +28,8 @@ export function ClientDashboard({ client, trainerId }) {
         ‹ Torna alla lista
       </button>
 
-      {/* DESKTOP: 3 colonne | MOBILE: 1 colonna */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-
-        {/* ── COLONNA 1: Profilo + Avatar/Rank ── */}
+        {/* Colonna 1 */}
         <div className="flex flex-col gap-4">
           <ClientInfoCard client={client} color={color} rankObj={rankObj} />
           <Card className="flex items-center gap-6 px-5 py-6">
@@ -42,7 +38,7 @@ export function ClientDashboard({ client, trainerId }) {
           </Card>
         </div>
 
-        {/* ── COLONNA 2: Pentagon + Andamento ── */}
+        {/* Colonna 2 */}
         <div className="flex flex-col gap-4">
           <Card className="flex items-center justify-center py-6">
             <Pentagon stats={client.stats} color={color} size={200} />
@@ -50,14 +46,15 @@ export function ClientDashboard({ client, trainerId }) {
           <StatsChart campionamenti={client.campionamenti} color={color} />
         </div>
 
-        {/* ── COLONNA 3: Missioni + Log + Badge ── */}
+        {/* Colonna 3 */}
         <div className="flex flex-col gap-4">
           <MissionsPanel
             client={{ ...client, missions }}
             color={color}
             onAddMission={handleAddMission}
             onCompleteMission={handleCompleteMission}
-            
+            onDeleteMission={handleDeleteMission}
+            onDeleteMission={handleDeleteMission}
             customTemplates={customTemplates}
           />
           <ActivityLog log={client.log} />
@@ -65,16 +62,12 @@ export function ClientDashboard({ client, trainerId }) {
         </div>
       </div>
 
-      {/* CTA — full width sotto le colonne */}
-      <div className="grid grid-cols-2 gap-3 mt-4">
+      {/* CTA */}
+      <div className="mt-4">
         <button onClick={() => setShowCampionamento(true)}
-          className="rounded-2xl py-4 text-white font-display text-[13px] font-bold cursor-pointer tracking-widest transition-opacity hover:opacity-90"
+          className="w-full rounded-2xl py-4 text-white font-display text-[13px] font-bold cursor-pointer tracking-widest transition-opacity hover:opacity-90"
           style={{ background: `linear-gradient(135deg, ${color}cc, ${color}44)`, border: `1px solid ${color}66`, boxShadow: `0 0 30px ${color}22` }}>
           📊 NUOVO CAMPIONAMENTO
-        </button>
-        <button onClick={() => setShowAddXP(true)}
-          className="rounded-2xl py-4 text-white font-display text-[13px] font-bold cursor-pointer tracking-widest transition-opacity hover:opacity-90 bg-white/[.04] border border-white/10">
-          ⭐ AGGIUNGI XP
         </button>
       </div>
 
@@ -82,15 +75,9 @@ export function ClientDashboard({ client, trainerId }) {
         <CampionamentoModal client={client} onClose={() => setShowCampionamento(false)}
           onSave={async (s, t, n) => { await handleCampionamento(client, s, t, n) }} />
       )}
-      {showAddXP && (
-        <AddXPModal client={client} onClose={() => setShowAddXP(false)}
-          onSave={async (xp, n) => { await handleAddXP(client, xp, n) }} />
-      )}
     </div>
   )
 }
-
-// ─── Sub-components ───────────────────────────────────────────────────────────
 
 function ClientInfoCard({ client, color, rankObj }) {
   return (
@@ -131,9 +118,7 @@ function RankBlock({ rankObj, color }) {
         style={{ border: `3px solid ${color}`, background: color + '11', boxShadow: `0 0 24px ${color}44` }}>
         <span className="font-display font-black text-[28px]" style={{ color }}>{rankObj.label}</span>
       </div>
-      <div className="text-center">
-        <div className="text-[10px] text-white/40 font-body tracking-[2px]">RANK</div>
-      </div>
+      <div className="text-[10px] text-white/40 font-body tracking-[2px]">RANK</div>
     </div>
   )
 }
