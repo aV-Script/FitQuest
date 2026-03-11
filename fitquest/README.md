@@ -47,15 +47,6 @@ npm run dev
 npm run build
 ```
 
-## 🔥 Roadmap — Fase 2 (Firebase)
-
-- [ ] Firebase Auth per il login del trainer
-- [ ] Firestore per persistere clienti e sessioni
-- [ ] Profilo cliente accessibile anche dall'app mobile
-- [ ] Notifiche push al cliente al level up
-- [ ] Leaderboard tra clienti dello stesso trainer
-- [ ] Foto profilo via Firebase Storage
-
 ## 🛠 Tech Stack
 
 | Layer | Tecnologia |
