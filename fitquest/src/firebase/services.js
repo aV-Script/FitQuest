@@ -1,75 +1,50 @@
-import { auth, db } from './config'
 import {
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged,
-} from 'firebase/auth'
-import {
-  collection,
-  doc,
-  getDocs,
-  addDoc,
-  updateDoc,
-  query,
-  where,
-  orderBy,
-  serverTimestamp,
+  getFirestore, collection, getDocs, addDoc, updateDoc,
+  doc, query, where, arrayUnion
 } from 'firebase/firestore'
+import {
+  getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword,
+  signOut, onAuthStateChanged
+} from 'firebase/auth'
+import app from './config'
 
-// ── AUTH ─────────────────────────────────────────────────────
+const db   = getFirestore(app)
+const auth = getAuth(app)
 
-export const login = (email, password) =>
-  signInWithEmailAndPassword(auth, email, password)
+// ── Auth ──────────────────────────────────────────────────────────────────────
+export const login       = (email, pw) => signInWithEmailAndPassword(auth, email, pw)
+export const register    = (email, pw) => createUserWithEmailAndPassword(auth, email, pw)
+export const logout      = ()          => signOut(auth)
+export const onAuthChange = (cb)       => onAuthStateChanged(auth, cb)
 
-export const register = (email, password) =>
-  createUserWithEmailAndPassword(auth, email, password)
-
-export const logout = () => signOut(auth)
-
-export const onAuthChange = (callback) =>
-  onAuthStateChanged(auth, callback)
-
-// ── CLIENTI ──────────────────────────────────────────────────
-
+// ── Clients ───────────────────────────────────────────────────────────────────
 export async function getClients(trainerId) {
-  const q = query(
-    collection(db, 'clients'),
-    where('trainerId', '==', trainerId)
-  )
-  const snapshot = await getDocs(q)
-  return snapshot.docs.map(d => ({ id: d.id, ...d.data() }))
+  const q    = query(collection(db, 'clients'), where('trainerId', '==', trainerId))
+  const snap = await getDocs(q)
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
 }
 
-export async function addClient(trainerId, clientData) {
-  return addDoc(collection(db, 'clients'), {
-    ...clientData,
-    trainerId,
-    createdAt: serverTimestamp(),
-  })
+export const addClient    = (trainerId, data) => addDoc(collection(db, 'clients'), data)
+export const updateClient = (id, data)        => updateDoc(doc(db, 'clients', id), data)
+export const addSession   = (clientId, data)  =>
+  updateDoc(doc(db, 'clients', clientId), { sessions: arrayUnion({ ...data, createdAt: new Date().toISOString() }) })
+
+// ── Missions ──────────────────────────────────────────────────────────────────
+export async function getMissions(clientId) {
+  const q    = query(collection(db, 'missions'), where('clientId', '==', clientId))
+  const snap = await getDocs(q)
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
 }
 
-export async function updateClient(clientId, data) {
-  return updateDoc(doc(db, 'clients', clientId), {
-    ...data,
-    updatedAt: serverTimestamp(),
-  })
+export const addMission    = (data)       => addDoc(collection(db, 'missions'), data)
+export const updateMission = (id, data)   => updateDoc(doc(db, 'missions', id), data)
+
+// ── Mission Templates ─────────────────────────────────────────────────────────
+export async function getCustomTemplates(trainerId) {
+  const q    = query(collection(db, 'missionTemplates'), where('trainerId', '==', trainerId))
+  const snap = await getDocs(q)
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
 }
 
-// ── SESSIONI ─────────────────────────────────────────────────
-
-export async function addSession(clientId, sessionData) {
-  return addDoc(collection(db, 'clients', clientId, 'sessions'), {
-    ...sessionData,
-    date: serverTimestamp(),
-  })
-}
-
-export async function getSessions(clientId) {
-  const q = query(
-    collection(db, 'clients', clientId, 'sessions'),
-    orderBy('date', 'desc')
-  )
-  const snapshot = await getDocs(q)
-  return snapshot.docs.map(d => ({ id: d.id, ...d.data() }))
-}
+export const saveTemplate = (trainerId, data) =>
+  addDoc(collection(db, 'missionTemplates'), { ...data, trainerId })

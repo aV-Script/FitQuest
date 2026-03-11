@@ -1,85 +1,52 @@
 import { memo, useMemo } from 'react'
 import { STATS } from '../../constants'
 
-const SIZE = 130
-const CX   = SIZE / 2
-const CY   = SIZE / 2
-const R    = 48
-const N    = STATS.length
+export const Pentagon = memo(function Pentagon({ stats = {}, color = '#60a5fa', size = 180 }) {
+  const cx = size / 2
+  const cy = size / 2
+  const R  = size * 0.42
 
-function angleFor(i) {
-  return (Math.PI * 2 * i) / N - Math.PI / 2
-}
+  const angles = STATS.map((_, i) => (Math.PI * 2 * i) / 5 - Math.PI / 2)
 
-function polarToCart(ratio, i) {
-  const angle = angleFor(i)
-  return {
-    x: CX + R * ratio * Math.cos(angle),
-    y: CY + R * ratio * Math.sin(angle),
-  }
-}
+  const outerPoints = useMemo(() =>
+    angles.map(a => ({ x: cx + R * Math.cos(a), y: cy + R * Math.sin(a) }))
+  , [cx, cy, R])
 
-function gridPolygon(ratio) {
-  return STATS.map((_, i) => {
-    const { x, y } = polarToCart(ratio, i)
-    return `${x},${y}`
-  }).join(' ')
-}
+  const statPoints = useMemo(() =>
+    STATS.map(({ key }, i) => {
+      const val = Math.min(100, Math.max(0, stats[key] ?? 0))
+      const r   = (val / 100) * R
+      return { x: cx + r * Math.cos(angles[i]), y: cy + r * Math.sin(angles[i]) }
+    })
+  , [stats, cx, cy, R])
 
-/**
- * Radar chart pentagonale.
- * Memoizzato: si re-renderizza solo se stats o color cambiano.
- */
-export const Pentagon = memo(function Pentagon({ stats, color }) {
-  const dataPoints = useMemo(
-    () => STATS.map(({ key }, i) => polarToCart(stats[key] / 100, i)),
-    [stats]
-  )
-
-  const dataPath = dataPoints
-    .map(({ x, y }, i) => `${i === 0 ? 'M' : 'L'}${x},${y}`)
-    .join(' ') + 'Z'
+  const toPath = pts => pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ') + ' Z'
 
   return (
-    <svg width={SIZE} height={SIZE} style={{ overflow: 'visible' }}>
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
       {/* Grid rings */}
-      {[0.25, 0.5, 0.75, 1].map(ratio => (
-        <polygon
-          key={ratio}
-          points={gridPolygon(ratio)}
-          fill="none"
-          stroke="rgba(255,255,255,0.08)"
-          strokeWidth="1"
-        />
+      {[0.25, 0.5, 0.75, 1].map(f => (
+        <polygon key={f}
+          points={outerPoints.map(p => `${(cx + (p.x - cx) * f).toFixed(1)},${(cy + (p.y - cy) * f).toFixed(1)}`).join(' ')}
+          fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
       ))}
-
-      {/* Grid spokes */}
-      {STATS.map((_, i) => {
-        const { x, y } = polarToCart(1, i)
-        return <line key={i} x1={CX} y1={CY} x2={x} y2={y} stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
-      })}
-
-      {/* Data area */}
-      <path d={dataPath} fill={color + '44'} stroke={color} strokeWidth="2" />
-
-      {/* Data points */}
-      {dataPoints.map(({ x, y }, i) => (
-        <circle key={i} cx={x} cy={y} r="3" fill={color} />
+      {/* Spokes */}
+      {outerPoints.map((p, i) => (
+        <line key={i} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
       ))}
-
+      {/* Stat area */}
+      <path d={toPath(statPoints)} fill={color + '33'} stroke={color} strokeWidth="2" strokeLinejoin="round" />
+      {/* Dots */}
+      {statPoints.map((p, i) => (
+        <circle key={i} cx={p.x} cy={p.y} r="3.5" fill={color} />
+      ))}
       {/* Labels */}
-      {STATS.map(({ icon }, i) => {
-        const { x, y } = polarToCart(1 + 18 / R, i)
+      {STATS.map(({ icon, label }, i) => {
+        const lx = cx + (R + 18) * Math.cos(angles[i])
+        const ly = cy + (R + 18) * Math.sin(angles[i])
         return (
-          <text
-            key={i}
-            x={x} y={y}
-            textAnchor="middle"
-            dominantBaseline="middle"
-            fontSize="8"
-            fill="rgba(255,255,255,0.6)"
-            fontFamily="Rajdhani, sans-serif"
-          >
+          <text key={i} x={lx} y={ly} textAnchor="middle" dominantBaseline="middle"
+            fontSize={size > 160 ? 10 : 9} fill="rgba(255,255,255,0.45)" fontFamily="Rajdhani">
             {icon}
           </text>
         )
