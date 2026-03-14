@@ -25,9 +25,6 @@ export const Pentagon = memo(function Pentagon({ stats = {}, color = '#60a5fa', 
   const svgSize = fluid ? 200 : size
   const vbPad = 30  // padding viewBox per le label fuori dal cerchio
   const vbSize = svgSize + vbPad * 2
-  const cx2 = svgSize / 2
-  const cy2 = svgSize / 2
-
   return (
     <svg
       width={fluid ? '100%' : size}

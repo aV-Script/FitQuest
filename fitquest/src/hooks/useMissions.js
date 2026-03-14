@@ -1,5 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
-import { getMissions, addMission, updateMission, deleteMission, saveTemplate, getCustomTemplates, updateClient, addNotification } from '../firebase/services'
+import { getMissions, addMission, updateMission, deleteMission, saveTemplate, getCustomTemplates } from '../firebase/missions'
+import { updateClient } from '../firebase/clients'
+import { addNotification } from '../firebase/notifications'
 import { MISSION_STATUS } from '../constants/missions'
 import { buildXPUpdate } from '../utils/gamification'
 

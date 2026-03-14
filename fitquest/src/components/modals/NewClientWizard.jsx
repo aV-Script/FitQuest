@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Modal, Input, Button } from '../ui'
+import { Modal, Input, Button, Field } from '../ui' 
 import { CATEGORIE, STATS } from '../../constants'
 import { calcPercentile, calcStatMedia } from '../../utils/percentile'
 import { getRankFromMedia } from '../../constants'
@@ -393,17 +393,7 @@ function AccountStep({ data, onChange, errors, rankObj, media, allStats }) {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function Field({ label, error, children }) {
-  return (
-    <div>
-      <div className="text-white/40 text-[11px] font-display tracking-wider mb-1.5">
-        {label.toUpperCase()}
-      </div>
-      {children}
-      {error && <p className="m-0 mt-1 text-red-400 font-body text-[12px]">{error}</p>}
-    </div>
-  )
-}
+
 
 function stepTitle(step) {
   if (step === 0) return 'Nuovo cliente — dati anagrafici'

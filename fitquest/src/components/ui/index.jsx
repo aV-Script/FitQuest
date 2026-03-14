@@ -128,3 +128,140 @@ export function Badge({ color, children }) {
     </span>
   )
 }
+
+// ─── Divider ──────────────────────────────────────────────────────────────────
+export function Divider({ color }) {
+  return (
+    <div className="px-6">
+      <div
+        className="w-full h-px"
+        style={{ background: `linear-gradient(90deg, transparent, ${color}33, transparent)` }}
+      />
+    </div>
+  )
+}
+
+// ─── Field ────────────────────────────────────────────────────────────────────
+// Wrapper label + input + messaggio di errore usato in tutti i form/modali
+export function Field({ label, error, children }) {
+  return (
+    <div>
+      <div className="text-white/40 text-[11px] font-display tracking-wider mb-1.5">
+        {label.toUpperCase()}
+      </div>
+      {children}
+      {error && <p className="m-0 mt-1 text-red-400 font-body text-[12px]">{error}</p>}
+    </div>
+  )
+}
+
+// ─── ActivityLog ──────────────────────────────────────────────────────────────
+export function ActivityLog({ log = [], color }) {
+  return (
+    <div
+      className="rounded-2xl p-5"
+      style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}
+    >
+      <SectionLabel>◈ Attività recenti</SectionLabel>
+      {log.length === 0 && (
+        <p className="m-0 font-body text-[13px] text-white/20">Nessuna attività ancora.</p>
+      )}
+      {log.slice(0, 5).map((entry, i) => (
+        <div key={i} className="flex gap-2.5 items-start mb-2.5">
+          <div className="flex flex-col items-center pt-1.5 gap-1">
+            <div className="w-[5px] h-[5px] rounded-full shrink-0" style={{ background: color + '88' }} />
+            {i < Math.min(log.length, 5) - 1 && (
+              <div className="w-px flex-1 min-h-[12px]" style={{ background: 'rgba(255,255,255,0.06)' }} />
+            )}
+          </div>
+          <div className="flex-1 pb-1">
+            <div className="font-body text-[13px] text-white/70">{entry.action}</div>
+            <div className="flex gap-2 mt-0.5">
+              <span className="font-body text-[11px] text-white/20">{entry.date}</span>
+              {entry.xp > 0 && (
+                <span className="font-display text-[10px] text-emerald-400">+{entry.xp} XP</span>
+              )}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ─── BadgeList ────────────────────────────────────────────────────────────────
+export function BadgeList({ badges = [], color }) {
+  return (
+    <div
+      className="rounded-2xl p-5"
+      style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}
+    >
+      <SectionLabel>◈ Badge conquistati</SectionLabel>
+      <div className="flex flex-wrap gap-2">
+        {badges.length === 0 && (
+          <p className="m-0 font-body text-[13px] text-white/20">Nessun badge ancora.</p>
+        )}
+        {badges.map((b, i) => (
+          <span
+            key={i}
+            className="font-body text-[13px] rounded-lg px-3 py-1.5"
+            style={{ background: color + '11', border: `1px solid ${color}33`, color: 'rgba(255,255,255,0.7)' }}
+          >
+            {b}
+          </span>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ─── StatsSection ─────────────────────────────────────────────────────────────
+// Sezione Status riusabile: barre statistiche + Pentagon affiancati
+// Usato in ClientDashboard (trainer) e ClientView (cliente read-only)
+import { Pentagon } from './Pentagon'
+import { STATS }    from '../../constants'
+
+export function StatsSection({ stats = {}, prevStats = null, color, pentagonSize = 130 }) {
+  return (
+    <div className="grid gap-6" style={{ gridTemplateColumns: '3fr 2fr' }}>
+      <div className="flex flex-col justify-center gap-3">
+        {STATS.map(({ key, label }) => {
+          const val   = stats[key] ?? 0
+          const prev  = prevStats?.[key] ?? null
+          const delta = prev !== null ? val - prev : null
+          return (
+            <div key={key} className="flex items-center gap-3">
+              <span className="font-body text-[12px] text-white/50 w-20 shrink-0">{label}</span>
+              <div
+                className="flex-1 h-[5px] rounded-full overflow-hidden"
+                style={{ background: 'rgba(255,255,255,0.06)' }}
+              >
+                <div
+                  className="h-full rounded-full transition-[width] duration-700"
+                  style={{ width: `${val}%`, background: color }}
+                />
+              </div>
+              <span
+                className="font-display text-[12px] w-7 text-right tabular-nums"
+                style={{ color }}
+              >
+                {val}
+              </span>
+              {delta !== null && (
+                <span
+                  className="font-display text-[10px] w-8 text-right tabular-nums"
+                  style={{ color: delta > 0 ? '#34d399' : delta < 0 ? '#f87171' : 'rgba(255,255,255,0.2)' }}
+                >
+                  {delta > 0 ? `+${delta}` : delta === 0 ? '—' : delta}
+                </span>
+              )}
+            </div>
+          )
+        })}
+      </div>
+      <div className="flex items-center justify-center">
+        <Pentagon stats={stats} color={color} size={pentagonSize} />
+      </div>
+    </div>
+  )
+}

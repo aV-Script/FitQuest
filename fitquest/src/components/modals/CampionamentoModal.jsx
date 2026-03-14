@@ -3,6 +3,7 @@ import { Modal, Input, Button } from '../ui'
 import { STATS } from '../../constants'
 import { calcPercentile, calcStatMedia } from '../../utils/percentile'
 import { getRankFromMedia } from '../../constants'
+import { useClientRank } from '../../hooks/useClientRank'
 import { Pentagon } from '../ui/Pentagon'
 
 export function CampionamentoModal({ client, onClose, onSave }) {

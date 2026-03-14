@@ -1,12 +1,13 @@
 import { useState, useCallback, useMemo } from 'react'
-import { useClients }      from '../../hooks/useClients'
-import { useClientSearch } from '../../hooks/useClientSearch'
-import { NewClientWizard } from '../modals/NewClientWizard'
-import { Input }           from '../ui'
-import { logout }          from '../../firebase/services'
-import { getRankFromMedia } from '../../constants'
-import { calcStatMedia }   from '../../utils/percentile'
-import { RANKS }           from '../../constants'
+import { useClients }       from '../../hooks/useClients'
+import { useClientSearch }  from '../../hooks/useClientSearch'
+import { useClientRank }    from '../../hooks/useClientRank'
+import { NewClientWizard }  from '../modals/NewClientWizard'
+import { AppNav }           from '../layout/AppNav'
+import { Input }            from '../ui'
+import { logout }           from '../../firebase/services'
+import { calcStatMedia }    from '../../utils/percentile'
+import { RANKS }            from '../../constants'
 
 export function TrainerArea({ trainerId }) {
   const { clients, loading, error, handleAddClient, selectClient } = useClients(trainerId)
@@ -21,10 +22,9 @@ export function TrainerArea({ trainerId }) {
   }, [handleAddClient])
 
   const stats = useMemo(() => {
-    const total = clients.length
+    const total    = clients.length
     const avgLevel = total > 0
-      ? Math.round(clients.reduce((s, c) => s + (c.level ?? 1), 0) / total)
-      : 0
+      ? Math.round(clients.reduce((s, c) => s + (c.level ?? 1), 0) / total) : 0
     const rankCounts = {}
     clients.forEach(c => { const r = c.rank ?? 'F'; rankCounts[r] = (rankCounts[r] ?? 0) + 1 })
     const topRanks = Object.entries(rankCounts).sort((a, b) => b[1] - a[1]).slice(0, 3)
@@ -37,9 +37,10 @@ export function TrainerArea({ trainerId }) {
   }, [clients])
 
   const displayed = useMemo(() => {
-    let list = filtered
-    if (filterCategoria !== 'tutti') list = list.filter(c => c.categoria === filterCategoria)
-    return [...list].sort((a, b) => {
+    let list = filterCategoria !== 'tutti'
+      ? filtered.filter(c => c.categoria === filterCategoria)
+      : [...filtered]
+    return list.sort((a, b) => {
       if (sortBy === 'name')  return a.name.localeCompare(b.name)
       if (sortBy === 'level') return (b.level ?? 1) - (a.level ?? 1)
       if (sortBy === 'rank')  return calcStatMedia(b.stats ?? {}) - calcStatMedia(a.stats ?? {})
@@ -50,52 +51,37 @@ export function TrainerArea({ trainerId }) {
   const SORT_OPTIONS = [['name', 'Nome A→Z'], ['rank', 'Rank migliore'], ['level', 'Livello più alto']]
 
   return (
-    <div className="min-h-screen text-white" style={{ background: 'radial-gradient(ellipse at 20% 0%, #0f1f3d 0%, #070b14 60%)' }}>
+    <div className="min-h-screen text-white"
+      style={{ background: 'radial-gradient(ellipse at 20% 0%, #0f1f3d 0%, #070b14 60%)' }}>
 
-      {/* ── Navbar — tre zone come ClientDashboard ── */}
-      <nav className="px-6 py-4 border-b border-white/[.05] flex items-center"> 
-        {/* sinistra */}
-        <div className="flex-1">
-          <span className="hidden sm:block font-display text-[11px] text-white/20 tracking-[2px]">
-            TRAINER DASHBOARD
-          </span>
-        </div>
-        {/* logo centrato */}
-        <span className="font-display font-black text-[18px] shrink-0 bg-gradient-to-r from-blue-400 to-violet-400 bg-clip-text text-transparent">
-          FITQUEST
-        </span>
-        {/* destra */}
-        <div className="flex-1 flex justify-end">
-          <button
-            onClick={logout}
-            className="bg-transparent border border-white/10 rounded-xl px-4 py-2 text-white/40 font-body text-[13px] cursor-pointer hover:text-white/60 transition-all"
-          >
+      <AppNav
+        left={<span className="hidden sm:block font-display text-[11px] text-white/20 tracking-[2px]">TRAINER DASHBOARD</span>}
+        right={
+          <button onClick={logout}
+            className="bg-transparent border border-white/10 rounded-xl px-4 py-2 text-white/40 font-body text-[13px] cursor-pointer hover:text-white/60 transition-all">
             Logout
           </button>
-        </div>
-      </nav>
+        }
+      />
 
-      {/* ── Layout principale ── */}
       <div className="flex min-h-[calc(100vh-57px)]">
 
-        {/* ── Sidebar sinistra — solo desktop ── */}
+        {/* Sidebar desktop */}
         <aside className="hidden lg:flex flex-col w-72 xl:w-80 shrink-0 border-r border-white/[.05] p-8 gap-6 sticky top-[57px] h-[calc(100vh-57px)] overflow-y-auto">
-          {/* Panoramica */}
-          <div>
-            <p className="font-display text-[10px] text-white/30 tracking-[3px] mb-4">PANORAMICA</p>
+          <SidebarSection label="PANORAMICA">
             <div className="grid grid-cols-2 gap-3">
-              <StatBox label="Clienti totali" value={stats.total} color="#60a5fa" />
-              <StatBox label="Livello medio" value={stats.avgLevel || '—'} color="#a78bfa" />
+              <StatBox label="Clienti totali" value={stats.total}    color="#60a5fa" />
+              <StatBox label="Livello medio"  value={stats.avgLevel || '—'} color="#a78bfa" />
             </div>
             {stats.topRanks.length > 0 && (
               <div className="mt-3">
                 <p className="font-display text-[10px] text-white/20 tracking-[2px] mb-2">RANK PIÙ COMUNI</p>
                 <div className="flex gap-2 flex-wrap">
                   {stats.topRanks.map(([rank, count]) => {
-                    const rankObj = RANKS.find(r => r.label === rank) ?? RANKS[RANKS.length - 1]
+                    const r = RANKS.find(r => r.label === rank) ?? RANKS[RANKS.length - 1]
                     return (
                       <span key={rank} className="font-display text-[12px] px-2.5 py-1 rounded-lg"
-                        style={{ background: rankObj.color + '22', color: rankObj.color, border: `1px solid ${rankObj.color}44` }}>
+                        style={{ background: r.color + '22', color: r.color, border: `1px solid ${r.color}44` }}>
                         {rank} <span className="opacity-50">×{count}</span>
                       </span>
                     )
@@ -103,59 +89,42 @@ export function TrainerArea({ trainerId }) {
                 </div>
               </div>
             )}
-          </div>
+          </SidebarSection>
 
-          <div className="w-full h-px" style={{ background: 'rgba(255,255,255,0.05)' }} />
+          <Separator />
 
-          {/* Ricerca */}
-          <div>
-            <p className="font-display text-[10px] text-white/30 tracking-[3px] mb-3">RICERCA</p>
+          <SidebarSection label="RICERCA">
             <Input placeholder="Nome cliente..." value={query} onChange={e => setQuery(e.target.value)} className="w-full" />
-          </div>
+          </SidebarSection>
 
-          {/* Filtro categoria */}
           {categorie.length > 1 && (
-            <div>
-              <p className="font-display text-[10px] text-white/30 tracking-[3px] mb-3">CATEGORIA</p>
+            <SidebarSection label="CATEGORIA">
               <div className="flex flex-col gap-1.5">
                 {categorie.map(cat => (
-                  <button key={cat} onClick={() => setFilterCategoria(cat)}
-                    className={`text-left px-3 py-2 rounded-xl font-body text-[13px] cursor-pointer border transition-all
-                      ${filterCategoria === cat ? 'text-white border-white/20 bg-white/[.06]' : 'text-white/40 border-transparent bg-transparent hover:text-white/60'}`}>
+                  <SidebarButton key={cat} active={filterCategoria === cat} onClick={() => setFilterCategoria(cat)}>
                     {cat.charAt(0).toUpperCase() + cat.slice(1)}
-                  </button>
+                  </SidebarButton>
                 ))}
               </div>
-            </div>
+            </SidebarSection>
           )}
 
-          {/* Ordinamento */}
-          <div>
-            <p className="font-display text-[10px] text-white/30 tracking-[3px] mb-3">ORDINA PER</p>
+          <SidebarSection label="ORDINA PER">
             <div className="flex flex-col gap-1.5">
               {SORT_OPTIONS.map(([val, label]) => (
-                <button key={val} onClick={() => setSortBy(val)}
-                  className={`text-left px-3 py-2 rounded-xl font-body text-[13px] cursor-pointer border transition-all
-                    ${sortBy === val ? 'text-white border-white/20 bg-white/[.06]' : 'text-white/40 border-transparent bg-transparent hover:text-white/60'}`}>
+                <SidebarButton key={val} active={sortBy === val} onClick={() => setSortBy(val)}>
                   {label}
-                </button>
+                </SidebarButton>
               ))}
             </div>
-          </div>
+          </SidebarSection>
 
-          {/* Bottone nuovo cliente — senza "+" */}
           <div className="mt-auto">
-            <button
-              onClick={() => setShowWizard(true)}
-              className="w-full rounded-xl py-3 font-display text-[12px] tracking-widest cursor-pointer border-0 transition-opacity hover:opacity-85"
-              style={{ background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)', color: '#fff' }}
-            >
-              NUOVO CLIENTE
-            </button>
+            <GradientButton onClick={() => setShowWizard(true)}>NUOVO CLIENTE</GradientButton>
           </div>
         </aside>
 
-        {/* ── Area principale ── */}
+        {/* Main */}
         <main className="flex-1 px-4 sm:px-6 lg:px-8 py-8 min-w-0">
 
           {/* Header mobile */}
@@ -165,19 +134,11 @@ export function TrainerArea({ trainerId }) {
                 <p className="font-display text-[10px] text-blue-400 tracking-[3px] m-0 mb-1">TRAINER DASHBOARD</p>
                 <h1 className="font-display font-black text-[26px] text-white m-0">I tuoi clienti</h1>
               </div>
-              <button
-                onClick={() => setShowWizard(true)}
-                className="shrink-0 rounded-xl px-5 py-2.5 font-display text-[12px] tracking-widest cursor-pointer border-0 transition-opacity hover:opacity-85"
-                style={{ background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)', color: '#fff' }}
-              >
+              <GradientButton onClick={() => setShowWizard(true)} className="px-5 py-2.5 text-[12px]">
                 NUOVO
-              </button>
+              </GradientButton>
             </div>
-
-            {/* Ricerca mobile */}
             <Input placeholder="Cerca cliente..." value={query} onChange={e => setQuery(e.target.value)} className="w-full mb-3" />
-
-            {/* Filtri mobile — pill buttons al posto del select nativo */}
             <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
               {SORT_OPTIONS.map(([val, label]) => (
                 <button key={val} onClick={() => setSortBy(val)}
@@ -185,8 +146,7 @@ export function TrainerArea({ trainerId }) {
                   style={sortBy === val
                     ? { background: 'rgba(255,255,255,0.1)', borderColor: 'rgba(255,255,255,0.2)', color: '#fff' }
                     : { background: 'transparent', borderColor: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.35)' }
-                  }
-                >
+                  }>
                   {label}
                 </button>
               ))}
@@ -194,13 +154,11 @@ export function TrainerArea({ trainerId }) {
           </div>
 
           {/* Contatore desktop */}
-          <div className="hidden lg:flex items-center justify-between mb-6">
-            <div>
-              <h1 className="font-display font-black text-[26px] text-white m-0">I tuoi clienti</h1>
-              <p className="font-body text-white/30 text-[13px] m-0 mt-1">
-                {loading ? 'Caricamento...' : `${displayed.length} ${displayed.length === 1 ? 'cliente' : 'clienti'}`}
-              </p>
-            </div>
+          <div className="hidden lg:block mb-6">
+            <h1 className="font-display font-black text-[26px] text-white m-0">I tuoi clienti</h1>
+            <p className="font-body text-white/30 text-[13px] m-0 mt-1">
+              {loading ? 'Caricamento...' : `${displayed.length} ${displayed.length === 1 ? 'cliente' : 'clienti'}`}
+            </p>
           </div>
 
           {error && (
@@ -209,17 +167,12 @@ export function TrainerArea({ trainerId }) {
             </div>
           )}
 
-          {loading ? (
-            <EmptyState message="Caricamento..." />
-          ) : displayed.length === 0 ? (
-            <EmptyState message={clients.length === 0 ? 'Nessun cliente. Aggiungine uno!' : 'Nessun risultato.'} />
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-              {displayed.map(client => (
-                <ClientCard key={client.id} client={client} onClick={() => selectClient(client)} />
-              ))}
-            </div>
-          )}
+          {loading ? <EmptyState message="Caricamento..." /> :
+           displayed.length === 0 ? <EmptyState message={clients.length === 0 ? 'Nessun cliente. Aggiungine uno!' : 'Nessun risultato.'} /> :
+           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+             {displayed.map(c => <ClientCard key={c.id} client={c} onClick={() => selectClient(c)} />)}
+           </div>
+          }
         </main>
       </div>
 
@@ -228,31 +181,19 @@ export function TrainerArea({ trainerId }) {
   )
 }
 
-// ── Sub-componenti ─────────────────────────────────────────────────────────────
-
-function StatBox({ label, value, color }) {
-  return (
-    <div className="rounded-xl p-4" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
-      <div className="font-display font-black text-[26px] leading-none" style={{ color }}>{value}</div>
-      <div className="font-body text-[11px] text-white/30 mt-1">{label}</div>
-    </div>
-  )
-}
+// ── Sub-componenti ────────────────────────────────────────────────────────────
 
 function ClientCard({ client, onClick }) {
-  const media   = calcStatMedia(client.stats ?? {})
-  const rankObj = getRankFromMedia(media)
-  const color   = client.rankColor ?? rankObj.color
-  const xpPct   = client.xpNext > 0 ? Math.round((client.xp / client.xpNext) * 100) : 0
+  const { rankObj, color } = useClientRank(client)
+  const xpPct = client.xpNext > 0 ? Math.round((client.xp / client.xpNext) * 100) : 0
 
   return (
-    <button
-      onClick={onClick}
+    <button onClick={onClick}
       className="text-left w-full rounded-2xl p-5 cursor-pointer transition-all duration-200 flex flex-col gap-3 group"
       style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}
       onMouseEnter={e => { e.currentTarget.style.background = color + '0d'; e.currentTarget.style.borderColor = color + '55' }}
-      onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)' }}
-    >
+      onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)' }}>
+
       <div className="flex items-center gap-3">
         <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
           style={{ background: color + '22', border: `2px solid ${color}55` }}>
@@ -287,7 +228,8 @@ function ClientCard({ client, onClick }) {
       {client.stats && Object.values(client.stats).some(v => v > 0) && (
         <div className="flex gap-1 flex-wrap">
           {Object.entries(client.stats).map(([key, val]) => (
-            <div key={key} className="flex items-center gap-1 rounded-lg px-2 py-1" style={{ background: 'rgba(255,255,255,0.04)' }}>
+            <div key={key} className="flex items-center gap-1 rounded-lg px-2 py-1"
+              style={{ background: 'rgba(255,255,255,0.04)' }}>
               <div className="h-[3px] rounded-full" style={{ width: 24, background: 'rgba(255,255,255,0.08)' }}>
                 <div style={{ width: `${val}%`, height: '100%', background: color + 'cc', borderRadius: 99 }} />
               </div>
@@ -298,6 +240,51 @@ function ClientCard({ client, onClick }) {
       )}
     </button>
   )
+}
+
+// ── Componenti UI locali alla sidebar ─────────────────────────────────────────
+
+function SidebarSection({ label, children }) {
+  return (
+    <div>
+      <p className="font-display text-[10px] text-white/30 tracking-[3px] mb-3">{label}</p>
+      {children}
+    </div>
+  )
+}
+
+function SidebarButton({ active, onClick, children }) {
+  return (
+    <button onClick={onClick}
+      className={`text-left px-3 py-2 rounded-xl font-body text-[13px] cursor-pointer border transition-all
+        ${active ? 'text-white border-white/20 bg-white/[.06]' : 'text-white/40 border-transparent bg-transparent hover:text-white/60'}`}>
+      {children}
+    </button>
+  )
+}
+
+function StatBox({ label, value, color }) {
+  return (
+    <div className="rounded-xl p-4"
+      style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+      <div className="font-display font-black text-[26px] leading-none" style={{ color }}>{value}</div>
+      <div className="font-body text-[11px] text-white/30 mt-1">{label}</div>
+    </div>
+  )
+}
+
+function GradientButton({ onClick, children, className = 'w-full py-3 text-[12px] tracking-widest' }) {
+  return (
+    <button onClick={onClick}
+      className={`rounded-xl font-display cursor-pointer border-0 transition-opacity hover:opacity-85 ${className}`}
+      style={{ background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)', color: '#fff' }}>
+      {children}
+    </button>
+  )
+}
+
+function Separator() {
+  return <div className="w-full h-px" style={{ background: 'rgba(255,255,255,0.05)' }} />
 }
 
 function EmptyState({ message }) {

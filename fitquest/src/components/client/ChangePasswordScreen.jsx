@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Field } from '../ui'
 import { getAuth, updatePassword } from 'firebase/auth'
 import { getFirestore, doc, updateDoc } from 'firebase/firestore'
 import app from '../../firebase/config'
@@ -94,12 +95,3 @@ export default function ChangePasswordScreen({ userId, onDone }) {
   )
 }
 
-function Field({ label, error, children }) {
-  return (
-    <div>
-      <div className="text-white/40 text-[11px] font-display tracking-wider mb-1.5">{label.toUpperCase()}</div>
-      {children}
-      {error && <p className="m-0 mt-1 text-red-400 font-body text-[12px]">{error}</p>}
-    </div>
-  )
-}

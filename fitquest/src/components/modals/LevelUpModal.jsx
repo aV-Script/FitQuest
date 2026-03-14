@@ -52,7 +52,7 @@ export function LevelUpModal({ client, onClose, onLevelUp }) {
         {error && <p className="m-0 text-red-400 font-body text-[13px]">{error}</p>}
 
         <Button variant="danger" loading={loading} onClick={handleConfirm}>
-          🚀 CONFERMA AGGIORNAMENTO
+           CONFERMA AGGIORNAMENTO
         </Button>
       </div>
     </Modal>
@@ -68,7 +68,7 @@ function StatSlider({ icon, label, currentValue, delta, onChange }) {
   return (
     <div className="flex items-center gap-3">
       <span className="w-[110px] text-white/60 text-[13px] font-body">
-        {icon} {label}
+        {label}
       </span>
       <span className="w-7 text-white text-[13px] font-display text-right">
         {currentValue}

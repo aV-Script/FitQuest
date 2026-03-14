@@ -1,13 +1,10 @@
 import { Pentagon } from '../ui/Pentagon'
 import { RankRing }  from '../ui/RankRing'
 import { STATS }     from '../../constants'
-import { calcStatMedia } from '../../utils/percentile'
-import { getRankFromMedia } from '../../constants'
+import { useClientRank } from '../../hooks/useClientRank'
 
 export function PlayerCard({ client, onEnter }) {
-  const media   = calcStatMedia(client.stats ?? {})
-  const rankObj = getRankFromMedia(media)
-  const color   = client.rankColor ?? rankObj.color
+  const { rankObj, color } = useClientRank(client)
   const xpPct   = client.xpNext > 0 ? Math.round((client.xp / client.xpNext) * 100) : 0
 
   return (
