@@ -60,7 +60,8 @@ export function NewClientWizard({ onClose, onAdd }) {
   const validateAccount = () => {
     const e = {}
     if (!account.email.trim() || !account.email.includes('@')) e.email = 'Email non valida'
-    if (!account.password || account.password.length < 6) e.password = 'Password minimo 6 caratteri'
+    if (!account.password || account.password.length < 8) e.password = 'Password minimo 8 caratteri'
+    else if (!/[0-9]/.test(account.password)) e.password = 'La password deve contenere almeno un numero'
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -378,7 +379,7 @@ function AccountStep({ data, onChange, errors, rankObj, media, allStats }) {
               onChange={e => onChange('email', e.target.value)} autoFocus />
           </Field>
           <Field label="Password temporanea" error={errors.password}>
-            <Input type="password" placeholder="Minimo 6 caratteri" value={data.password}
+            <Input type="password" placeholder="Min. 8 caratteri, almeno 1 numero" value={data.password}
               onChange={e => onChange('password', e.target.value)} />
           </Field>
           <p className="m-0 text-white/25 font-body text-[12px]">

@@ -107,7 +107,7 @@ export function ClientDashboard({ client, trainerId }) {
             onMouseEnter={e => e.currentTarget.style.background = color + '22'}
             onMouseLeave={e => e.currentTarget.style.background = color + '11'}
           >
-            + CAMPIONAMENTO
+            CAMPIONAMENTO
           </button>
         </div>
         <div className="grid gap-6" style={{ gridTemplateColumns: '3fr 2fr' }}>
@@ -162,7 +162,6 @@ export function ClientDashboard({ client, trainerId }) {
 
       {/* Grafico andamento */}
       <section className="px-6 py-6">
-        <SectionLabel>◈ Andamento</SectionLabel>
         <StatsChart campionamenti={client.campionamenti} color={color} />
       </section>
 

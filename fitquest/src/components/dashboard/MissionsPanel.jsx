@@ -20,13 +20,13 @@ export function MissionsPanel({ client, color, onAddMission, onCompleteMission, 
   return (
     <div className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.02)', border: `1px solid ${color}22` }}>
       <div className="flex items-center justify-between mb-4">
-        <SectionLabel>◈ Quest log</SectionLabel>
+        <SectionLabel>◈ Quest</SectionLabel>
         <button onClick={() => setShowModal(true)}
           className="text-[11px] font-display px-3 py-1.5 rounded-lg cursor-pointer border transition-all"
           style={{ color, borderColor: color + '55', background: color + '11' }}
           onMouseEnter={e => e.currentTarget.style.background = color + '22'}
           onMouseLeave={e => e.currentTarget.style.background = color + '11'}>
-          + NUOVA
+          NUOVA
         </button>
       </div>
 
@@ -112,11 +112,11 @@ function MissionCard({ mission, color, onComplete, onDelete }) {
           style={{ color, borderColor: color + '55', background: color + '11' }}
           onMouseEnter={e => e.currentTarget.style.background = color + '22'}
           onMouseLeave={e => e.currentTarget.style.background = color + '11'}>
-          ✓ COMPLETA
+          COMPLETA
         </button>
         <button onClick={onDelete}
           className="px-3 py-1.5 rounded-lg font-display text-[11px] cursor-pointer border border-white/10 bg-transparent text-white/30 hover:text-red-400 hover:border-red-400/30 transition-all">
-          ️
+          RIMUOVI
         </button>
       </div>
     </div>

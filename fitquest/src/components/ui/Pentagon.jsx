@@ -23,6 +23,8 @@ export const Pentagon = memo(function Pentagon({ stats = {}, color = '#60a5fa', 
   const toPath = pts => pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ') + ' Z'
 
   const svgSize = fluid ? 200 : size
+  const vbPad = 30  // padding viewBox per le label fuori dal cerchio
+  const vbSize = svgSize + vbPad * 2
   const cx2 = svgSize / 2
   const cy2 = svgSize / 2
 
@@ -30,7 +32,7 @@ export const Pentagon = memo(function Pentagon({ stats = {}, color = '#60a5fa', 
     <svg
       width={fluid ? '100%' : size}
       height={fluid ? '100%' : size}
-      viewBox={`0 0 ${svgSize} ${svgSize}`}
+      viewBox={`${-vbPad} ${-vbPad} ${vbSize} ${vbSize}`}
       style={fluid ? { display: 'block' } : undefined}
     >
       {/* Grid rings */}
@@ -51,9 +53,12 @@ export const Pentagon = memo(function Pentagon({ stats = {}, color = '#60a5fa', 
       ))}
       {/* Labels */}
       {STATS.map(({ label }, i) => {
-        const lx = cx + (R + 22) * Math.cos(angles[i])
-        const ly = cy + (R + 22) * Math.sin(angles[i])
-        const abbr = label.slice(0, 3).toUpperCase()
+        const offset = size < 140 ? 18 : 24
+        const lx = cx + (R + offset) * Math.cos(angles[i])
+        const ly = cy + (R + offset) * Math.sin(angles[i])
+        // Abbreviazioni fisse per evitare troncature
+        const ABBR = { Forza: 'FOR', Mobilità: 'MOB', Equilibrio: 'EQU', Esplosività: 'ESP', Resistenza: 'RES' }
+        const abbr = ABBR[label] ?? label.slice(0, 3).toUpperCase()
         return (
           <text key={i} x={lx} y={ly} textAnchor="middle" dominantBaseline="middle"
             fontSize={size > 160 ? 10 : 9} fill="rgba(255,255,255,0.5)" fontFamily="Rajdhani" fontWeight="600" letterSpacing="1">

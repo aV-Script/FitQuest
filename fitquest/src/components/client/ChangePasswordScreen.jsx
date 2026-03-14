@@ -13,7 +13,7 @@ export default function ChangePasswordScreen({ userId, onDone }) {
 
   const validate = () => {
     const e = {}
-    if (form.password.length < 6)            e.password = 'Minimo 6 caratteri'
+    if (form.password.length < 8)            e.password = 'Minimo 6 caratteri'
     if (form.password !== form.confirm)       e.confirm  = 'Le password non coincidono'
     setErrors(e)
     return Object.keys(e).length === 0

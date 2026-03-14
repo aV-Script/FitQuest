@@ -4,7 +4,7 @@ import {
 } from 'firebase/firestore'
 import {
   getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword,
-  signOut, onAuthStateChanged
+  signOut, onAuthStateChanged, sendPasswordResetEmail
 } from 'firebase/auth'
 import { initializeApp } from 'firebase/app'
 import app from './config'
@@ -27,6 +27,7 @@ const secondaryAuth = getAuth(secondaryApp)
 export const login        = (email, pw) => signInWithEmailAndPassword(auth, email, pw)
 export const register     = (email, pw) => createUserWithEmailAndPassword(auth, email, pw)
 export const logout       = ()          => signOut(auth)
+export const resetPassword = (email)     => sendPasswordResetEmail(auth, email)
 export const onAuthChange = (cb)        => onAuthStateChanged(auth, cb)
 
 export async function createClientAccount(email, password) {
@@ -101,8 +102,13 @@ export const addNotification      = (data) =>
 export const markNotificationRead = (id) =>
   updateDoc(doc(db, 'notifications', id), { read: true })
 
-export const markAllNotificationsRead = async (clientId) => {
+export const markAllNotificationsRead = async (clientId, readAt = new Date().toISOString()) => {
   const notifs = await getNotifications(clientId)
-  await Promise.all(notifs.filter(n => !n.read).map(n => markNotificationRead(n.id)))
+  await Promise.all(notifs.filter(n => !n.read).map(n =>
+    updateDoc(doc(db, 'notifications', n.id), { read: true, readAt })
+  ))
 }
+
+export const deleteNotification = (id) =>
+  deleteDoc(doc(db, 'notifications', id))
 
