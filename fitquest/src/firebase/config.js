@@ -1,13 +1,13 @@
 import { initializeApp } from 'firebase/app'
 
 const firebaseConfig = {
-  apiKey:            "AIzaSyABkp7d91Wb2JG0SsJzDIhrceH_cma0Qc0",
-  authDomain:        "fitquest-60a09.firebaseapp.com",
-  projectId:         "fitquest-60a09",
-  storageBucket:     "fitquest-60a09.firebasestorage.app",
-  messagingSenderId: "684894217887",
-  appId:             "1:684894217887:web:685adbbd3b67254de3e4aa",
-  measurementId:     "G-GC1WDBJXVH"
+  apiKey:            import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain:        import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId:         import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket:     import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId:             import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId:     import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 }
 
 const app = initializeApp(firebaseConfig)

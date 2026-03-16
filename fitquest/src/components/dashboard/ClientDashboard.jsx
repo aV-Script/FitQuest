@@ -1,19 +1,18 @@
 import { useState }         from 'react'
 import { useClients }       from '../../hooks/useClients'
-import { useMissions }      from '../../hooks/useMissions'
 import { useClientRank }    from '../../hooks/useClientRank'
 import { AppNav }           from '../layout/AppNav'
 import { CampionamentoModal } from '../modals/CampionamentoModal'
-import { MissionsPanel }    from './MissionsPanel'
 import { StatsChart }       from './StatsChart'
 import { RankRing }         from '../ui/RankRing'
 import { SectionLabel, Divider, ActivityLog, BadgeList, StatsSection } from '../ui'
+import { ClassesSection } from '../ui/ClassesSection'
+import { SpecSuggestions } from '../ui/SpecSuggestions'
+import { ClientCalendar } from '../client/ClientCalendar'
 
 export function ClientDashboard({ client, trainerId }) {
   const { handleCampionamento, deselectClient, updateLocalClient } = useClients()
   const { rankObj, color } = useClientRank(client)
-  const { missions, customTemplates, handleAddMission, handleCompleteMission, handleDeleteMission } =
-    useMissions(client, trainerId, updateLocalClient)
   const [showCampionamento, setShowCampionamento] = useState(false)
 
   const prevStats = client.campionamenti?.[1]?.stats ?? null
@@ -55,6 +54,16 @@ export function ClientDashboard({ client, trainerId }) {
 
       <Divider color={color} />
 
+      {/* Calendario */}
+      <section className="px-6 py-6">
+        <div className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
+          <SectionLabel>◈ Calendario allenamenti</SectionLabel>
+          <ClientCalendar clientId={client.id} />
+        </div>
+      </section>
+
+      <Divider color={color} />
+
       {/* Status */}
       <section className="px-6 pt-6 pb-4">
         <div
@@ -76,25 +85,30 @@ export function ClientDashboard({ client, trainerId }) {
         </div>
       </section>
 
-      <Divider color={color} />
-
-      {/* Quest Log */}
-      <section className="px-6 py-6">
-        <MissionsPanel
-          client={{ ...client, missions }}
-          color={color}
-          onAddMission={handleAddMission}
-          onCompleteMission={handleCompleteMission}
-          onDeleteMission={handleDeleteMission}
-          customTemplates={customTemplates}
-        />
-      </section>
 
       <Divider color={color} />
 
       {/* Andamento */}
       <section className="px-6 py-6">
         <StatsChart campionamenti={client.campionamenti} color={color} />
+      </section>
+
+      <Divider color={color} />
+
+      {/* Classi e SPEC */}
+      <section className="px-6 py-6">
+        <div className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
+          <SectionLabel>◈ Classi e Specializzazioni</SectionLabel>
+          <ClassesSection classes={client.classes ?? []} specs={client.specs ?? []} />
+        </div>
+      </section>
+
+
+      <Divider color={color} />
+
+      {/* SPEC suggerite */}
+      <section className="px-6 py-6">
+        <SpecSuggestions stats={client.stats ?? {}} unlockedSpecs={client.specs ?? []} />
       </section>
 
       <Divider color={color} />

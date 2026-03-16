@@ -1,18 +1,19 @@
 import { useState, useEffect }   from 'react'
-import { getClientById, getMissions, logout } from '../../firebase/services'
+import { getClientById, logout } from '../../firebase/services'
 import { useClientRank }    from '../../hooks/useClientRank'
 import { useNotifications } from '../../hooks/useNotifications'
 import { AppNav }           from '../layout/AppNav'
 import { RankRing }         from '../ui/RankRing'
 import { SectionLabel, Divider, ActivityLog, BadgeList, StatsSection } from '../ui'
+import { ClassesSection } from '../ui/ClassesSection'
+import { SpecSuggestions } from '../ui/SpecSuggestions'
 import { StatsChart }       from '../dashboard/StatsChart'
-import { MISSION_STATUS }   from '../../constants/missions'
 import { PlayerCard }       from './PlayerCard'
+import { ClientCalendar }  from './ClientCalendar'
 import { NotificationsPanel } from '../layout/NotificationsPanel'
 
 export default function ClientView({ clientId }) {
   const [client,  setClient]  = useState(null)
-  const [missions, setMissions] = useState([])
   const [loading,  setLoading] = useState(true)
   const [view,     setView]    = useState('card')
   const [showNotifs, setShowNotifs] = useState(false)
@@ -21,8 +22,7 @@ export default function ClientView({ clientId }) {
   const { notifications, unreadCount, markAllRead, remove } = useNotifications(clientId)
 
   useEffect(() => {
-    Promise.all([getClientById(clientId), getMissions(clientId)])
-      .then(([c, m]) => { setClient(c); setMissions(m) })
+    getClientById(clientId).then(c => setClient(c))
       .finally(() => setLoading(false))
   }, [clientId])
 
@@ -34,7 +34,6 @@ export default function ClientView({ clientId }) {
   if (loading) return <FullScreenMsg>CARICAMENTO...</FullScreenMsg>
   if (!client)  return <FullScreenMsg>Profilo non trovato.</FullScreenMsg>
 
-  const activeMissions = missions.filter(m => m.status === MISSION_STATUS.ACTIVE)
   const prevStats      = client.campionamenti?.[1]?.stats ?? null
 
   if (view === 'card') return <PlayerCard client={client} onEnter={() => setView('dashboard')} />
@@ -85,6 +84,16 @@ export default function ClientView({ clientId }) {
 
       <Divider color={color} />
 
+      {/* Calendario */}
+      <section className="px-6 py-6">
+        <div className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
+          <SectionLabel>◈ Calendario allenamenti</SectionLabel>
+          <ClientCalendar clientId={clientId} />
+        </div>
+      </section>
+
+      <Divider color={color} />
+
       {/* Status */}
       <section className="px-6 py-6">
         <div className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
@@ -93,24 +102,30 @@ export default function ClientView({ clientId }) {
         </div>
       </section>
 
-      <Divider color={color} />
-
-      {/* Quest attive */}
-      <section className="px-6 py-6">
-        <div className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
-          <SectionLabel>◈ Quest attive</SectionLabel>
-          {activeMissions.length === 0
-            ? <p className="font-body text-[13px] text-white/20">Nessuna missione attiva.</p>
-            : activeMissions.map(m => <QuestItem key={m.id} mission={m} color={color} />)
-          }
-        </div>
-      </section>
 
       <Divider color={color} />
 
       {/* Andamento */}
       <section className="px-6 py-6">
         <StatsChart campionamenti={client.campionamenti} color={color} />
+      </section>
+
+      <Divider color={color} />
+
+      {/* Classi e SPEC */}
+      <section className="px-6 py-6">
+        <div className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
+          <SectionLabel>◈ Classi e Specializzazioni</SectionLabel>
+          <ClassesSection classes={client.classes ?? []} specs={client.specs ?? []} />
+        </div>
+      </section>
+
+
+      <Divider color={color} />
+
+      {/* SPEC suggerite */}
+      <section className="px-6 py-6">
+        <SpecSuggestions stats={client.stats ?? {}} unlockedSpecs={client.specs ?? []} />
       </section>
 
       <Divider color={color} />
@@ -158,24 +173,6 @@ function XPBar({ xp, xpNext, color }) {
   )
 }
 
-function QuestItem({ mission, color }) {
-  return (
-    <div className="rounded-xl p-3.5 mb-2"
-      style={{ background: 'rgba(255,255,255,0.02)', border: `1px solid ${color}22` }}>
-      <div className="flex justify-between items-start gap-2">
-        <div>
-          <div className="font-body font-bold text-[14px] text-white">{mission.name}</div>
-          {mission.description && (
-            <div className="text-white/40 font-body text-[12px] mt-0.5">{mission.description}</div>
-          )}
-        </div>
-        <span className="font-display text-[12px] whitespace-nowrap shrink-0" style={{ color: '#facc15' }}>
-          {mission.xp} XP
-        </span>
-      </div>
-    </div>
-  )
-}
 
 function NotifBell({ count, color, onClick }) {
   return (

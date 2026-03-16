@@ -1,6 +1,8 @@
 // ─── Tabelle di riferimento per il calcolo dei percentili ────────────────────
 // Formato: { percentile: valore_del_test }
-
+// I valori per percentile 0 e 100 sono calcolati per estrapolazione lineare
+// dai due punti estremi della distribuzione (5→10 per il basso, 90→95 per l'alto).
+// Servono per garantire interpolazione continua anche fuori dal range 5-95.
 
 export const TABLES = {
 

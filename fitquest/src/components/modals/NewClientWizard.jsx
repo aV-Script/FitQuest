@@ -1,19 +1,22 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Modal, Input, Button, Field } from '../ui'
+import { useGroups } from '../../hooks/useGroups'
 import { CATEGORIE, STATS } from '../../constants'
 import { calcPercentile, calcStatMedia } from '../../utils/percentile'
 import { getRankFromMedia } from '../../constants'
 import { Pentagon } from '../ui/Pentagon'
 
-const TOTAL_STEPS    = 7
+const TOTAL_STEPS    = 8
 const EMPTY_ANAGRAFICA = { name: '', eta: '', sesso: 'M', peso: '', altezza: '', categoria: 'Amatoriale' }
 const EMPTY_TESTS      = { forza: '', mobilita: '', equilibrio: '', esplosivita: '', resistenza: '' }
 
-export function NewClientWizard({ onClose, onAdd }) {
+export function NewClientWizard({ onClose, onAdd, trainerId }) {
   const [step,       setStep]       = useState(0)
   const [anagrafica, setAnagrafica] = useState(EMPTY_ANAGRAFICA)
   const [tests,      setTests]      = useState(EMPTY_TESTS)
   const [account,    setAccount]    = useState({ email: '', password: '' })
+  const [settings,   setSettings]   = useState({ sessionsPerWeek: 3, groupId: null, newGroupName: '' })
+  const { groups, handleAddGroup, handleToggleClient } = useGroups(trainerId ?? null)
   const [loading,    setLoading]    = useState(false)
   const [errors,     setErrors]     = useState({})
 
@@ -76,16 +79,24 @@ export function NewClientWizard({ onClose, onAdd }) {
     if (!validateAccount()) return
     setLoading(true)
     try {
-      await onAdd({
+      const newClient = await onAdd({
         ...anagrafica,
-        eta:        parseInt(anagrafica.eta),
-        peso:       parseFloat(anagrafica.peso),
-        altezza:    parseFloat(anagrafica.altezza),
-        testValues: { ...tests },
-        stats:      allStats,
-        email:      account.email.trim(),
-        password:   account.password,
+        eta:              parseInt(anagrafica.eta),
+        peso:             parseFloat(anagrafica.peso),
+        altezza:          parseFloat(anagrafica.altezza),
+        testValues:       { ...tests },
+        stats:            allStats,
+        email:            account.email.trim(),
+        password:         account.password,
+        sessionsPerWeek:  parseInt(settings.sessionsPerWeek) || 3,
       })
+      // Aggiungi al gruppo se selezionato o crea nuovo
+      if (settings.newGroupName.trim() && trainerId) {
+        const g = await handleAddGroup(settings.newGroupName.trim())
+        if (g && newClient?.id) await handleToggleClient(g.id, newClient.id)
+      } else if (settings.groupId && newClient?.id) {
+        await handleToggleClient(settings.groupId, newClient.id)
+      }
       onClose()
     } catch (err) {
       setErrors({ email: err.message })
@@ -147,6 +158,13 @@ export function NewClientWizard({ onClose, onAdd }) {
             />
           )}
           {step === 6 && (
+            <SettingsStep
+              data={settings}
+              onChange={(k, v) => setSettings(p => ({ ...p, [k]: v }))}
+              groups={groups}
+            />
+          )}
+          {step === 7 && (
             <AccountStep
               data={account}
               onChange={(k, v) => setAccount(p => ({ ...p, [k]: v }))}
@@ -398,6 +416,7 @@ function AccountStep({ data, onChange, errors, rankObj, media, allStats }) {
 function stepTitle(step) {
   if (step === 0) return 'Nuovo cliente — dati anagrafici'
   if (step <= 5)  return `Test ${step}/5 — ${STATS[step - 1].label}`
+  if (step === 6) return 'Impostazioni allenamento'
   return 'Account cliente'
 }
 
@@ -407,4 +426,85 @@ function scoreLabel(pct) {
   if (pct >= 50) return 'Nella media'
   if (pct >= 25) return 'Sotto la media'
   return 'Da migliorare'
+}
+
+// ── SettingsStep ──────────────────────────────────────────────────────────────
+function SettingsStep({ data, onChange, groups }) {
+  return (
+    <div className="flex flex-col gap-5">
+
+      {/* Frequenza settimanale */}
+      <Field label="Sessioni per settimana">
+        <div className="flex items-center gap-3">
+          <input
+            type="range" min={1} max={7} step={1}
+            value={data.sessionsPerWeek}
+            onChange={e => onChange('sessionsPerWeek', e.target.value)}
+            className="flex-1"
+          />
+          <span className="font-display font-black text-[22px] w-8 text-center"
+            style={{ color: '#60a5fa' }}>
+            {data.sessionsPerWeek}
+          </span>
+        </div>
+        <div className="flex justify-between mt-1">
+          <span className="font-body text-[11px] text-white/25">1×/sett</span>
+          <span className="font-body text-[11px] text-white/40">
+            ~{Math.round(data.sessionsPerWeek * 4.33)} sessioni/mese ·{' '}
+            {Math.round(500 / Math.round(data.sessionsPerWeek * 4.33))} XP/sessione
+          </span>
+          <span className="font-body text-[11px] text-white/25">7×/sett</span>
+        </div>
+      </Field>
+
+      {/* Gruppo */}
+      <div>
+        <div className="text-white/40 text-[11px] font-display tracking-wider mb-2">
+          AGGIUNGI A UN GRUPPO (opzionale)
+        </div>
+
+        {/* Gruppi esistenti */}
+        {groups.length > 0 && (
+          <div className="flex flex-col gap-1.5 mb-3">
+            <button
+              onClick={() => { onChange('groupId', null); onChange('newGroupName', '') }}
+              className="flex items-center gap-2 px-3 py-2.5 rounded-xl cursor-pointer border transition-all text-left border-none bg-transparent"
+              style={!data.groupId && !data.newGroupName
+                ? { background: 'rgba(255,255,255,0.07)', color: '#fff' }
+                : { color: 'rgba(255,255,255,0.35)' }
+              }>
+              <span className="font-body text-[13px]">Nessun gruppo</span>
+            </button>
+            {groups.map(g => (
+              <button key={g.id}
+                onClick={() => { onChange('groupId', g.id); onChange('newGroupName', '') }}
+                className="flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer border transition-all text-left border-none"
+                style={data.groupId === g.id
+                  ? { background: 'rgba(59,130,246,0.15)', color: '#fff' }
+                  : { background: 'rgba(255,255,255,0.03)', color: 'rgba(255,255,255,0.55)' }
+                }>
+                <span className="font-body text-[13px]">{g.name}</span>
+                <span className="font-display text-[10px] opacity-40">{g.clientIds.length} clienti</span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Crea nuovo gruppo */}
+        <div className="flex gap-2 items-center">
+          <input
+            className="input-base flex-1"
+            placeholder="Oppure crea un nuovo gruppo..."
+            value={data.newGroupName}
+            onChange={e => { onChange('newGroupName', e.target.value); onChange('groupId', null) }}
+          />
+        </div>
+        {data.newGroupName.trim() && (
+          <p className="font-body text-[11px] text-blue-400/70 mt-1.5 m-0">
+            Verrà creato il gruppo "{data.newGroupName.trim()}" e il cliente vi sarà aggiunto automaticamente.
+          </p>
+        )}
+      </div>
+    </div>
+  )
 }

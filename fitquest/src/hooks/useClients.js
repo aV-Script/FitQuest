@@ -50,7 +50,9 @@ export function useClients(trainerId) {
       mustChangePassword: true,
     })
 
-    dispatch({ type: ACTIONS.ADD_CLIENT, payload: { id: ref.id, ...data, email, clientAuthUid: clientUid } })
+    const newClient = { id: ref.id, ...data, email, clientAuthUid: clientUid }
+    dispatch({ type: ACTIONS.ADD_CLIENT, payload: newClient })
+    return newClient
   }, [trainerId])
 
   const handleCampionamento = useCallback(async (client, newStats, testValues) => {

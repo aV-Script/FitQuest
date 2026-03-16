@@ -8,13 +8,14 @@ import app from './config'
 const auth = getAuth(app)
 
 // App secondaria per creare account cliente senza fare logout del trainer
+// Usa le stesse env vars del config principale
 const SECONDARY_CONFIG = {
-  apiKey:            "AIzaSyABkp7d91Wb2JG0SsJzDIhrceH_cma0Qc0",
-  authDomain:        "fitquest-60a09.firebaseapp.com",
-  projectId:         "fitquest-60a09",
-  storageBucket:     "fitquest-60a09.firebasestorage.app",
-  messagingSenderId: "684894217887",
-  appId:             "1:684894217887:web:685adbbd3b67254de3e4aa",
+  apiKey:            import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain:        import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId:         import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket:     import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId:             import.meta.env.VITE_FIREBASE_APP_ID,
 }
 const secondaryApp  = initializeApp(SECONDARY_CONFIG, 'secondary')
 const secondaryAuth = getAuth(secondaryApp)

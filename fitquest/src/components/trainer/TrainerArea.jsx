@@ -4,6 +4,8 @@ import { useClientSearch }  from '../../hooks/useClientSearch'
 import { useClientRank }    from '../../hooks/useClientRank'
 import { NewClientWizard }  from '../modals/NewClientWizard'
 import { AppNav }           from '../layout/AppNav'
+import { TestGuidePage }    from './TestGuidePage'
+import { TrainerCalendar }  from './TrainerCalendar'
 import { Input }            from '../ui'
 import { logout }           from '../../firebase/services'
 import { calcStatMedia }    from '../../utils/percentile'
@@ -13,13 +15,15 @@ export function TrainerArea({ trainerId }) {
   const { clients, loading, error, handleAddClient, selectClient } = useClients(trainerId)
   const { query, setQuery, filtered } = useClientSearch(clients)
   const [showWizard,      setShowWizard]      = useState(false)
+  const [page,          setPage]          = useState('dashboard') // 'dashboard' | 'guide' | 'calendar'
   const [filterCategoria, setFilterCategoria] = useState('tutti')
   const [sortBy,          setSortBy]          = useState('name')
 
   const handleAdd = useCallback(async (formData) => {
-    await handleAddClient(formData)
+    const newClient = await handleAddClient(formData)
     setShowWizard(false)
-  }, [handleAddClient])
+    if (newClient) selectClient(newClient)
+  }, [handleAddClient, selectClient])
 
   const stats = useMemo(() => {
     const total    = clients.length
@@ -50,16 +54,31 @@ export function TrainerArea({ trainerId }) {
 
   const SORT_OPTIONS = [['name', 'Nome A→Z'], ['rank', 'Rank migliore'], ['level', 'Livello più alto']]
 
+  if (page === 'guide') {
+    return <TestGuidePage onBack={() => setPage('dashboard')} />
+  }
+
+  if (page === 'calendar') {
+    return <TrainerCalendar trainerId={trainerId} clients={clients} onBack={() => setPage('dashboard')} />
+  }
+
   return (
     <div className="min-h-screen text-white">
 
       <AppNav
         left={<span className="hidden sm:block font-display text-[11px] text-white/20 tracking-[2px]">TRAINER DASHBOARD</span>}
         right={
-          <button onClick={logout}
-            className="bg-transparent border border-white/10 rounded-xl px-4 py-2 text-white/40 font-body text-[13px] cursor-pointer hover:text-white/60 transition-all">
-            Logout
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Calendario — visibile su mobile dove la sidebar non c'è */}
+            <button onClick={() => setPage('calendar')}
+              className="lg:hidden bg-transparent border border-white/10 rounded-xl px-3 py-1.5 text-white/40 font-display text-[11px] tracking-widest cursor-pointer hover:text-white/60 transition-all">
+              Calendario
+            </button>
+            <button onClick={logout}
+              className="bg-transparent border border-white/10 rounded-xl px-4 py-2 text-white/40 font-body text-[13px] cursor-pointer hover:text-white/60 transition-all">
+              Logout
+            </button>
+          </div>
         }
       />
 
@@ -118,7 +137,25 @@ export function TrainerArea({ trainerId }) {
             </div>
           </SidebarSection>
 
-          <div className="mt-auto">
+          <div className="mt-auto flex flex-col gap-2">
+            <button
+              onClick={() => setPage('calendar')}
+              className="w-full rounded-xl py-2.5 font-display text-[11px] tracking-widest cursor-pointer border transition-all"
+              style={{ background: 'transparent', borderColor: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)' }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; e.currentTarget.style.color = 'rgba(255,255,255,0.7)' }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'rgba(255,255,255,0.4)' }}
+            >
+              CALENDARIO
+            </button>
+            <button
+              onClick={() => setPage('guide')}
+              className="w-full rounded-xl py-2.5 font-display text-[11px] tracking-widest cursor-pointer border transition-all"
+              style={{ background: 'transparent', borderColor: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)' }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; e.currentTarget.style.color = 'rgba(255,255,255,0.7)' }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'rgba(255,255,255,0.4)' }}
+            >
+              GUIDA TEST
+            </button>
             <GradientButton onClick={() => setShowWizard(true)}>NUOVO CLIENTE</GradientButton>
           </div>
         </aside>
