@@ -7,20 +7,33 @@ import { StatsChart }       from './StatsChart'
 import { RankRing }         from '../ui/RankRing'
 import { SectionLabel, Divider, ActivityLog, StatsSection } from '../ui'
 import { ClientCalendar } from '../client/ClientCalendar'
+import { deleteClient } from '../../firebase/clients'
 
 export function ClientDashboard({ client, trainerId }) {
-  const { handleCampionamento, updateLocalClient } = useClients()
+  const { handleCampionamento, updateLocalClient, deselectClient } = useClients()
   const { rankObj, color } = useClientRank(client)
   const [showCampionamento, setShowCampionamento] = useState(false)
-
+  const [showDelete, setShowDelete] = useState(false)
   const prevStats = client.campionamenti?.[1]?.stats ?? null
-
+  const handleDelete = async () => {
+    await deleteClient(client.id)
+    updateLocalClient(client.id, null) // segnala al context di rimuoverlo
+    deselectClient()
+    setShowDelete(false)
+  }
   return (
     <div className="min-h-screen text-white">
 
       <AppNav
         color={color}
         left={null}
+        right={
+          <button
+            onClick={() => setShowDelete(true)}
+            className="bg-transparent border border-red-500/20 rounded-xl px-3 py-1.5 text-red-400/50 font-display text-[11px] cursor-pointer hover:border-red-500/50 hover:text-red-400 transition-all">
+            ELIMINA
+          </button>
+        }
       />
 
       {/* Hero */}
@@ -102,9 +115,35 @@ export function ClientDashboard({ client, trainerId }) {
           onSave={async (s, t) => { await handleCampionamento(client, s, t) }}
         />
       )}
+
+      {showDelete && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center px-4"
+          onClick={() => setShowDelete(false)}>
+          <div className="bg-gray-900 border border-white/10 rounded-2xl p-6 w-full max-w-sm"
+            onClick={e => e.stopPropagation()}>
+            <h3 className="font-display font-black text-[16px] text-white mb-2">Elimina cliente</h3>
+            <p className="font-body text-[13px] text-white/50 mb-6">
+              Stai per eliminare <strong className="text-white">{client.name}</strong>. 
+              Questa azione è irreversibile.
+            </p>
+            <div className="flex gap-3">
+              <button onClick={() => setShowDelete(false)}
+                className="flex-1 py-2.5 rounded-xl font-display text-[12px] cursor-pointer border border-white/10 bg-transparent text-white/40 hover:text-white/70 transition-all">
+                ANNULLA
+              </button>
+              <button onClick={handleDelete}
+                className="flex-1 py-2.5 rounded-xl font-display text-[12px] cursor-pointer border-0 transition-opacity hover:opacity-85"
+                style={{ background: '#ef4444', color: '#fff' }}>
+                ELIMINA
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
+
 
 // XPBar locale — variante prominente (h-3) diversa da quella in ui/index.jsx (h-1.5)
 function XPBar({ xp, xpNext, color }) {

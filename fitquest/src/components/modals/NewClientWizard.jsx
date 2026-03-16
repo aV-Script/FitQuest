@@ -1,77 +1,80 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { Modal, Input, Button, Field } from '../ui'
-import { useGroups } from '../../hooks/useGroups'
-import { CATEGORIE, STATS } from '../../constants'
+import { CATEGORIE, CATEGORY_TESTS, getRankFromMedia } from '../../constants'
 import { calcPercentile, calcStatMedia } from '../../utils/percentile'
-import { getRankFromMedia } from '../../constants'
-import { Pentagon } from '../ui/Pentagon'
+import { useGroups } from '../../hooks/useGroups'
 
-const TOTAL_STEPS    = 8
-const EMPTY_ANAGRAFICA = { name: '', eta: '', sesso: 'M', peso: '', altezza: '', categoria: 'Amatoriale' }
-const EMPTY_TESTS      = { forza: '', mobilita: '', equilibrio: '', esplosivita: '', resistenza: '' }
+// Step map:
+// 0 → anagrafica
+// 1 → categoria
+// 2-6 → test 1-5
+// 7 → impostazioni
+// 8 → account
+const TOTAL_STEPS = 9
 
 export function NewClientWizard({ onClose, onAdd, trainerId }) {
   const [step,       setStep]       = useState(0)
-  const [anagrafica, setAnagrafica] = useState(EMPTY_ANAGRAFICA)
-  const [tests,      setTests]      = useState(EMPTY_TESTS)
+  const [anagrafica, setAnagrafica] = useState({ name: '', eta: '', sesso: 'M', peso: '', altezza: '' })
+  const [categoria,  setCategoria]  = useState('health')
+  const [tests,      setTests]      = useState({})
   const [account,    setAccount]    = useState({ email: '', password: '' })
   const [settings,   setSettings]   = useState({ sessionsPerWeek: 3, groupId: null, newGroupName: '' })
-  const { groups, handleAddGroup, handleToggleClient } = useGroups(trainerId ?? null)
   const [loading,    setLoading]    = useState(false)
   const [errors,     setErrors]     = useState({})
 
-  const statStep = STATS[step - 1]
+  const { groups, handleAddGroup, handleToggleClient } = useGroups(trainerId ?? null)
+
+  const categoryTests = CATEGORY_TESTS[categoria] ?? CATEGORY_TESTS.health
+
+  // Step 2-6 → test index 0-4
+  const currentTest = step >= 2 && step <= 6 ? categoryTests[step - 2] : null
 
   const livePercentile = useMemo(() => {
-    if (!statStep) return null
-    const val = parseFloat(tests[statStep.key])
+    if (!currentTest) return null
+    const val = parseFloat(tests[currentTest.key])
     if (isNaN(val)) return null
-    return calcPercentile(statStep.key, val, anagrafica.sesso, parseInt(anagrafica.eta))
-  }, [statStep, tests, anagrafica.sesso, anagrafica.eta])
+    return calcPercentile(currentTest.key, val, anagrafica.sesso, parseInt(anagrafica.eta))
+  }, [currentTest, tests, anagrafica.sesso, anagrafica.eta])
 
   const allStats = useMemo(() => {
     const result = {}
-    STATS.forEach(s => {
-      const val = parseFloat(tests[s.key])
-      result[s.key] = isNaN(val) ? 0 : calcPercentile(s.key, val, anagrafica.sesso, parseInt(anagrafica.eta))
+    categoryTests.forEach(t => {
+      const val = parseFloat(tests[t.key])
+      result[t.key] = isNaN(val) ? 0 : calcPercentile(t.key, val, anagrafica.sesso, parseInt(anagrafica.eta))
     })
     return result
-  }, [tests, anagrafica])
+  }, [tests, categoryTests, anagrafica.sesso, anagrafica.eta])
 
   const media   = calcStatMedia(allStats)
   const rankObj = getRankFromMedia(media)
 
-  // ── Validazioni ────────────────────────────────────────────────────────────
   const validateStep0 = () => {
     const e = {}
-    if (!anagrafica.name.trim()) e.name = 'Inserisci il nome'
+    if (!anagrafica.name.trim()) e.name = 'Nome obbligatorio'
     if (!anagrafica.eta || isNaN(anagrafica.eta) || +anagrafica.eta < 16 || +anagrafica.eta > 100) e.eta = 'Età non valida'
     if (!anagrafica.peso || isNaN(anagrafica.peso)) e.peso = 'Peso non valido'
     if (!anagrafica.altezza || isNaN(anagrafica.altezza)) e.altezza = 'Altezza non valida'
-    setErrors(e)
-    return Object.keys(e).length === 0
+    setErrors(e); return Object.keys(e).length === 0
   }
 
-  const validateStatStep = () => {
-    const key = STATS[step - 1].key
-    const val = parseFloat(tests[key])
-    if (isNaN(val) || val < 0) { setErrors({ [key]: 'Inserisci un valore valido' }); return false }
-    setErrors({})
-    return true
+  const validateTestStep = () => {
+    if (!currentTest) return true
+    const val = parseFloat(tests[currentTest.key])
+    if (isNaN(val)) { setErrors({ [currentTest.key]: 'Inserisci un valore valido' }); return false }
+    setErrors({}); return true
   }
 
   const validateAccount = () => {
     const e = {}
     if (!account.email.trim() || !account.email.includes('@')) e.email = 'Email non valida'
     if (!account.password || account.password.length < 8) e.password = 'Password minimo 8 caratteri'
-    else if (!/[0-9]/.test(account.password)) e.password = 'La password deve contenere almeno un numero'
-    setErrors(e)
-    return Object.keys(e).length === 0
+    else if (!/[0-9]/.test(account.password)) e.password = 'Deve contenere almeno un numero'
+    setErrors(e); return Object.keys(e).length === 0
   }
 
   const next = () => {
     if (step === 0 && !validateStep0()) return
-    if (step >= 1 && step <= 5 && !validateStatStep()) return
+    if (step >= 2 && step <= 6 && !validateTestStep()) return
     setStep(s => s + 1)
   }
 
@@ -81,16 +84,16 @@ export function NewClientWizard({ onClose, onAdd, trainerId }) {
     try {
       const newClient = await onAdd({
         ...anagrafica,
-        eta:              parseInt(anagrafica.eta),
-        peso:             parseFloat(anagrafica.peso),
-        altezza:          parseFloat(anagrafica.altezza),
-        testValues:       { ...tests },
-        stats:            allStats,
-        email:            account.email.trim(),
-        password:         account.password,
-        sessionsPerWeek:  parseInt(settings.sessionsPerWeek) || 3,
+        eta:             parseInt(anagrafica.eta),
+        peso:            parseFloat(anagrafica.peso),
+        altezza:         parseFloat(anagrafica.altezza),
+        categoria,
+        testValues:      { ...tests },
+        stats:           allStats,
+        email:           account.email.trim(),
+        password:        account.password,
+        sessionsPerWeek: parseInt(settings.sessionsPerWeek) || 3,
       })
-      // Aggiungi al gruppo se selezionato o crea nuovo
       if (settings.newGroupName.trim() && trainerId) {
         const g = await handleAddGroup(settings.newGroupName.trim())
         if (g && newClient?.id) await handleToggleClient(g.id, newClient.id)
@@ -105,406 +108,253 @@ export function NewClientWizard({ onClose, onAdd, trainerId }) {
   }
 
   const isLastStep  = step === TOTAL_STEPS - 1
-  const progressPct = Math.round((step / TOTAL_STEPS) * 100)
+  const progressPct = Math.round((step / (TOTAL_STEPS - 1)) * 100)
+
+  const getStepTitle = () => {
+    if (step === 0) return 'Dati anagrafici'
+    if (step === 1) return 'Categoria'
+    if (step >= 2 && step <= 6) return `Test ${step - 1}/5 — ${currentTest?.label}`
+    if (step === 7) return 'Impostazioni allenamento'
+    return 'Account cliente'
+  }
 
   return (
-    <Modal title={stepTitle(step)} onClose={onClose} size="lg">
-      {/* Progress bar */}
-      <div className="mb-6">
-        <div className="flex justify-between text-[11px] text-white/30 font-display mb-1.5">
-          <span>Step {step + 1} di {TOTAL_STEPS}</span>
-          <span>{progressPct}%</span>
-        </div>
-        <div className="bg-white/[.08] rounded-full h-1.5">
-          <div
-            className="h-full rounded-full transition-[width] duration-500"
-            style={{ width: `${progressPct}%`, background: `linear-gradient(90deg, #3b82f6, ${rankObj.color})` }}
-          />
-        </div>
-      </div>
+    <Modal onClose={onClose} disableOverlayClose size="lg">
+      <div className="flex flex-col gap-4">
 
-      {/* ── Layout a due colonne su desktop ── */}
-      <div className="flex flex-col lg:flex-row gap-6">
-
-        {/* Colonna sinistra: pannello contestuale */}
-        <div className="hidden lg:flex flex-col gap-4 w-56 xl:w-64 shrink-0">
-          <StepSidebar
-            step={step}
-            anagrafica={anagrafica}
-            statStep={statStep}
-            livePercentile={livePercentile}
-            allStats={allStats}
-            rankObj={rankObj}
-            media={media}
-          />
-        </div>
-
-        {/* Colonna destra (o unica su mobile): il form vero */}
-        <div className="flex-1 min-w-0 flex flex-col gap-4">
-          {step === 0 && (
-            <AnagraficaStep
-              data={anagrafica}
-              onChange={(k, v) => setAnagrafica(p => ({ ...p, [k]: v }))}
-              errors={errors}
-            />
-          )}
-          {step >= 1 && step <= 5 && (
-            <TestStep
-              stat={statStep}
-              value={tests[statStep.key]}
-              onChange={v => setTests(p => ({ ...p, [statStep.key]: v }))}
-              percentile={livePercentile}
-              error={errors[statStep.key]}
-            />
-          )}
-          {step === 6 && (
-            <SettingsStep
-              data={settings}
-              onChange={(k, v) => setSettings(p => ({ ...p, [k]: v }))}
-              groups={groups}
-            />
-          )}
-          {step === 7 && (
-            <AccountStep
-              data={account}
-              onChange={(k, v) => setAccount(p => ({ ...p, [k]: v }))}
-              errors={errors}
-              rankObj={rankObj}
-              media={media}
-              allStats={allStats}
-            />
-          )}
-
-          {/* Navigazione */}
-          <div className={`flex gap-3 mt-2 ${step === 0 ? 'justify-end' : 'justify-between'}`}>
-            {step > 0 && (
-              <button
-                onClick={() => setStep(s => s - 1)}
-                className="bg-transparent border border-white/10 rounded-xl px-5 py-3 text-white/50 font-display text-[12px] cursor-pointer hover:text-white/70 transition-colors"
-              >
-                ‹ INDIETRO
-              </button>
-            )}
-            {!isLastStep
-              ? <Button variant="primary" className="flex-1" onClick={next}>AVANTI ›</Button>
-              : <Button variant="primary" className="flex-1" loading={loading} onClick={handleSubmit}>CREA CLIENTE</Button>
-            }
+        {/* Header progress */}
+        <div>
+          <div className="flex justify-between items-center mb-1">
+            <span className="font-display text-[11px] text-white/40">{getStepTitle()}</span>
+            <span className="font-display text-[11px] text-white/25">Step {step + 1} di {TOTAL_STEPS}</span>
           </div>
+          <div className="h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+            <div className="h-full rounded-full transition-[width] duration-300"
+              style={{ width: `${progressPct}%`, background: 'linear-gradient(90deg, #3b82f6, #8b5cf6)' }} />
+          </div>
+        </div>
+
+        {/* ── Step 0: Anagrafica ── */}
+        {step === 0 && (
+          <div className="flex flex-col gap-3">
+            <Field label="Nome e cognome" error={errors.name}>
+              <Input value={anagrafica.name}
+                onChange={e => setAnagrafica(p => ({ ...p, name: e.target.value }))}
+                placeholder="Mario Rossi" />
+            </Field>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Età" error={errors.eta}>
+                <Input type="number" value={anagrafica.eta}
+                  onChange={e => setAnagrafica(p => ({ ...p, eta: e.target.value }))}
+                  placeholder="30" />
+              </Field>
+              <Field label="Sesso">
+                <div className="flex gap-2">
+                  {['M', 'F'].map(s => (
+                    <button key={s} onClick={() => setAnagrafica(p => ({ ...p, sesso: s }))}
+                      className="flex-1 py-2.5 rounded-xl font-display text-[12px] cursor-pointer border transition-all"
+                      style={anagrafica.sesso === s
+                        ? { background: 'rgba(59,130,246,0.2)', borderColor: '#3b82f6', color: '#fff' }
+                        : { background: 'transparent', borderColor: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)' }
+                      }>{s}</button>
+                  ))}
+                </div>
+              </Field>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Peso (kg)" error={errors.peso}>
+                <Input type="number" value={anagrafica.peso}
+                  onChange={e => setAnagrafica(p => ({ ...p, peso: e.target.value }))}
+                  placeholder="70" />
+              </Field>
+              <Field label="Altezza (cm)" error={errors.altezza}>
+                <Input type="number" value={anagrafica.altezza}
+                  onChange={e => setAnagrafica(p => ({ ...p, altezza: e.target.value }))}
+                  placeholder="175" />
+              </Field>
+            </div>
+          </div>
+        )}
+
+        {/* ── Step 1: Categoria ── */}
+        {step === 1 && (
+          <div className="flex flex-col gap-3">
+            <p className="font-body text-[13px] text-white/40 m-0">
+              La categoria determina i 5 test somministrati al cliente.
+            </p>
+            {CATEGORIE.map(cat => (
+              <button key={cat.id}
+                onClick={() => setCategoria(cat.id)}
+                className="flex items-start gap-4 p-4 rounded-2xl cursor-pointer border transition-all text-left"
+                style={categoria === cat.id
+                  ? { background: cat.color + '15', borderColor: cat.color + '55' }
+                  : { background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.07)' }
+                }>
+                <div className="w-3 h-3 rounded-full mt-1 shrink-0"
+                  style={{ background: categoria === cat.id ? cat.color : 'rgba(255,255,255,0.15)' }} />
+                <div>
+                  <div className="font-display font-black text-[14px]"
+                    style={{ color: categoria === cat.id ? cat.color : 'rgba(255,255,255,0.7)' }}>
+                    {cat.label}
+                  </div>
+                  <div className="font-body text-[12px] text-white/40 mt-0.5">{cat.desc}</div>
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {CATEGORY_TESTS[cat.id].map(t => (
+                      <span key={t.key} className="font-display text-[9px] px-2 py-0.5 rounded-md"
+                        style={{ background: cat.color + '18', color: cat.color + 'cc' }}>
+                        {t.test}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* ── Step 2-6: Test ── */}
+        {step >= 2 && step <= 6 && currentTest && (
+          <div className="flex flex-col gap-4">
+            <div>
+              <p className="font-display text-[10px] text-white/30 tracking-[2px] m-0 mb-1">{currentTest.test}</p>
+              <p className="font-body text-[13px] text-white/50 m-0">{currentTest.desc}</p>
+            </div>
+            <Field label={`${currentTest.label} (${currentTest.unit})`} error={errors[currentTest.key]}>
+              <Input
+                type="number" step="0.1"
+                value={tests[currentTest.key] ?? ''}
+                onChange={e => setTests(p => ({ ...p, [currentTest.key]: e.target.value }))}
+                placeholder={`Inserisci valore in ${currentTest.unit}`}
+              />
+            </Field>
+            {livePercentile !== null && (
+              <div className="rounded-xl p-3"
+                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                <div className="flex justify-between mb-1.5">
+                  <span className="font-display text-[10px] text-white/30 tracking-[2px]">PERCENTILE</span>
+                  <span className="font-display text-[13px] font-black" style={{ color: '#60a5fa' }}>
+                    {livePercentile}°
+                  </span>
+                </div>
+                <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                  <div className="h-full rounded-full transition-[width] duration-300"
+                    style={{ width: `${livePercentile}%`, background: '#60a5fa' }} />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Step 7: Impostazioni ── */}
+        {step === 7 && (
+          <div className="flex flex-col gap-5">
+            <Field label="Sessioni per settimana">
+              <div className="flex items-center gap-3">
+                <input type="range" min={1} max={7} step={1}
+                  value={settings.sessionsPerWeek}
+                  onChange={e => setSettings(p => ({ ...p, sessionsPerWeek: e.target.value }))}
+                  className="flex-1" />
+                <span className="font-display font-black text-[22px] w-8 text-center" style={{ color: '#60a5fa' }}>
+                  {settings.sessionsPerWeek}
+                </span>
+              </div>
+              <div className="flex justify-between mt-1">
+                <span className="font-body text-[11px] text-white/25">1×/sett</span>
+                <span className="font-body text-[11px] text-white/40">
+                  ~{Math.round(settings.sessionsPerWeek * 4.33)} sessioni/mese · {Math.round(500 / Math.round(settings.sessionsPerWeek * 4.33))} XP/sessione
+                </span>
+                <span className="font-body text-[11px] text-white/25">7×/sett</span>
+              </div>
+            </Field>
+
+            <div>
+              <div className="font-display text-[10px] text-white/40 tracking-wider mb-2">GRUPPO (opzionale)</div>
+              {groups.length > 0 && (
+                <div className="flex flex-col gap-1.5 mb-3">
+                  <button
+                    onClick={() => setSettings(p => ({ ...p, groupId: null, newGroupName: '' }))}
+                    className="flex items-center gap-2 px-3 py-2.5 rounded-xl cursor-pointer border-none bg-transparent text-left"
+                    style={!settings.groupId && !settings.newGroupName
+                      ? { background: 'rgba(255,255,255,0.07)', color: '#fff' }
+                      : { color: 'rgba(255,255,255,0.35)' }}>
+                    <span className="font-body text-[13px]">Nessun gruppo</span>
+                  </button>
+                  {groups.map(g => (
+                    <button key={g.id}
+                      onClick={() => setSettings(p => ({ ...p, groupId: g.id, newGroupName: '' }))}
+                      className="flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer border-none text-left"
+                      style={settings.groupId === g.id
+                        ? { background: 'rgba(59,130,246,0.15)', color: '#fff' }
+                        : { background: 'rgba(255,255,255,0.03)', color: 'rgba(255,255,255,0.55)' }}>
+                      <span className="font-body text-[13px]">{g.name}</span>
+                      <span className="font-display text-[10px] opacity-40">{g.clientIds.length} clienti</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              <Input
+                className="w-full"
+                placeholder="Oppure crea un nuovo gruppo..."
+                value={settings.newGroupName}
+                onChange={e => setSettings(p => ({ ...p, newGroupName: e.target.value, groupId: null }))}
+              />
+              {settings.newGroupName.trim() && (
+                <p className="font-body text-[11px] text-blue-400/70 mt-1.5 m-0">
+                  Verrà creato il gruppo "{settings.newGroupName.trim()}"
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── Step 8: Account ── */}
+        {step === 8 && (
+          <div className="flex flex-col gap-4">
+            <div className="rounded-xl p-4 flex items-center gap-4"
+              style={{ background: rankObj.color + '11', border: `1px solid ${rankObj.color}33` }}>
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center"
+                style={{ background: rankObj.color + '22' }}>
+                <span className="font-display font-black text-[18px]" style={{ color: rankObj.color }}>
+                  {rankObj.label}
+                </span>
+              </div>
+              <div>
+                <div className="font-display font-black text-[15px] text-white">{anagrafica.name}</div>
+                <div className="font-body text-[12px] text-white/40">
+                  {CATEGORIE.find(c => c.id === categoria)?.label} · Media {media}/100
+                </div>
+              </div>
+            </div>
+            <Field label="Email" error={errors.email}>
+              <Input type="email" value={account.email}
+                onChange={e => setAccount(p => ({ ...p, email: e.target.value }))}
+                placeholder="cliente@email.com" />
+            </Field>
+            <Field label="Password temporanea" error={errors.password}>
+              <Input type="password" value={account.password}
+                onChange={e => setAccount(p => ({ ...p, password: e.target.value }))}
+                placeholder="Minimo 8 caratteri + 1 numero" />
+            </Field>
+            <p className="font-body text-[11px] text-white/25 m-0">
+              Il cliente potrà cambiarla al primo accesso.
+            </p>
+          </div>
+        )}
+
+        {/* Navigazione */}
+        <div className={`flex gap-3 mt-2 ${step === 0 ? 'justify-end' : 'justify-between'}`}>
+          {step > 0 && (
+            <button onClick={() => setStep(s => s - 1)}
+              className="bg-transparent border border-white/10 rounded-xl px-5 py-3 text-white/50 font-display text-[12px] cursor-pointer hover:text-white/70 transition-colors">
+              ‹ INDIETRO
+            </button>
+          )}
+          {!isLastStep
+            ? <Button variant="primary" className="flex-1" onClick={next}>AVANTI ›</Button>
+            : <Button variant="primary" className="flex-1" loading={loading} onClick={handleSubmit}>CREA CLIENTE</Button>
+          }
         </div>
       </div>
     </Modal>
-  )
-}
-
-// ── Sidebar contestuale desktop ───────────────────────────────────────────────
-
-function StepSidebar({ step, anagrafica, statStep, livePercentile, allStats, rankObj, media }) {
-  const color = rankObj.color
-
-  // Step 0: icona + descrizione cosa stiamo facendo
-  if (step === 0) return (
-    <div className="flex flex-col gap-3 h-full">
-      <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
-        <div className="font-display text-[10px] text-white/30 tracking-[2px] mb-3">STEP 1 DI 7</div>
-        <div className="font-display font-black text-[32px] text-white leading-none mb-2">Anagrafica</div>
-        <p className="m-0 font-body text-[13px] text-white/40 leading-relaxed">
-          Nome, età, sesso e dati fisici del cliente. Questi dati vengono usati per calibrare i percentili dei test.
-        </p>
-      </div>
-      <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
-        <div className="font-display text-[10px] text-white/30 tracking-[2px] mb-2">PERCHÉ SERVONO</div>
-        {[
-          ['Età + sesso', 'determinano la fascia percentile di riferimento'],
-          ['Peso + altezza', 'vengono salvati nel profilo ma non influenzano i test'],
-          ['Categoria', 'classifica il cliente nel tuo roster'],
-        ].map(([bold, rest]) => (
-          <div key={bold} className="flex gap-2 mb-2">
-            <div className="w-1 h-1 rounded-full bg-white/20 mt-2 shrink-0" />
-            <p className="m-0 font-body text-[12px] text-white/40">
-              <span className="text-white/60">{bold}</span> {rest}
-            </p>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-
-  // Step 1-5: descrizione test + preview percentile grande
-  if (step >= 1 && step <= 5 && statStep) {
-    const pColor = livePercentile === null ? 'rgba(255,255,255,0.3)'
-      : livePercentile >= 75 ? '#6ee7b7'
-      : livePercentile >= 40 ? '#f59e0b'
-      : '#f87171'
-    return (
-      <div className="flex flex-col gap-3 h-full">
-        <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
-          <div className="font-display text-[10px] text-white/30 tracking-[2px] mb-2">TEST {step} DI 5</div>
-          <div className="font-display font-black text-[22px] text-white leading-tight mb-1">{statStep.test}</div>
-          <p className="m-0 font-body text-[13px] text-white/40 leading-relaxed">{statStep.desc}</p>
-        </div>
-        <div
-          className="rounded-2xl p-5 text-center flex-1 flex flex-col items-center justify-center"
-          style={{ background: 'rgba(255,255,255,0.02)', border: `1px solid ${pColor}22` }}
-        >
-          {livePercentile === null ? (
-            <div className="font-body text-[12px] text-white/20">Inserisci il valore per vedere il punteggio</div>
-          ) : (
-            <>
-              <div className="font-display text-[10px] text-white/30 tracking-[2px] mb-2">PUNTEGGIO</div>
-              <div className="font-display font-black text-[64px] leading-none" style={{ color: pColor }}>
-                {livePercentile}
-              </div>
-              <div className="font-body text-[12px] mt-1" style={{ color: pColor }}>
-                {scoreLabel(livePercentile)}
-              </div>
-            </>
-          )}
-        </div>
-        {/* Pentagon con le stat raccolte finora */}
-        <div className="rounded-2xl p-4 flex flex-col items-center gap-2"
-          style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
-          <div className="font-display text-[9px] text-white/20 tracking-[2px]">PROFILO ATTUALE</div>
-          <Pentagon stats={allStats} color={color} size={100} />
-        </div>
-      </div>
-    )
-  }
-
-  // Step 6: rank assegnato + riepilogo stat
-  if (step === 6) return (
-    <div className="flex flex-col gap-3 h-full">
-      <div className="rounded-2xl p-5 text-center" style={{ background: color + '11', border: `1px solid ${color}33` }}>
-        <div className="font-display text-[10px] text-white/30 tracking-[2px] mb-2">RANK ASSEGNATO</div>
-        <div className="font-display font-black text-[52px] leading-none" style={{ color }}>{rankObj.label}</div>
-        <div className="font-body text-[12px] text-white/30 mt-1">Media: {Math.round(media)}/100</div>
-      </div>
-      <div className="rounded-2xl p-4 flex flex-col items-center gap-2 flex-1"
-        style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
-        <Pentagon stats={allStats} color={color} size={120} />
-        {STATS.map(s => (
-          <div key={s.key} className="w-full flex items-center gap-2">
-            <span className="text-[11px] w-4">{s.icon}</span>
-            <span className="font-body text-[10px] text-white/40 flex-1">{s.label}</span>
-            <span className="font-display text-[11px]" style={{ color }}>{allStats[s.key]}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-
-  return null
-}
-
-// ── Steps form ────────────────────────────────────────────────────────────────
-
-function AnagraficaStep({ data, onChange, errors }) {
-  return (
-    <div className="flex flex-col gap-3.5">
-      <Field label="Nome e Cognome" error={errors.name}>
-        <Input placeholder="Es. Mario Rossi" value={data.name}
-          onChange={e => onChange('name', e.target.value)} autoFocus />
-      </Field>
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Età" error={errors.eta}>
-          <Input type="number" placeholder="Es. 35" value={data.eta}
-            onChange={e => onChange('eta', e.target.value)} />
-        </Field>
-        <Field label="Sesso">
-          <div className="flex gap-2">
-            {['M', 'F'].map(s => (
-              <button key={s} onClick={() => onChange('sesso', s)}
-                className={`flex-1 py-2.5 rounded-xl font-display text-[13px] border-2 transition-all cursor-pointer
-                  ${data.sesso === s ? 'bg-blue-500/20 border-blue-400 text-white' : 'bg-white/[.05] border-transparent text-white/50 hover:bg-white/10'}`}>
-                {s === 'M' ? 'M' : 'F'}
-              </button>
-            ))}
-          </div>
-        </Field>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Peso (kg)" error={errors.peso}>
-          <Input type="number" placeholder="Es. 75" value={data.peso}
-            onChange={e => onChange('peso', e.target.value)} />
-        </Field>
-        <Field label="Altezza (cm)" error={errors.altezza}>
-          <Input type="number" placeholder="Es. 175" value={data.altezza}
-            onChange={e => onChange('altezza', e.target.value)} />
-        </Field>
-      </div>
-      <Field label="Categoria">
-        <div className="flex gap-2">
-          {CATEGORIE.map(c => (
-            <button key={c} onClick={() => onChange('categoria', c)}
-              className={`flex-1 py-2.5 rounded-xl font-display text-[11px] border-2 transition-all cursor-pointer
-                ${data.categoria === c ? 'bg-blue-500/20 border-blue-400 text-white' : 'bg-white/[.05] border-transparent text-white/50 hover:bg-white/10'}`}>
-              {c}
-            </button>
-          ))}
-        </div>
-      </Field>
-    </div>
-  )
-}
-
-function TestStep({ stat, value, onChange, percentile, error }) {
-  const color = percentile === null ? '#60a5fa'
-    : percentile >= 75 ? '#6ee7b7' : percentile >= 40 ? '#f59e0b' : '#f87171'
-  return (
-    <div className="flex flex-col gap-4">
-      {/* Card descrizione test — visibile solo su mobile (desktop la vede nella sidebar) */}
-      <div className="lg:hidden rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
-        <div className="font-display text-[13px] text-white mb-1">{stat.test}</div>
-        <div className="font-body text-[13px] text-white/50">{stat.desc}</div>
-      </div>
-
-      <Field label={`Risultato (${stat.unit})`} error={error}>
-        <Input type="number" placeholder={`Valore in ${stat.unit}`} value={value}
-          onChange={e => onChange(e.target.value)} autoFocus />
-      </Field>
-
-      {/* Preview percentile su mobile */}
-      <div className="lg:hidden rounded-2xl p-4 text-center" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
-        {percentile === null ? (
-          <div className="text-white/30 font-body text-[13px]">Inserisci il valore per vedere il punteggio</div>
-        ) : (
-          <>
-            <div className="font-display text-[11px] text-white/30 tracking-[2px] mb-2">PUNTEGGIO {stat.label.toUpperCase()}</div>
-            <div className="font-display text-[48px] font-black" style={{ color }}>{percentile}</div>
-            <div className="font-body text-[12px] mt-1" style={{ color }}>{scoreLabel(percentile)}</div>
-          </>
-        )}
-      </div>
-    </div>
-  )
-}
-
-function AccountStep({ data, onChange, errors, rankObj, media, allStats }) {
-  return (
-    <div className="flex flex-col gap-4">
-      {/* Rank preview — solo mobile (desktop nella sidebar) */}
-      <div className="lg:hidden rounded-2xl p-4 border text-center"
-        style={{ borderColor: rankObj.color + '44', background: rankObj.color + '11' }}>
-        <div className="font-display text-[11px] text-white/30 tracking-[3px] mb-1">RANK ASSEGNATO</div>
-        <div className="font-display text-[40px] font-black" style={{ color: rankObj.color }}>{rankObj.label}</div>
-        <div className="font-body text-[12px] text-white/30 mt-0.5">Media: {Math.round(media)}/100</div>
-      </div>
-
-      <div className="pt-2">
-        <div className="font-display text-[11px] text-white/30 tracking-[2px] mb-4">ACCOUNT CLIENTE</div>
-        <div className="flex flex-col gap-3">
-          <Field label="Email cliente" error={errors.email}>
-            <Input type="email" placeholder="email@esempio.com" value={data.email}
-              onChange={e => onChange('email', e.target.value)} autoFocus />
-          </Field>
-          <Field label="Password temporanea" error={errors.password}>
-            <Input type="password" placeholder="Min. 8 caratteri, almeno 1 numero" value={data.password}
-              onChange={e => onChange('password', e.target.value)} />
-          </Field>
-          <p className="m-0 text-white/25 font-body text-[12px]">
-            Il cliente dovrà cambiare la password al primo accesso.
-          </p>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-
-
-function stepTitle(step) {
-  if (step === 0) return 'Nuovo cliente — dati anagrafici'
-  if (step <= 5)  return `Test ${step}/5 — ${STATS[step - 1].label}`
-  if (step === 6) return 'Impostazioni allenamento'
-  return 'Account cliente'
-}
-
-function scoreLabel(pct) {
-  if (pct >= 90) return 'Eccellente'
-  if (pct >= 75) return 'Ottimo'
-  if (pct >= 50) return 'Nella media'
-  if (pct >= 25) return 'Sotto la media'
-  return 'Da migliorare'
-}
-
-// ── SettingsStep ──────────────────────────────────────────────────────────────
-function SettingsStep({ data, onChange, groups }) {
-  return (
-    <div className="flex flex-col gap-5">
-
-      {/* Frequenza settimanale */}
-      <Field label="Sessioni per settimana">
-        <div className="flex items-center gap-3">
-          <input
-            type="range" min={1} max={7} step={1}
-            value={data.sessionsPerWeek}
-            onChange={e => onChange('sessionsPerWeek', e.target.value)}
-            className="flex-1"
-          />
-          <span className="font-display font-black text-[22px] w-8 text-center"
-            style={{ color: '#60a5fa' }}>
-            {data.sessionsPerWeek}
-          </span>
-        </div>
-        <div className="flex justify-between mt-1">
-          <span className="font-body text-[11px] text-white/25">1×/sett</span>
-          <span className="font-body text-[11px] text-white/40">
-            ~{Math.round(data.sessionsPerWeek * 4.33)} sessioni/mese ·{' '}
-            {Math.round(500 / Math.round(data.sessionsPerWeek * 4.33))} XP/sessione
-          </span>
-          <span className="font-body text-[11px] text-white/25">7×/sett</span>
-        </div>
-      </Field>
-
-      {/* Gruppo */}
-      <div>
-        <div className="text-white/40 text-[11px] font-display tracking-wider mb-2">
-          AGGIUNGI A UN GRUPPO (opzionale)
-        </div>
-
-        {/* Gruppi esistenti */}
-        {groups.length > 0 && (
-          <div className="flex flex-col gap-1.5 mb-3">
-            <button
-              onClick={() => { onChange('groupId', null); onChange('newGroupName', '') }}
-              className="flex items-center gap-2 px-3 py-2.5 rounded-xl cursor-pointer border transition-all text-left border-none bg-transparent"
-              style={!data.groupId && !data.newGroupName
-                ? { background: 'rgba(255,255,255,0.07)', color: '#fff' }
-                : { color: 'rgba(255,255,255,0.35)' }
-              }>
-              <span className="font-body text-[13px]">Nessun gruppo</span>
-            </button>
-            {groups.map(g => (
-              <button key={g.id}
-                onClick={() => { onChange('groupId', g.id); onChange('newGroupName', '') }}
-                className="flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer border transition-all text-left border-none"
-                style={data.groupId === g.id
-                  ? { background: 'rgba(59,130,246,0.15)', color: '#fff' }
-                  : { background: 'rgba(255,255,255,0.03)', color: 'rgba(255,255,255,0.55)' }
-                }>
-                <span className="font-body text-[13px]">{g.name}</span>
-                <span className="font-display text-[10px] opacity-40">{g.clientIds.length} clienti</span>
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Crea nuovo gruppo */}
-        <div className="flex gap-2 items-center">
-          <input
-            className="input-base flex-1"
-            placeholder="Oppure crea un nuovo gruppo..."
-            value={data.newGroupName}
-            onChange={e => { onChange('newGroupName', e.target.value); onChange('groupId', null) }}
-          />
-        </div>
-        {data.newGroupName.trim() && (
-          <p className="font-body text-[11px] text-blue-400/70 mt-1.5 m-0">
-            Verrà creato il gruppo "{data.newGroupName.trim()}" e il cliente vi sarà aggiunto automaticamente.
-          </p>
-        )}
-      </div>
-    </div>
   )
 }

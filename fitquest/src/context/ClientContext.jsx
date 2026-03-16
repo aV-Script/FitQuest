@@ -8,6 +8,7 @@ export const ACTIONS = {
   UPDATE_CLIENT:   'UPDATE_CLIENT',
   SELECT_CLIENT:   'SELECT_CLIENT',
   DESELECT_CLIENT: 'DESELECT_CLIENT',
+  REMOVE_CLIENT:   'REMOVE_CLIENT'
 }
 
 const initialState = { clients: [], loading: false, error: null, selectedClient: null }
@@ -25,6 +26,12 @@ function reducer(state, { type, payload }) {
     }
     case ACTIONS.SELECT_CLIENT:   return { ...state, selectedClient: payload }
     case ACTIONS.DESELECT_CLIENT: return { ...state, selectedClient: null }
+    case ACTIONS.REMOVE_CLIENT:
+      return {
+        ...state,
+        clients: state.clients.filter(c => c.id !== payload),
+        selectedClient: state.selectedClient?.id === payload ? null : state.selectedClient,
+      }
     default: return state
   }
 }

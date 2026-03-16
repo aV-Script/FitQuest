@@ -28,7 +28,7 @@ const MODAL_WIDTHS = {
   xl:      'w-[420px] lg:w-[960px]',
 }
 
-export function Modal({ title, onClose, size = 'default', children }) {
+export function Modal({ title, onClose, disableOverlayClose, size = 'default', children }) {
   useEffect(() => {
     const handler = e => { if (e.key === 'Escape') onClose() }
     window.addEventListener('keydown', handler)
@@ -38,7 +38,7 @@ export function Modal({ title, onClose, size = 'default', children }) {
   return (
     <div
       className="fixed inset-0 bg-black/80 z-50 flex items-start lg:items-center justify-center overflow-y-auto py-4 px-4"
-      onClick={onClose}
+      onClick={disableOverlayClose ? undefined : onClose}
     >
       <div
         className={`bg-gray-900 border border-white/10 rounded-2xl p-6 lg:p-8 ${MODAL_WIDTHS[size]} max-w-[96vw] my-auto`}

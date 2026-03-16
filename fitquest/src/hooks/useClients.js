@@ -88,11 +88,13 @@ export function useClients(trainerId) {
     } catch { dispatch({ type: ACTIONS.UPDATE_CLIENT, payload: client }) }
   }, [])
 
-  const updateLocalClient = useCallback((update) => {
-    if (state.selectedClient?.id) {
-      dispatch({ type: ACTIONS.UPDATE_CLIENT, payload: { id: state.selectedClient.id, ...update } })
+  const updateLocalClient = useCallback((id, data) => {
+    if (data === null) {
+      dispatch({ type: ACTIONS.REMOVE_CLIENT, payload: id })
+    } else {
+      dispatch({ type: ACTIONS.UPDATE_CLIENT, payload: { id, ...data } })
     }
-  }, [state.selectedClient?.id])
+  }, [])
 
   const selectClient   = useCallback(client => dispatch({ type: ACTIONS.SELECT_CLIENT,   payload: client }), [])
   const deselectClient = useCallback(()       => dispatch({ type: ACTIONS.DESELECT_CLIENT }), [])

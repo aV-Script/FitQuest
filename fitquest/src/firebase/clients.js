@@ -21,3 +21,5 @@ export const addSession   = (clientId, data)  =>
   updateDoc(doc(db, 'clients', clientId), {
     sessions: arrayUnion({ ...data, createdAt: new Date().toISOString() }),
   })
+  
+export const deleteClient = (id) => deleteDoc(doc(db, 'clients', id))
