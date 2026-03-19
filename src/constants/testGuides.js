@@ -8,7 +8,7 @@ export const TEST_GUIDES = {
 
   // ── HEALTH ──────────────────────────────────────────────────────────────────
 
-  mobilita: {
+  sit_and_reach: {
     name: 'Sit and Reach', stat: 'Mobilità', unit: 'cm', duration: '10 minuti',
     equipment: ['Cassetta sit-and-reach o metro a nastro con nastro adesivo sul pavimento'],
     warmup: [
@@ -30,7 +30,7 @@ export const TEST_GUIDES = {
     ],
   },
 
-  equilibrio: {
+  flamingo_test: {
     name: 'Flamingo Test', stat: 'Equilibrio', unit: 'n° cadute in 60s', duration: '15 minuti',
     equipment: ['Cronometro', 'Tappetino', 'Area libera 2×2m'],
     warmup: [
@@ -53,7 +53,7 @@ export const TEST_GUIDES = {
     ],
   },
 
-  resistenza: {
+  ymca_step_test: {
     name: 'YMCA Step Test', stat: 'Resistenza', unit: 'bpm', duration: '8 minuti',
     equipment: ['Step H=30.5cm', 'Metronomo 96 bpm', 'Cronometro', 'Cardiofrequenzimetro'],
     warmup: [
@@ -73,7 +73,7 @@ export const TEST_GUIDES = {
     ],
   },
 
-  forza: {
+  dinamometro_hand_grip: {
     name: 'Dinamometro Hand Grip', stat: 'Forza', unit: 'kg', duration: '10 minuti',
     equipment: ['Dinamometro a mano', 'Sedia con schienale'],
     warmup: [
@@ -94,7 +94,7 @@ export const TEST_GUIDES = {
     ],
   },
 
-  esplosivita: {
+  esplosisit_to_standvita: {
     name: '5 Sit to Stand', stat: 'Esplosività', unit: 'secondi', duration: '10 minuti',
     equipment: ['Sedia H=46cm senza braccioli', 'Cronometro'],
     warmup: [
