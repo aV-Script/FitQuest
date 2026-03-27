@@ -2,7 +2,7 @@
  * Sidebar desktop per la sezione gruppi.
  * Ricerca gruppi + bottone nuovo gruppo.
  */
-export function GroupsSidebar({ groupSearch, setGroupSearch, onNewGroup, totalGroups }) {
+export function GroupsSidebar({ groupSearch, onGroupSearchChange, onNewGroup, totalGroups }) {
   return (
     <aside className="
       hidden lg:flex flex-col w-64 xl:w-72 shrink-0
@@ -21,7 +21,7 @@ export function GroupsSidebar({ groupSearch, setGroupSearch, onNewGroup, totalGr
         <p className="font-display text-[10px] text-white/30 tracking-[3px] mb-2">RICERCA</p>
         <input
           value={groupSearch}
-          onChange={e => setGroupSearch(e.target.value)}
+          onChange={e => onGroupSearchChange(e.target.value)}
           placeholder="Nome gruppo..."
           className="input-base w-full"
         />

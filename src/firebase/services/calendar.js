@@ -3,6 +3,7 @@ import {
   doc, query, where, orderBy, arrayUnion, arrayRemove,
 } from 'firebase/firestore'
 import { db } from './db'
+import { SLOT_STATUS } from '../../constants/slotStatus'
 
 // ── Slots ─────────────────────────────────────────────────────────────────────
 
@@ -46,7 +47,7 @@ export const getSlotsByGroup = async (trainerId, groupId, fromDate) => {
 export const addSlot = (data) =>
   addDoc(collection(db, 'slots'), {
     ...data,
-    status:    'planned',
+    status:    SLOT_STATUS.PLANNED,
     attendees: [],
     absentees: [],
     createdAt: new Date().toISOString(),
@@ -60,14 +61,14 @@ export const deleteSlot = (id) =>
 
 export const closeSlot = (id, { attendees, absentees }) =>
   updateDoc(doc(db, 'slots', id), {
-    status:    'completed',
+    status:    SLOT_STATUS.COMPLETED,
     attendees,
     absentees,
   })
 
 export const skipSlot = (id) =>
   updateDoc(doc(db, 'slots', id), {
-    status:    'skipped',
+    status:    SLOT_STATUS.SKIPPED,
     attendees: [],
     absentees: [],
   })
@@ -93,22 +94,4 @@ export const addRecurrence = (data) =>
 export const deleteRecurrence = (id) =>
   deleteDoc(doc(db, 'recurrences', id))
 
-/**
- * Genera tutte le date in un intervallo per i giorni della settimana dati.
- * @param {string}   startDate — 'YYYY-MM-DD'
- * @param {string}   endDate   — 'YYYY-MM-DD'
- * @param {number[]} days      — [0=Dom, 1=Lun, ..., 6=Sab]
- */
-export function generateRecurrenceDates(startDate, endDate, days) {
-  const dates  = []
-  const cursor = new Date(startDate + 'T12:00')
-  const end    = new Date(endDate   + 'T12:00')
-
-  while (cursor <= end) {
-    if (days.includes(cursor.getDay())) {
-      dates.push(cursor.toISOString().slice(0, 10))
-    }
-    cursor.setDate(cursor.getDate() + 1)
-  }
-  return dates
-}
+export { generateRecurrenceDates } from '../../utils/calendarUtils'

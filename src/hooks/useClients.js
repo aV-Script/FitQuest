@@ -1,12 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useTrainerDispatch, ACTIONS }       from '../context/TrainerContext'
-import { getClients, addClient, updateClient, deleteClient } from '../firebase/services/clients'
-import { createClientAccount }   from '../firebase/services/auth'
-import { addNotification }       from '../firebase/services/notifications'
-import { setDoc, doc }           from 'firebase/firestore'
-import { db }                    from '../firebase/services/db'
-import { buildNewClient, buildCampionamentoUpdate, buildXPUpdate } from '../utils/gamification'
-import { NEW_CLIENT_DEFAULTS }   from '../constants'
+import { getClients, updateClient, deleteClient } from '../firebase/services/clients'
+import { addNotification }          from '../firebase/services/notifications'
+import { buildCampionamentoUpdate, buildXPUpdate } from '../utils/gamification'
+import { createClientUseCase }      from '../usecases/createClientUseCase'
+import { saveCampionamentoUseCase } from '../usecases/saveCampionamentoUseCase'
 import { useToast }              from './useToast'
 import { getFirebaseErrorMessage } from '../utils/firebaseErrors'
 
@@ -39,18 +37,8 @@ export function useClients(trainerId) {
 
   // ── Add client — non ottimistico per natura (richiede uid Firebase) ────────
   const handleAddClient = useCallback(async (formData) => {
-    const { email, password, ...rest } = formData
     try {
-      const clientUid = await createClientAccount(email, password)
-      const data      = buildNewClient(trainerId, rest, NEW_CLIENT_DEFAULTS)
-      const ref       = await addClient(trainerId, { ...data, email, clientAuthUid: clientUid })
-      await setDoc(doc(db, 'users', clientUid), {
-        role:               'client',
-        clientId:           ref.id,
-        trainerId,
-        mustChangePassword: true,
-      })
-      const newClient = { id: ref.id, ...data, email, clientAuthUid: clientUid }
+      const newClient = await createClientUseCase(trainerId, formData)
       setClients(prev => [...prev, newClient])
       toast.success('Cliente creato')
       return newClient
@@ -69,15 +57,7 @@ export function useClients(trainerId) {
     dispatch({ type: ACTIONS.SELECT_CLIENT, payload: { ...client, ...update } })
 
     try {
-      await updateClient(client.id, update)
-      if (client.clientAuthUid) {
-        await addNotification({
-          clientId: client.id,
-          message:  `Il tuo trainer ha aggiornato i tuoi parametri — nuovo rank: ${update.rank}`,
-          date:     new Date().toLocaleDateString('it-IT', { day: '2-digit', month: 'short' }),
-          type:     'campionamento',
-        })
-      }
+      await saveCampionamentoUseCase(client, update)
       toast.success('Campionamento salvato')
     } catch {
       updateLocal(client.id, snapshot)
@@ -128,8 +108,8 @@ export function useClients(trainerId) {
 
   return {
     clients,
-    loading,
-    error,
+    isLoading: loading,
+    fetchError: error,
     handleAddClient,
     handleCampionamento,
     handleAddXP,

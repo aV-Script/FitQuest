@@ -1,7 +1,6 @@
 import { useState, useCallback }           from 'react'
 import { useCalendar }                     from '../../features/calendar/useCalendar'
 import { Skeleton }                        from '../../components/common/Skeleton'
-import { useClients }                      from '../../hooks/useClients'
 import { CalendarHeader }                  from './trainer-calendar/CalendarHeader'
 import { MonthView }                       from './trainer-calendar/MonthView'
 import { WeekView }                        from './trainer-calendar/WeekView'
@@ -12,16 +11,15 @@ import { AddSlotModal }                    from './trainer-calendar/AddSlotModal
 import { RecurrenceModal }                 from './trainer-calendar/RecurrenceModal'
 import { useGroups } from '../../hooks/useGroups'
 
-export function TrainerCalendar({ trainerId }) {
+export function TrainerCalendar({ trainerId, clients = [] }) {
   const {
-    slots, loading,
+    slots, isLoading,
     currentDate, view,
     setView, navigate, goToToday,
     handleAddSlot, handleAddRecurrence,
     handleCloseSlot, handleSkipSlot, handleDeleteSlot,
   } = useCalendar(trainerId)
 
-  const { clients } = useClients(trainerId)
   const { groups } = useGroups(trainerId)
   const today = new Date().toISOString().slice(0, 10)
 
@@ -85,7 +83,7 @@ export function TrainerCalendar({ trainerId }) {
         onNewRecurrence={() => setRecurrenceModal(true)}
       />
 
-      {loading ? (
+      {isLoading ? (
         <div className="flex-1 flex flex-col gap-3 p-6">
           <Skeleton variant="list" count={8} />
         </div>

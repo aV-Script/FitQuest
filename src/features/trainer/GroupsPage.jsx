@@ -5,14 +5,14 @@ import { usePagination }                  from '../../hooks/usePagination'
 import { Pagination }                     from '../../components/common/Pagination'
 import { GroupCard }                      from './groups-page/GroupCard'
 import { GroupDetailView }                from './groups-page/GroupDetailView'
-import { GroupsSidebar }                  from './groups-page/GroupSidebar'
+import { GroupsSidebar }                  from './groups-page/GroupsSidebar'
 import { Skeleton }                       from '../../components/common/Skeleton'
 import { PAGINATION_PAGE_SIZE }           from '../../config/app.config'
 
 const GROUPS_PAGE_SIZE = PAGINATION_PAGE_SIZE
 
 export function GroupsPage({ trainerId }) {
-  const { groups, loading, handleAddGroup, handleRenameGroup, handleToggleClient, handleDeleteGroup } = useGroups(trainerId)
+  const { groups, isLoading, handleAddGroup, handleRenameGroup, handleToggleClient, handleDeleteGroup } = useGroups(trainerId)
   const { clients } = useClients(trainerId)
 
   const [view,         setView]         = useState('list') // 'list' | 'detail'
@@ -71,7 +71,7 @@ export function GroupsPage({ trainerId }) {
 
       <GroupsSidebar
         groupSearch={groupSearch}
-        setGroupSearch={setGroupSearch}
+        onGroupSearchChange={setGroupSearch}
         onNewGroup={() => setShowNew(true)}
         totalGroups={groups.length}
       />
@@ -85,7 +85,7 @@ export function GroupsPage({ trainerId }) {
               I tuoi gruppi
             </h1>
             <p className="font-body text-white/30 text-[13px] m-0 mt-0.5">
-              {loading
+              {isLoading
                 ? '\u00a0'
                 : `${filteredGroups.length} ${filteredGroups.length === 1 ? 'gruppo' : 'gruppi'}`
               }
@@ -147,7 +147,7 @@ export function GroupsPage({ trainerId }) {
         )}
 
         {/* Lista gruppi */}
-        {loading ? (
+        {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
             <Skeleton variant="card" count={6} />
           </div>

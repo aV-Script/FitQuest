@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { SLOT_STATUS } from '../../../constants/slotStatus'
 
 /**
  * Popup dettaglio slot — appare al click su un evento.
@@ -21,14 +22,14 @@ export function SlotPopup({ slot, clients, position, onClose, onDelete, onSkip, 
     .filter(Boolean)
 
   const statusLabel = {
-    planned:   { text: 'PIANIFICATA', color: '#60a5fa' },
-    completed: { text: 'COMPLETATA',  color: '#34d399' },
-    skipped:   { text: 'SALTATA',     color: '#6b7280' },
-  }[slot.status ?? 'planned']
+    [SLOT_STATUS.PLANNED]:   { text: 'PIANIFICATA', color: '#60a5fa' },
+    [SLOT_STATUS.COMPLETED]: { text: 'COMPLETATA',  color: '#34d399' },
+    [SLOT_STATUS.SKIPPED]:   { text: 'SALTATA',     color: '#6b7280' },
+  }[slot.status ?? SLOT_STATUS.PLANNED]
 
   const isPast      = slot.date < new Date().toISOString().slice(0, 10)
-  const isCompleted = slot.status === 'completed'
-  const isSkipped   = slot.status === 'skipped'
+  const isCompleted = slot.status === SLOT_STATUS.COMPLETED
+  const isSkipped   = slot.status === SLOT_STATUS.SKIPPED
 
   return (
     <div

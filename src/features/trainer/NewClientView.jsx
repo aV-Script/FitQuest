@@ -51,7 +51,7 @@ export function NewClientView({ trainerId, onAdd, onBack }) {
         <WizardNav
           step={wizard.step}
           isLastStep={wizard.isLastStep}
-          loading={wizard.loading}
+          loading={wizard.isLoading}
           onPrev={wizard.prev}
           onNext={wizard.next}
           onSubmit={wizard.handleRequestSubmit}
@@ -63,7 +63,7 @@ export function NewClientView({ trainerId, onAdd, onBack }) {
           title="Creare il cliente?"
           description={`Stai per creare l'account per ${wizard.anagrafica.name}.`}
           confirmLabel="CREA CLIENTE"
-          loading={wizard.loading}
+          loading={wizard.isLoading}
           onConfirm={wizard.handleConfirmSubmit}
           onCancel={() => wizard.setShowConfirm(false)}
         />

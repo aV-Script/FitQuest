@@ -4,42 +4,16 @@ import {
   addClientToSlot, removeClientFromSlot,
   getSlotsByGroup, addRecurrence,
   generateRecurrenceDates,
-  closeSlot, skipSlot,
+  skipSlot,
 } from '../../firebase/services/calendar'
-import { updateClient }    from '../../firebase/services/clients'
-import { addNotification } from '../../firebase/services/notifications'
-import { buildXPUpdate, calcSessionConfig } from '../../utils/gamification'
-import { useToast }        from '../../hooks/useToast'
+import { calcSessionConfig }         from '../../utils/gamification'
+import { getMonthRange, getWeekRange } from '../../utils/calendarUtils'
+import { closeSessionUseCase }       from '../../usecases/closeSessionUseCase'
+import { SLOT_STATUS }               from '../../constants/slotStatus'
+import { useToast }                  from '../../hooks/useToast'
 
 export { calcSessionConfig }
-
-export function getMonthRange(year, month) {
-  const from    = `${year}-${String(month).padStart(2, '0')}-01`
-  const lastDay = new Date(year, month, 0).getDate()
-  const to      = `${year}-${String(month).padStart(2, '0')}-${lastDay}`
-  return { from, to }
-}
-
-export function getWeekRange(date) {
-  const d      = new Date(date + 'T12:00')
-  const day    = d.getDay()
-  const diff   = (day + 6) % 7
-  const monday = new Date(d)
-  monday.setDate(d.getDate() - diff)
-  const sunday = new Date(monday)
-  sunday.setDate(monday.getDate() + 6)
-  return {
-    from: monday.toISOString().slice(0, 10),
-    to:   sunday.toISOString().slice(0, 10),
-  }
-}
-
-export function calcMonthlyCompletion(clientSlots, clientId) {
-  const planned   = clientSlots.length
-  const completed = clientSlots.filter(s => s.attendees?.includes(clientId)).length
-  if (planned === 0) return { planned: 0, completed: 0, pct: 0 }
-  return { planned, completed, pct: Math.round((completed / planned) * 100) }
-}
+export { calcMonthlyCompletion, getMonthRange, getWeekRange } from '../../utils/calendarUtils'
 
 export function useCalendar(trainerId) {
   const [slots,        setSlots]        = useState([])
@@ -58,7 +32,7 @@ export function useCalendar(trainerId) {
 
   const { from, to } = getRange(currentDate, view)
 
-  const refresh = useCallback(() => {
+  const fetchSlots = useCallback(() => {
     if (!trainerId) return
     setLoading(true)
     getTrainerSlots(trainerId, from, to)
@@ -66,7 +40,7 @@ export function useCalendar(trainerId) {
       .finally(() => setLoading(false))
   }, [trainerId, from, to])
 
-  useEffect(() => { refresh() }, [refresh])
+  useEffect(() => { fetchSlots() }, [fetchSlots])
 
   // ── Navigazione ───────────────────────────────────────────────────────────
   const navigate = useCallback((direction) => {
@@ -110,7 +84,7 @@ export function useCalendar(trainerId) {
     const newSlot = {
       id: ref.id, trainerId, date, startTime, endTime,
       clientIds, groupIds,
-      status: 'planned', attendees: [], absentees: [],
+      status: SLOT_STATUS.PLANNED, attendees: [], absentees: [],
       recurrenceId: null,
     }
     setSlots(prev => [...prev, newSlot])
@@ -133,11 +107,11 @@ export function useCalendar(trainerId) {
       if (slot?.id) await updateSlot(slot.id, { recurrenceId })
     }
 
-    refresh()
+    fetchSlots()
     return recurrenceId
-  }, [trainerId, handleAddSlot, refresh])
+  }, [trainerId, handleAddSlot, fetchSlots])
 
-  // ── Close slot — assegna XP ai presenti ───────────────────────────────────
+  // ── Close slot — delega al use case ──────────────────────────────────────
   const handleCloseSlot = useCallback(async (slotId, attendeeIds, clientsData) => {
     const slot = slots.find(s => s.id === slotId)
     if (!slot) return
@@ -147,44 +121,13 @@ export function useCalendar(trainerId) {
 
     setSlots(prev => prev.map(s => s.id === slotId ? {
       ...s,
-      status:    'completed',
+      status:    SLOT_STATUS.COMPLETED,
       attendees:  attendeeIds,
       absentees:  absenteeIds,
     } : s))
 
     try {
-      await closeSlot(slotId, { attendees: attendeeIds, absentees: absenteeIds })
-
-      await Promise.all(
-        attendeeIds.map(async clientId => {
-          const client = clientsData.find(c => c.id === clientId)
-          if (!client) return
-          const config     = calcSessionConfig(client.sessionsPerWeek ?? 3)
-          const { update } = buildXPUpdate(client, config.xpPerSession, 'Sessione di allenamento completata')
-          await updateClient(client.id, update)
-          if (client.clientAuthUid) {
-            await addNotification({
-              clientId: client.id,
-              message:  `Sessione del ${slot.date} completata! +${config.xpPerSession} XP`,
-              date:     new Date().toLocaleDateString('it-IT', { day: '2-digit', month: 'short' }),
-              type:     'session',
-            })
-          }
-        })
-      )
-
-      await Promise.all(
-        absenteeIds.map(async clientId => {
-          const client = clientsData.find(c => c.id === clientId)
-          if (!client?.clientAuthUid) return
-          await addNotification({
-            clientId: client.id,
-            message:  `Sessione del ${slot.date} — assenza registrata.`,
-            date:     new Date().toLocaleDateString('it-IT', { day: '2-digit', month: 'short' }),
-            type:     'absence',
-          })
-        })
-      )
+      await closeSessionUseCase(slot, attendeeIds, clientsData)
       toast.success('Sessione chiusa · +XP assegnata')
     } catch {
       setSlots(prev => prev.map(s => s.id === slotId ? snapshot : s))
@@ -196,7 +139,7 @@ export function useCalendar(trainerId) {
   const handleSkipSlot = useCallback(async (slotId) => {
     const snapshot = slots.find(s => s.id === slotId)
     setSlots(prev => prev.map(s => s.id === slotId ? {
-      ...s, status: 'skipped', attendees: [], absentees: [],
+      ...s, status: SLOT_STATUS.SKIPPED, attendees: [], absentees: [],
     } : s))
     try {
       await skipSlot(slotId)
@@ -224,8 +167,8 @@ export function useCalendar(trainerId) {
         .filter(s => !s.clientIds.includes(clientId))
         .map(s => addClientToSlot(s.id, clientId))
     )
-    refresh()
-  }, [trainerId, refresh])
+    fetchSlots()
+  }, [trainerId, fetchSlots])
 
   const handleRemoveClientFromGroupSlots = useCallback(async (groupId, clientId, fromDate) => {
     const groupSlots = await getSlotsByGroup(trainerId, groupId, fromDate)
@@ -234,11 +177,11 @@ export function useCalendar(trainerId) {
         .filter(s => s.clientIds.includes(clientId))
         .map(s => removeClientFromSlot(s.id, clientId))
     )
-    refresh()
-  }, [trainerId, refresh])
+    fetchSlots()
+  }, [trainerId, fetchSlots])
 
   return {
-    slots, loading,
+    slots, isLoading: loading,
     currentDate, view,
     setView, navigate, goToToday,
     handleAddSlot,
@@ -248,6 +191,6 @@ export function useCalendar(trainerId) {
     handleDeleteSlot,
     handleAddClientToGroupSlots,
     handleRemoveClientFromGroupSlots,
-    refresh,
+    fetchSlots,
   }
 }

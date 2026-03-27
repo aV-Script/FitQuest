@@ -1,8 +1,9 @@
-import { TrainerProvider } from '../../context/TrainerContext'
-import { TrainerShell }    from '../../components/layout/TrainerShell'
-import { ClientDashboard } from '../client/ClientDashboard'
-import { useTrainerNav }   from './useTrainerNav'
-import { PAGES }           from './trainer.config'
+import { TrainerProvider }  from '../../context/TrainerContext'
+import { TrainerShell }     from '../../components/layout/TrainerShell'
+import { ClientDashboard }  from '../client/ClientDashboard'
+import { useTrainerNav }    from './useTrainerNav'
+import { useClients }       from '../../hooks/useClients'
+import { PAGES }            from './trainer.config'
 
 export default function TrainerView({ user }) {
   return (
@@ -13,7 +14,11 @@ export default function TrainerView({ user }) {
 }
 
 function TrainerLayout({ user }) {
-  const { page, selectedClient, navigateTo, deselectClient } = useTrainerNav() 
+  const { page, selectedClient, navigateTo, deselectClient } = useTrainerNav()
+  const {
+    clients, isLoading, fetchError,
+    handleAddClient, handleCampionamento, handleDeleteClient,
+  } = useClients(user.uid)
   const CurrentPage = PAGES[page] ?? PAGES.clients
 
   return (
@@ -24,9 +29,17 @@ function TrainerLayout({ user }) {
           client={selectedClient}
           trainerId={user.uid}
           onBack={deselectClient}
+          onCampionamento={handleCampionamento}
+          onDelete={handleDeleteClient}
         />
       ) : (
-        <CurrentPage trainerId={user.uid} />
+        <CurrentPage
+          trainerId={user.uid}
+          clients={clients}
+          clientsLoading={isLoading}
+          clientsError={fetchError}
+          onAddClient={handleAddClient}
+        />
       )}
     </TrainerShell>
   )

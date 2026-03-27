@@ -1,5 +1,4 @@
 import { useState, useCallback }    from 'react'
-import { useClients }               from '../../hooks/useClients'
 import { useClientRank }            from '../../hooks/useClientRank'
 import { SectionLabel, Divider, ActivityLog, StatsSection } from '../../components/ui'
 import { StatsChart }               from './StatsChart'
@@ -8,23 +7,22 @@ import { DeleteDialog }             from './client-dashboard/DeleteDialog'
 import { ClientSessionsSummary }    from './client-dashboard/ClientSessionsSummary'
 import { CampionamentoView }        from './CampionamentoView'
 
-export function ClientDashboard({ client, trainerId, onBack }) {
-  const { handleCampionamento, handleDeleteClient } = useClients(trainerId)
-  const { rankObj, color }                          = useClientRank(client)
+export function ClientDashboard({ client, trainerId, onBack, onCampionamento, onDelete }) {
+  const { rankObj, color } = useClientRank(client)
   const [view,       setView]       = useState('dashboard') // 'dashboard' | 'campionamento'
   const [showDelete, setShowDelete] = useState(false)
 
   const prevStats = client.campionamenti?.[1]?.stats ?? null
 
   const handleDelete = useCallback(async () => {
-    await handleDeleteClient(client.id)
+    await onDelete(client.id)
     setShowDelete(false)
     onBack()
-  }, [handleDeleteClient, client.id, onBack])
+  }, [onDelete, client.id, onBack])
 
   const handleSaveCampionamento = useCallback(async (newStats, testValues) => {
-    await handleCampionamento(client, newStats, testValues)
-  }, [handleCampionamento, client])
+    await onCampionamento(client, newStats, testValues)
+  }, [onCampionamento, client])
 
   // Vista campionamento — sostituisce il dashboard
     if (view === 'campionamento') {

@@ -1,11 +1,12 @@
 import { useMemo, memo } from 'react'
+import { SLOT_STATUS } from '../../../constants/slotStatus'
 
 const DAY_NAMES = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom']
 
 const STATUS_COLOR = {
-  planned:   '#3b82f6',
-  completed: '#34d399',
-  skipped:   '#6b7280',
+  [SLOT_STATUS.PLANNED]:   '#3b82f6',
+  [SLOT_STATUS.COMPLETED]: '#34d399',
+  [SLOT_STATUS.SKIPPED]:   '#6b7280',
 }
 
 const MonthCell = memo(function MonthCell({ cell, clients, today, onSlotClick, onEmptyClick }) {
@@ -29,7 +30,7 @@ const MonthCell = memo(function MonthCell({ cell, clients, today, onSlotClick, o
       </div>
       <div className="flex flex-col gap-0.5 px-1 pb-1">
         {cell.slots.slice(0, 3).map(slot => {
-          const statusColor = STATUS_COLOR[slot.status ?? 'planned']
+          const statusColor = STATUS_COLOR[slot.status ?? SLOT_STATUS.PLANNED]
           const clientNames = slot.clientIds
             .map(id => clients.find(c => c.id === id)?.name)
             .filter(Boolean)

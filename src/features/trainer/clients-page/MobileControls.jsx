@@ -7,8 +7,8 @@ const SORT_OPTIONS = [
 ]
 
 export function MobileControls({
-  query, setQuery,
-  sortBy, setSortBy,
+  query,  onQueryChange,
+  sortBy, onSortByChange,
   onNewClient,
 }) {
   return (
@@ -18,7 +18,7 @@ export function MobileControls({
       <Input
         placeholder="Cerca..."
         value={query}
-        onChange={e => setQuery(e.target.value)}
+        onChange={e => onQueryChange(e.target.value)}
         className="w-full mb-3"
       />
 
@@ -30,7 +30,7 @@ export function MobileControls({
           {SORT_OPTIONS.map(([val, label]) => (
             <button
               key={val}
-              onClick={() => setSortBy(val)}
+              onClick={() => onSortByChange(val)}
               className="shrink-0 rounded-xl px-3 py-1.5 font-display text-[10px] tracking-wide cursor-pointer border transition-all whitespace-nowrap"
               style={sortBy === val
                 ? { background: 'rgba(255,255,255,0.1)', borderColor: 'rgba(255,255,255,0.2)', color: '#fff' }

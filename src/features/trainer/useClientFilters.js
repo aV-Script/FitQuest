@@ -24,7 +24,7 @@ export function useClientFilters(clients, groups) {
   }, [clients])
 
   // Lista filtrata e ordinata
-  const displayed = useMemo(() => {
+  const filteredClients = useMemo(() => {
     let list = [...clients]
 
     if (filterGroup) {
@@ -45,11 +45,11 @@ export function useClientFilters(clients, groups) {
   }, [clients, groups, filterGroup, filterCategoria, query, sortBy])
 
   return {
-    query,           setQuery,
-    filterCategoria, setFilterCategoria,
-    filterGroup,     setFilterGroup,
-    sortBy,          setSortBy,
+    query,          onQueryChange:    setQuery,
+    filterCategoria, onCategoriaChange: setFilterCategoria,
+    filterGroup,    onGroupChange:    setFilterGroup,
+    sortBy,         onSortByChange:   setSortBy,
     categorie,
-    displayed,
+    filteredClients,
   }
 }

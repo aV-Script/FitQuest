@@ -1,5 +1,5 @@
 import { SidebarIcon } from './SidebarIcon'
-import { NAV_ITEMS, LogoutIcon } from './nav.items.config'
+import { NAV_ITEMS, LogoutIcon } from './navItems.config'
 
 /**
  * Sidebar desktop — icone con tooltip, logo, logout.

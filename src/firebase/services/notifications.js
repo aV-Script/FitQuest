@@ -10,8 +10,7 @@ export const getNotifications = async (clientId) => {
     const snap = await getDocs(q)
     const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }))
     return docs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-  } catch (err) {
-    console.error('getNotifications error:', err)
+  } catch {
     return []
   }
 }

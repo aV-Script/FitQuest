@@ -1,5 +1,5 @@
 import { TabItem }              from './TabItem'
-import { NAV_ITEMS, LogoutIcon } from './nav.items.config'
+import { NAV_ITEMS, LogoutIcon } from './navItems.config'
 
 /**
  * Navigazione mobile — header fisso + tab bar.

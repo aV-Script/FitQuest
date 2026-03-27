@@ -1,8 +1,9 @@
-import { useRef, useEffect } from 'react'
-import { EventBlock } from './EventBlock'
+import { useRef, useEffect }         from 'react'
+import { HOUR_HEIGHT_PX as HOUR_H } from '../../../utils/calendarUtils'
+import { EventBlock }               from './EventBlock'
 
-const HOURS  = Array.from({ length: 24 }, (_, i) => i)
-const HOUR_H = 60
+const HOURS              = Array.from({ length: 24 }, (_, i) => i)
+const HOURS_COLUMN_WIDTH = 52  // px larghezza colonna ore
 
 /**
  * Vista giorno — colonna oraria singola.
@@ -46,7 +47,7 @@ export function DayView({ currentDate, slots, clients, today, onSlotClick, onEmp
         <div className="flex" style={{ height: HOUR_H * 24 }}>
 
           {/* Colonna ore */}
-          <div className="shrink-0 relative" style={{ width: 52 }}>
+          <div className="shrink-0 relative" style={{ width: HOURS_COLUMN_WIDTH }}>
             {HOURS.map(h => (
               <div
                 key={h}

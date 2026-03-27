@@ -1,9 +1,10 @@
 import { useMemo, useRef, useEffect } from 'react'
-import { EventBlock } from './EventBlock'
+import { HOUR_HEIGHT_PX as HOUR_H }  from '../../../utils/calendarUtils'
+import { EventBlock }                from './EventBlock'
 
-const HOURS     = Array.from({ length: 24 }, (_, i) => i)
-const DAY_NAMES = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom']
-const HOUR_H    = 60 // px per ora
+const HOURS              = Array.from({ length: 24 }, (_, i) => i)
+const DAY_NAMES          = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom']
+const HOURS_COLUMN_WIDTH = 52  // px larghezza colonna ore
 
 /**
  * Vista settimana — colonne orarie con eventi come blocchi posizionati.
@@ -52,7 +53,7 @@ export function WeekView({ currentDate, slots, clients, today, onSlotClick, onEm
     <div className="flex flex-col flex-1 min-h-0">
 
       {/* Header giorni */}
-      <div className="flex border-b border-white/[.05] shrink-0" style={{ paddingLeft: 52 }}>
+      <div className="flex border-b border-white/[.05] shrink-0" style={{ paddingLeft: HOURS_COLUMN_WIDTH }}>
         {weekDays.map((dateStr, i) => {
           const d        = new Date(dateStr + 'T12:00')
           const isToday  = dateStr === today
@@ -80,7 +81,7 @@ export function WeekView({ currentDate, slots, clients, today, onSlotClick, onEm
         <div className="flex" style={{ height: HOUR_H * 24 }}>
 
           {/* Colonna ore */}
-          <div className="shrink-0 relative" style={{ width: 52 }}>
+          <div className="shrink-0 relative" style={{ width: HOURS_COLUMN_WIDTH }}>
             {HOURS.map(h => (
               <div
                 key={h}

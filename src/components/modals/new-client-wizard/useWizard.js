@@ -5,6 +5,24 @@ import { calcPercentile, calcStatMedia }  from '../../../utils/percentile'
 import { getFirebaseErrorMessage }        from '../../../utils/firebaseErrors'
 import { validateEmail, validatePassword, validateAge, validateRequired, validateNumber } from '../../../utils/validation'
 
+/**
+ * Calcola il valore finale di un test (con o senza formula composita).
+ * @returns {number|null} — null se i campi richiesti non sono ancora compilati
+ */
+function calcTestFinalValue(test, tests) {
+  if (test.variables && test.formulaType) {
+    const varsValues = {}
+    for (const v of test.variables) {
+      const val = Number(tests[v.key])
+      if (tests[v.key] === '' || isNaN(val)) return null
+      varsValues[v.key] = val
+    }
+    return applyFormula(test, varsValues)
+  }
+  const val = Number(tests[test.key])
+  return tests[test.key] === '' || isNaN(val) ? null : val
+}
+
 export function useWizard({ trainerId, groups, onAdd, onClose, onAddGroup, onToggleClientGroup }) {
   const [step,       setStep]       = useState(0)
   const [anagrafica, setAnagrafica] = useState({ name: '', eta: '', sesso: 'M', peso: '', altezza: '' })
@@ -24,40 +42,15 @@ export function useWizard({ trainerId, groups, onAdd, onClose, onAddGroup, onTog
 
   const livePercentile = useMemo(() => {
     if (!currentTest) return null
-    let finalValue
-    if (currentTest.variables && currentTest.formulaType) {
-      const varsValues = {}
-      for (const v of currentTest.variables) {
-        const val = Number(tests[v.key])
-        if (tests[v.key] === '' || isNaN(val)) return null
-        varsValues[v.key] = val
-      }
-      finalValue = applyFormula(currentTest, varsValues)
-    } else {
-      const val = Number(tests[currentTest.key])
-      if (tests[currentTest.key] === '' || isNaN(val)) return null
-      finalValue = val
-    }
+    const finalValue = calcTestFinalValue(currentTest, tests)
+    if (finalValue === null) return null
     return calcPercentile(currentTest.stat, finalValue, anagrafica.sesso, parseInt(anagrafica.eta))
   }, [currentTest, tests, anagrafica.sesso, anagrafica.eta])
 
   const allStats = useMemo(() => {
     const result = {}
     categoryTests.forEach(test => {
-      let finalValue
-      if (test.variables && test.formulaType) {
-        const varsValues = {}
-        let incomplete = false
-        for (const v of test.variables) {
-          const val = Number(tests[v.key])
-          if (tests[v.key] === '' || isNaN(val)) { incomplete = true; break }
-          varsValues[v.key] = val
-        }
-        finalValue = incomplete ? null : applyFormula(test, varsValues)
-      } else {
-        const val = Number(tests[test.key])
-        finalValue = tests[test.key] === '' || isNaN(val) ? null : val
-      }
+      const finalValue = calcTestFinalValue(test, tests)
       result[test.stat] = finalValue !== null
         ? calcPercentile(test.stat, finalValue, anagrafica.sesso, parseInt(anagrafica.eta)) ?? 0
         : 0
@@ -188,7 +181,7 @@ export function useWizard({ trainerId, groups, onAdd, onClose, onAddGroup, onTog
   }, [anagrafica, categoria, tests, allStats, account, settings, onAdd, onClose, onAddGroup, onToggleClientGroup])
 
   return {
-    step, anagrafica, categoria, tests, settings, account, errors, loading,
+    step, anagrafica, categoria, tests, settings, account, errors, isLoading: loading,
     showConfirm, setShowConfirm,
     categoryTests, currentStep, currentTest,
     livePercentile, allStats, media, rankObj,

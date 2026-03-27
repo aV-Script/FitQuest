@@ -1,5 +1,4 @@
 import { useState, useCallback }  from 'react'
-import { useClients }             from '../../hooks/useClients'
 import { useGroups }              from '../../hooks/useGroups'
 import { useTrainerNav }          from './useTrainerNav'
 import { useClientFilters }       from './useClientFilters'
@@ -14,20 +13,19 @@ import { PAGINATION_PAGE_SIZE }  from '../../config/app.config'
 
 const PAGE_SIZE = PAGINATION_PAGE_SIZE
 
-export function ClientsPage({ trainerId }) {
-  const { clients, loading, error, handleAddClient } = useClients(trainerId)
-  const { groups }                                   = useGroups(trainerId)
+export function ClientsPage({ trainerId, clients = [], clientsLoading: loading = false, clientsError: error = null, onAddClient }) {
+  const { groups }     = useGroups(trainerId)
   const { selectClient }                             = useTrainerNav()
   const filters                                      = useClientFilters(clients, groups)
   const [view, setView]                              = useState('list')
 
-  const pagination = usePagination(filters.displayed, PAGE_SIZE)
+  const pagination = usePagination(filters.filteredClients, PAGE_SIZE)
 
   const handleAdd    = useCallback(async (formData) => {
-    const newClient = await handleAddClient(formData)
+    const newClient = await onAddClient(formData)
     if (newClient) selectClient(newClient)
     return newClient
-  }, [handleAddClient, selectClient])
+  }, [onAddClient, selectClient])
 
   const handleSelect = useCallback((client) => selectClient(client), [selectClient])
 
@@ -54,9 +52,9 @@ export function ClientsPage({ trainerId }) {
 
         <MobileControls
           query={filters.query}
-          setQuery={filters.setQuery}
+          onQueryChange={filters.onQueryChange}
           sortBy={filters.sortBy}
-          setSortBy={filters.setSortBy}
+          onSortByChange={filters.onSortByChange}
           onNewClient={() => setView('new')}
         />
 
@@ -69,7 +67,7 @@ export function ClientsPage({ trainerId }) {
             <p className="font-body text-white/30 text-[13px] m-0 mt-0.5">
               {loading
                 ? '\u00a0'
-                : `${filters.displayed.length} ${filters.displayed.length === 1 ? 'cliente' : 'clienti'}`
+                : `${filters.filteredClients.length} ${filters.filteredClients.length === 1 ? 'cliente' : 'clienti'}`
               }
             </p>
           </div>
@@ -85,7 +83,7 @@ export function ClientsPage({ trainerId }) {
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
             <Skeleton variant="card" count={6} />
           </div>
-        ) : filters.displayed.length === 0 ? (
+        ) : filters.filteredClients.length === 0 ? (
           <EmptyState>
             {clients.length === 0 ? 'Nessun cliente. Aggiungine uno!' : 'Nessun risultato.'}
           </EmptyState>

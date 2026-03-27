@@ -88,8 +88,8 @@ export function useGroups(trainerId) {
 
   return {
     groups,
-    loading,
-    error,
+    isLoading: loading,
+    fetchError: error,
     handleAddGroup,
     handleRenameGroup,
     handleToggleClient,

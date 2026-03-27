@@ -1,15 +1,16 @@
 import { calcSessionConfig } from '../../../utils/gamification'
+import { SLOT_STATUS } from '../../../constants/slotStatus'
 
 const STATUS_COLORS = {
-  planned:   '#3b82f6',
-  completed: '#34d399',
-  skipped:   '#6b7280',
+  [SLOT_STATUS.PLANNED]:   '#3b82f6',
+  [SLOT_STATUS.COMPLETED]: '#34d399',
+  [SLOT_STATUS.SKIPPED]:   '#6b7280',
 }
 
 const STATUS_LABELS = {
-  planned:   'PIANIFICATA',
-  completed: 'COMPLETATA',
-  skipped:   'SALTATA',
+  [SLOT_STATUS.PLANNED]:   'PIANIFICATA',
+  [SLOT_STATUS.COMPLETED]: 'COMPLETATA',
+  [SLOT_STATUS.SKIPPED]:   'SALTATA',
 }
 
 /**
@@ -18,7 +19,7 @@ const STATUS_LABELS = {
  * Le azioni (chiudi, elimina) passano attraverso SlotPopup al click.
  */
 export function SlotCard({ slot, clients, onClick }) {
-  const status      = slot.status ?? 'planned'
+  const status      = slot.status ?? SLOT_STATUS.PLANNED
   const statusColor = STATUS_COLORS[status]
   const statusLabel = STATUS_LABELS[status]
 

@@ -11,10 +11,10 @@ const SORT_OPTIONS = [
  * Riceve tutto dallo hook useClientFilters — non gestisce stato proprio.
  */
 export function FiltersSidebar({
-  query, setQuery,
-  filterCategoria, setFilterCategoria,
-  filterGroup, setFilterGroup,
-  sortBy, setSortBy,
+  query,          onQueryChange,
+  filterCategoria, onCategoriaChange,
+  filterGroup,    onGroupChange,
+  sortBy,         onSortByChange,
   categorie,
   groups,
   onNewClient,
@@ -31,7 +31,7 @@ export function FiltersSidebar({
         <Input
           placeholder="Nome cliente..."
           value={query}
-          onChange={e => setQuery(e.target.value)}
+          onChange={e => onQueryChange(e.target.value)}
           className="w-full"
         />
       </FilterSection>
@@ -42,7 +42,7 @@ export function FiltersSidebar({
             <FilterBtn
               key={cat}
               active={filterCategoria === cat}
-              onClick={() => setFilterCategoria(cat)}
+              onClick={() => onCategoriaChange(cat)}
             >
               {cat.charAt(0).toUpperCase() + cat.slice(1)}
             </FilterBtn>
@@ -52,14 +52,14 @@ export function FiltersSidebar({
 
       {groups.length > 0 && (
         <FilterSection label="GRUPPO">
-          <FilterBtn active={filterGroup === null} onClick={() => setFilterGroup(null)}>
+          <FilterBtn active={filterGroup === null} onClick={() => onGroupChange(null)}>
             Tutti
           </FilterBtn>
           {groups.map(g => (
             <FilterBtn
               key={g.id}
               active={filterGroup === g.id}
-              onClick={() => setFilterGroup(g.id)}
+              onClick={() => onGroupChange(g.id)}
             >
               {g.name}
               <span className="ml-1 opacity-40 text-[10px]">({g.clientIds.length})</span>
@@ -70,7 +70,7 @@ export function FiltersSidebar({
 
       <FilterSection label="ORDINA PER">
         {SORT_OPTIONS.map(([val, label]) => (
-          <FilterBtn key={val} active={sortBy === val} onClick={() => setSortBy(val)}>
+          <FilterBtn key={val} active={sortBy === val} onClick={() => onSortByChange(val)}>
             {label}
           </FilterBtn>
         ))}
