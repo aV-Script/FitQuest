@@ -5,8 +5,6 @@ import { WizardProgress } from '../../components/modals/new-client-wizard/Wizard
 import { WizardNav }      from '../../components/modals/new-client-wizard/WizardNav'
 import { StepAnagrafica } from '../../components/modals/new-client-wizard/steps/StepAnagrafica'
 import { StepCategoria }  from '../../components/modals/new-client-wizard/steps/StepCategoria'
-import { StepTest }       from '../../components/modals/new-client-wizard/steps/StepTest'
-import { StepSettings }   from '../../components/modals/new-client-wizard/steps/StepSettings'
 import { StepAccount }    from '../../components/modals/new-client-wizard/steps/StepAccount'
 import { TOTAL_STEPS }    from '../../components/modals/new-client-wizard/wizard.config'
 
@@ -87,24 +85,6 @@ function StepContent({ wizard }) {
     <StepCategoria
       categoria={wizard.categoria}
       setCategoria={wizard.setCategoria}
-    />
-  )
-
-  if (currentStep?.type === 'test') return (
-    <StepTest
-      test={currentTest}
-      tests={wizard.tests}
-      setTests={wizard.setTests}
-      errors={wizard.errors}
-      livePercentile={wizard.livePercentile}
-    />
-  )
-
-  if (currentStep?.type === 'settings') return (
-    <StepSettings
-      settings={wizard.settings}
-      setSettings={wizard.setSettings}
-      groups={wizard.groups}
     />
   )
 

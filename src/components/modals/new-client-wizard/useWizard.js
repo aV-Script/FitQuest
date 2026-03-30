@@ -23,12 +23,11 @@ function calcTestFinalValue(test, tests) {
   return tests[test.key] === '' || isNaN(val) ? null : val
 }
 
-export function useWizard({ trainerId, groups, onAdd, onClose, onAddGroup, onToggleClientGroup }) {
+export function useWizard({ groups, onAdd, onClose, onAddGroup, onToggleClientGroup }) {
   const [step,       setStep]       = useState(0)
   const [anagrafica, setAnagrafica] = useState({ name: '', eta: '', sesso: 'M', peso: '', altezza: '' })
   const [categoria,  setCategoria]  = useState('health')
   const [tests,      setTests]      = useState({})
-  const [settings,   setSettings]   = useState({ sessionsPerWeek: 3, groupId: null, newGroupName: '' })
   const [account,    setAccount]    = useState({ email: '', password: '' })
   const [errors,     setErrors]     = useState({})
   const [loading,    setLoading]    = useState(false)
@@ -159,18 +158,8 @@ export function useWizard({ trainerId, groups, onAdd, onClose, onAddGroup, onTog
         stats:           allStats,
         email:           account.email.trim(),
         password:        account.password,
-        sessionsPerWeek: parseInt(settings.sessionsPerWeek) || 3,
       })
 
-      // ── Gestione gruppo — usa handler passati dall'esterno ────────────────
-      if (newClient?.id) {
-        if (settings.newGroupName.trim()) {
-          const g = await onAddGroup(settings.newGroupName.trim())
-          if (g?.id) await onToggleClientGroup(g.id, newClient.id)
-        } else if (settings.groupId) {
-          await onToggleClientGroup(settings.groupId, newClient.id)
-        }
-      }
 
       onClose()
     } catch (err) {
@@ -178,17 +167,16 @@ export function useWizard({ trainerId, groups, onAdd, onClose, onAddGroup, onTog
       setLoading(false)
       setShowConfirm(false)
     }
-  }, [anagrafica, categoria, tests, allStats, account, settings, onAdd, onClose, onAddGroup, onToggleClientGroup])
+  }, [anagrafica, categoria,  account, onAdd, onClose, onAddGroup, onToggleClientGroup])
 
   return {
-    step, anagrafica, categoria, tests, settings, account, errors, isLoading: loading,
+    step, anagrafica, categoria,  account, errors, isLoading: loading,
     showConfirm, setShowConfirm,
     categoryTests, currentStep, currentTest,
-    livePercentile, allStats, media, rankObj,
+    livePercentile, media, rankObj,
     stepTitle, progressPct,
     isLastStep: step === TOTAL_STEPS - 1,
-    groups,
-    setAnagrafica, setCategoria, setTests, setSettings, setAccount,
+    setAnagrafica, setCategoria, setAccount,
     next, prev,
     handleRequestSubmit,
     handleConfirmSubmit,

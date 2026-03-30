@@ -12,12 +12,6 @@
 export const WIZARD_STEPS = [
   { type: 'anagrafica', title: 'Dati anagrafici' },
   { type: 'categoria',  title: 'Categoria' },
-  { type: 'test',       title: null, index: 0 }, 
-  { type: 'test',       title: null, index: 1 },
-  { type: 'test',       title: null, index: 2 },
-  { type: 'test',       title: null, index: 3 },
-  { type: 'test',       title: null, index: 4 },
-  { type: 'settings',  title: 'Impostazioni allenamento' },
   { type: 'account',   title: 'Account cliente' },
 ]
 

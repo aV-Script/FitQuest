@@ -1,10 +1,10 @@
-import { buildXPUpdate, calcSessionConfig } from '../utils/gamification'
-import { closeSlot }      from '../firebase/services/calendar'
-import { updateClient }   from '../firebase/services/clients'
-import { addNotification } from '../firebase/services/notifications'
+import { buildSessionUpdate } from '../utils/gamification'
+import { closeSlot }          from '../firebase/services/calendar'
+import { updateClient }       from '../firebase/services/clients'
+import { addNotification }    from '../firebase/services/notifications'
 
 /**
- * Chiude una sessione: aggiorna lo slot, assegna XP agli attendees,
+ * Chiude una sessione: aggiorna lo slot, assegna XP e streak agli attendees,
  * invia notifiche a presenti e assenti.
  *
  * @param {object}   slot        — slot da chiudere (deve avere id, date, clientIds)
@@ -16,17 +16,24 @@ export async function closeSessionUseCase(slot, attendeeIds, clients) {
 
   await closeSlot(slot.id, { attendees: attendeeIds, absentees: absenteeIds })
 
+  // Aggiorna XP, streak e log dei presenti, invia notifiche
   await Promise.all(
     attendeeIds.map(async clientId => {
       const client = clients.find(c => c.id === clientId)
       if (!client) return
-      const config     = calcSessionConfig(client.sessionsPerWeek ?? 3)
-      const { update } = buildXPUpdate(client, config.xpPerSession, 'Sessione di allenamento completata')
+
+      const { update, xpGain } = buildSessionUpdate(
+        client,
+        client.baseXP ?? 50,
+        'Sessione di allenamento'
+      )
+
       await updateClient(client.id, update)
+
       if (client.clientAuthUid) {
         await addNotification({
           clientId: client.id,
-          message:  `Sessione del ${slot.date} completata! +${config.xpPerSession} XP`,
+          message:  `Sessione del ${slot.date} completata! +${xpGain} XP (streak ${update.sessionStreak})`,
           date:     new Date().toLocaleDateString('it-IT', { day: '2-digit', month: 'short' }),
           type:     'session',
         })
@@ -34,16 +41,22 @@ export async function closeSessionUseCase(slot, attendeeIds, clients) {
     })
   )
 
+  // Azzera streak degli assenti e invia notifiche
   await Promise.all(
     absenteeIds.map(async clientId => {
       const client = clients.find(c => c.id === clientId)
-      if (!client?.clientAuthUid) return
-      await addNotification({
-        clientId: client.id,
-        message:  `Sessione del ${slot.date} — assenza registrata.`,
-        date:     new Date().toLocaleDateString('it-IT', { day: '2-digit', month: 'short' }),
-        type:     'absence',
-      })
+      if (!client) return
+
+      await updateClient(client.id, { sessionStreak: 0 })
+
+      if (client.clientAuthUid) {
+        await addNotification({
+          clientId: client.id,
+          message:  `Sessione del ${slot.date} — assenza registrata. Streak azzerata.`,
+          date:     new Date().toLocaleDateString('it-IT', { day: '2-digit', month: 'short' }),
+          type:     'absence',
+        })
+      }
     })
   )
 }

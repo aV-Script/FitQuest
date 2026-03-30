@@ -60,7 +60,7 @@ export const CATEGORIE = [
   {
     id:    'athlete',
     label: 'Athlete',
-    color: '#f59e0b',
+    color: '#0066cc',
     desc:  'Atleti agonisti o con alto livello prestativo. Test di performance avanzati.',
   },
 ]
@@ -71,15 +71,18 @@ export function getCategoriaById(id) {
 
 // ── Defaults nuovo cliente ────────────────────────────────────────────────────
 export const NEW_CLIENT_DEFAULTS = {
-  level:           1,
-  rank:            'F',
-  rankColor:       '#6b7280',
-  xp:              0,
-  xpNext:          700,
-  stats:           {},
-  log:             [],
-  campionamenti:   [],
-  sessionsPerWeek: 3,
+  level:              1,
+  rank:               'F',
+  rankColor:          '#6b7280',
+  xp:                 0,
+  xpNext:             700,
+  stats:              {},
+  log:                [],
+  campionamenti:      [],
+  sessionStreak:      0,
+  lastSessionDate:    null,
+  baseXP:             50,
+  maxMonthlySessions: 20,
 }
 
 // ── Costanti gamification ─────────────────────────────────────────────────────

@@ -11,7 +11,7 @@ import { AddSlotModal }                    from './trainer-calendar/AddSlotModal
 import { RecurrenceModal }                 from './trainer-calendar/RecurrenceModal'
 import { useGroups } from '../../hooks/useGroups'
 
-export function TrainerCalendar({ trainerId, clients = [] }) {
+export function TrainerCalendar({ trainerId, clients = [], onRefreshClients }) {
   const {
     slots, isLoading,
     currentDate, view,
@@ -49,7 +49,8 @@ export function TrainerCalendar({ trainerId, clients = [] }) {
   const handleConfirmClose = useCallback(async (attendeeIds) => {
     await handleCloseSlot(closeModal.id, attendeeIds, clients)
     setCloseModal(null)
-  }, [closeModal, handleCloseSlot, clients])
+    onRefreshClients?.()
+  }, [closeModal, handleCloseSlot, clients, onRefreshClients])
 
   const handleSkip = useCallback(async (slotId) => {
     setPopup(null)

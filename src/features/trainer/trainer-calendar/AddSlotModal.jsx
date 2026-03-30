@@ -1,5 +1,4 @@
 import { useState, useMemo, useEffect } from 'react'
-import { calcSessionConfig } from '../../../utils/gamification'
 
 /**
  * Modal per la creazione di una nuova sessione.
@@ -27,19 +26,23 @@ export function AddSlotModal({ date, clients, groups, slots, onClose, onSave }) 
     })
   }
 
+  // Verifica quanti clienti hanno raggiunto il limite mensile
   const overLimitClients = useMemo(() => {
     return selectedClients.filter(clientId => {
       const client = clients.find(c => c.id === clientId)
       if (!client) return false
-      const { monthlySessions } = calcSessionConfig(client.sessionsPerWeek ?? 3)
+
       const year  = new Date(selectedDate).getFullYear()
       const month = new Date(selectedDate).getMonth() + 1
       const from  = `${year}-${String(month).padStart(2,'0')}-01`
       const to    = `${year}-${String(month).padStart(2,'0')}-${new Date(year, month, 0).getDate()}`
+
       const planned = slots.filter(s =>
         s.clientIds.includes(clientId) && s.date >= from && s.date <= to
       ).length
-      return planned >= monthlySessions
+
+      const maxMonthlySessions = client.maxMonthlySessions ?? 20
+      return planned >= maxMonthlySessions
     })
   }, [selectedClients, clients, slots, selectedDate])
 

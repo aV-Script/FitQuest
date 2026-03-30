@@ -1,29 +1,32 @@
 import { useState, useEffect, useMemo } from 'react'
 import { getClientSlots } from '../../firebase/services/calendar'
 import { getMonthRange, calcMonthlyCompletion } from '../calendar/useCalendar'
-import { calcSessionConfig, BONUS_XP_FULL_MONTH } from '../../utils/gamification'
+import { calcStreakPreview } from '../../utils/gamification'
 
 const MONTH_NAMES = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno',
   'Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre']
 const DAY_NAMES = ['Lun','Mar','Mer','Gio','Ven','Sab','Dom']
 
-export function ClientCalendar({ clientId, sessionsPerWeek = 3 }) {
+export function ClientCalendar({ clientId, clients }) {
   const [slots,        setSlots]        = useState([])
   const [currentYear,  setCurrentYear]  = useState(new Date().getFullYear())
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1)
 
   const { from, to } = getMonthRange(currentYear, currentMonth)
-  const { xpPerSession, monthlySessions } = calcSessionConfig(sessionsPerWeek)
 
+  // Ottieni i dati delle sessioni del client
   useEffect(() => {
     if (!clientId) return
     getClientSlots(clientId, from, to).then(setSlots)
   }, [clientId, from, to])
 
+  const client = clients?.find(c => c.id === clientId)
+
+  // Mappa dei giorni del mese per calendario
   const calendarDays = useMemo(() => {
     const firstDay    = new Date(currentYear, currentMonth - 1, 1)
     const lastDay     = new Date(currentYear, currentMonth, 0)
-    const startOffset = (firstDay.getDay() + 6) % 7
+    const startOffset = (firstDay.getDay() + 6) % 7 // Lun = 0
     const days = []
     for (let i = 0; i < startOffset; i++) days.push(null)
     for (let d = 1; d <= lastDay.getDate(); d++) {
@@ -37,7 +40,13 @@ export function ClientCalendar({ clientId, sessionsPerWeek = 3 }) {
   const today = new Date().toISOString().slice(0, 10)
 
   const prevMonth = () => setCurrentMonth(m => { if (m === 1) { setCurrentYear(y => y-1); return 12 } return m-1 })
-  const nextMonth = () => setCurrentMonth(m => { if (m === 12) { setCurrentYear(y => y+1); return 1  } return m+1 })
+  const nextMonth = () => setCurrentMonth(m => { if (m === 12) { setCurrentYear(y => y+1); return 1 } return m+1 })
+
+  // Preview XP in base allo streak attuale
+  const previewXP = useMemo(() => {
+    if (!client) return 0
+    return calcStreakPreview(client).xp
+  }, [client])
 
   return (
     <div className="flex flex-col gap-4">
@@ -67,13 +76,6 @@ export function ClientCalendar({ clientId, sessionsPerWeek = 3 }) {
             <div className="h-full rounded-full transition-[width] duration-700"
               style={{ width: `${pct}%`, background: pct === 100 ? '#34d399' : pct >= 50 ? '#f59e0b' : '#f87171' }} />
           </div>
-          <div className="flex justify-between mt-1.5">
-            <span className="font-body text-[11px] text-white/30">{xpPerSession * completed} XP guadagnati</span>
-            {pct === 100
-              ? <span className="font-display text-[10px] text-emerald-400">+{BONUS_XP_FULL_MONTH} XP bonus!</span>
-              : <span className="font-body text-[11px] text-white/20">Mese completo: +{BONUS_XP_FULL_MONTH} XP</span>
-            }
-          </div>
         </div>
       )}
 
@@ -92,6 +94,9 @@ export function ClientCalendar({ clientId, sessionsPerWeek = 3 }) {
             const isCompleted = hasSlots && cell.slots.every(s => s.attendees?.includes(clientId))
             const isPlanned   = hasSlots && !isCompleted
 
+            // Stima XP giorno (preview)
+            const dayXP = client && hasSlots && isPlanned ? calcStreakPreview(client).xp : 0
+
             return (
               <div key={cell.dateStr}
                 className="rounded-[3px] flex flex-col items-center justify-center gap-0.5 py-2 min-h-[44px]"
@@ -108,6 +113,9 @@ export function ClientCalendar({ clientId, sessionsPerWeek = 3 }) {
                 )}
                 {isCompleted && <div className="w-1 h-1 rounded-full bg-emerald-400" />}
                 {isPlanned   && <div className="w-1 h-1 rounded-full bg-blue-400 opacity-60" />}
+                {dayXP > 0 && isPlanned && (
+                  <span className="font-display text-[8px] text-emerald-400">+{dayXP} XP</span>
+                )}
               </div>
             )
           })}

@@ -6,23 +6,74 @@ import {
 } from '../constants'
 import { calcStatMedia } from './percentile'
 
-// ── Configurazione sessioni ───────────────────────────────────────────────────
-export const MONTHLY_XP_TARGET   = 500
-export const BONUS_XP_FULL_MONTH = 200
-export const WEEKS_PER_MONTH     = 4.33
+// ── Streak sessioni ───────────────────────────────────────────────────────────
+// La streak conta sessioni consecutive chiuse con presenza.
+// Sale di 1 a ogni sessione completata, si azzera se il cliente è assente.
 
-/**
- * Calcola la configurazione sessioni dato il numero di sessioni settimanali.
- * Spostato da useCalendar — è logica di business, non logica di hook.
- */
-export function calcSessionConfig(sessionsPerWeek) {
-  const freq        = Math.max(1, Math.min(7, Math.round(sessionsPerWeek)))
-  const monthlySess = Math.round(freq * WEEKS_PER_MONTH)
-  const xpPerSess   = Math.round(MONTHLY_XP_TARGET / monthlySess)
-  return { sessionsPerWeek: freq, monthlySessions: monthlySess, xpPerSession: xpPerSess }
+/** Streak dopo una presenza confermata. */
+export function updateSessionStreak(client) {
+  return (client.sessionStreak ?? 0) + 1
 }
 
-const XP_PER_CAMPIONAMENTO  = 50
+/** Anteprima streak per la UI (prima di confermare). */
+export function calcStreakPreview(client) {
+  return (client.sessionStreak ?? 0) + 1
+}
+
+/**
+ * Calcola EXP per sessione basata SOLO su streak
+ */
+export function calcSessionXP(baseXP, streak = 0) {
+  const multiplier = 1 + Math.min(streak * 0.1, 0.5) // max +50%
+  return Math.round(baseXP * multiplier)
+}
+
+
+/**
+ * Costruisce l'update dopo una sessione
+ * @param {object} client
+ * @param {number} baseXP
+ * @param {string} label (es. "Allenamento forza")
+ */
+export function buildSessionUpdate(client, baseXP, label = 'Sessione') {
+  const todayDate = new Date()
+  const todayStr = todayDate.toLocaleDateString('it-IT', {
+    day: '2-digit',
+    month: 'short'
+  })
+
+  const streak = updateSessionStreak(client, todayDate)
+
+  const xpGain = calcSessionXP(baseXP, streak)
+
+  const logEntry = {
+    date: todayStr,
+    action: `${label} (streak ${streak})`,
+    xp: xpGain
+  }
+
+  const log = [logEntry, ...(client.log ?? [])].slice(0, LOG_MAX_ENTRIES)
+
+  const { xp, xpNext, level } = calcLevelProgression(
+    (client.xp ?? 0) + xpGain,
+    client.xpNext,
+    client.level
+  )
+
+  return {
+    update: {
+      xp,
+      xpNext,
+      level,
+      sessionStreak: streak,
+      lastSessionDate: todayDate.toISOString(),
+      log
+    },
+    xpGain,
+    streak
+  }
+}
+
 const MAX_CAMPIONAMENTI     = 50
 
 /**
@@ -65,10 +116,84 @@ export function buildXPUpdate(client, xpToAdd, note) {
  * @param {object} testValues — valori grezzi dei test eseguiti
  * @returns {{ update: object, campionamento: object }}
  */
+/**
+ * Calcola il patch da applicare al cliente dopo un campionamento.
+ * Aggiorna stats, rank, media, campionamenti, log, xp e level.
+ * Sistema EXP stile RPG con:
+ * - miglioramenti proporzionali
+ * - bonus streak
+ * - bonus record personale
+ */
 export function buildCampionamentoUpdate(client, newStats, testValues) {
   const media   = calcStatMedia(newStats)
   const rankObj = getRankFromMedia(media)
   const today   = new Date().toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })
+
+  const prevStats = client.campionamenti?.[0]?.stats
+
+  let xpGain = 0
+  let improved = false
+
+  if (prevStats) {
+    let totalImprovement = 0
+    let improvedStatsCount = 0
+    let recordBonus = 0
+
+    Object.keys(newStats).forEach(key => {
+      const prev = prevStats[key] ?? 0
+      const curr = newStats[key] ?? 0
+      const diff = curr - prev
+
+      if (diff > 0) {
+        improved = true
+        improvedStatsCount++
+        totalImprovement += diff
+
+        const bestEver = Math.max(
+          ...((client.campionamenti ?? []).map(c => c.stats?.[key] ?? 0))
+        )
+
+        if (curr > bestEver) {
+          recordBonus += 5
+        }
+      }
+    })
+
+    const BASE_SCALE = 1.2
+    xpGain = totalImprovement * BASE_SCALE
+    xpGain += improvedStatsCount * 2
+    xpGain += recordBonus
+
+    let streak = 0
+
+    for (const c of client.campionamenti ?? []) {
+      const prev = c.stats
+      const next = client.campionamenti?.[streak + 1]?.stats
+      if (!next) break
+
+      const hasImprovement = Object.keys(prev).some(k => (prev[k] ?? 0) > (next[k] ?? 0))
+      if (hasImprovement) streak++
+      else break
+    }
+
+    if (improved) {
+      streak += 1 // includi questo campionamento
+
+      const STREAK_MULTIPLIER = 1 + Math.min(streak * 0.1, 0.5) 
+      // max +50%
+
+      xpGain *= STREAK_MULTIPLIER
+    }
+
+    // 🔹 Soft minimum (se c'è miglioramento)
+    if (improved) {
+      xpGain = Math.max(10, xpGain)
+    } else {
+      xpGain = 0
+    }
+
+    xpGain = Math.round(xpGain)
+  }
 
   const campionamento = { date: today, stats: newStats, tests: testValues, media }
   const campionamenti = [campionamento, ...(client.campionamenti ?? [])].slice(0, MAX_CAMPIONAMENTI)
@@ -82,19 +207,31 @@ export function buildCampionamentoUpdate(client, newStats, testValues) {
     })
     .join(' · ')
 
-  const logEntry = { date: today, action: `Campionamento — ${valStr}`, xp: XP_PER_CAMPIONAMENTO }
-  const log      = [logEntry, ...(client.log ?? [])].slice(0, LOG_MAX_ENTRIES)
+  const logEntry = {
+    date: today,
+    action: `Campionamento — ${valStr}`,
+    xp: xpGain
+  }
+
+  const log = [logEntry, ...(client.log ?? [])].slice(0, LOG_MAX_ENTRIES)
 
   const { xp, xpNext, level } = calcLevelProgression(
-    (client.xp ?? 0) + XP_PER_CAMPIONAMENTO,
+    (client.xp ?? 0) + xpGain,
     client.xpNext,
     client.level
   )
 
   return {
     update: {
-      stats: newStats, rank: rankObj.label, rankColor: rankObj.color,
-      media, campionamenti, log, xp, xpNext, level,
+      stats: newStats,
+      rank: rankObj.label,
+      rankColor: rankObj.color,
+      media,
+      campionamenti,
+      log,
+      xp,
+      xpNext,
+      level,
     },
     campionamento,
   }

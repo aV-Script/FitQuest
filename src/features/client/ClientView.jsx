@@ -7,7 +7,6 @@ import { ClientShell }                    from './client-view/ClientShell'
 import { ClientDashboardPage }            from './client-view/ClientDashboardPage'
 import { ClientProfilePage }              from './client-view/ClientProfilePage'
 import { ClientCalendar }                 from './ClientCalendar'
-import { PlayerCard }                     from './PlayerCard'
 import { NotificationsPanel }             from '../notification/NotificationsPanel'
 
 // Mappa pagina → componente
@@ -19,7 +18,7 @@ const PAGES = {
 
 /**
  * Entry point dell'area cliente.
- * Gestisce fetch, navigazione, notifiche e player card.
+ * Gestisce fetch, navigazione, notifiche
  */
 export default function ClientView({ clientId }) {
   const { client, loading } = useClient(clientId)
@@ -44,10 +43,6 @@ export default function ClientView({ clientId }) {
   )
   if (!client) return <FullScreenMsg>Profilo non trovato.</FullScreenMsg>
 
-  // Player card — vista a schermo intero
-  if (view === 'card') {
-    return <PlayerCard client={client} onEnter={() => setView('dashboard')} />
-  }
 
   return (
     <ClientShell

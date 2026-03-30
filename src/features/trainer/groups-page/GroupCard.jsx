@@ -30,30 +30,6 @@ export function GroupCard({ group, clients, onClick }) {
           </div>
         </div>
 
-        {/* Avatar clienti */}
-        {groupClients.length > 0 && (
-          <div className="flex items-center shrink-0 ml-3">
-            <div className="flex -space-x-2">
-              {groupClients.map(c => (
-                <div
-                  key={c.id}
-                  className="w-7 h-7 rounded-full flex items-center justify-center border-2 border-[#080c12]"
-                  style={{ background: 'rgba(15,214,90,0.15)' }}
-                >
-                  <span className="font-display text-[10px]" style={{ color: '#0fd65a' }}>
-                    {c.name?.[0]?.toUpperCase()}
-                  </span>
-                </div>
-              ))}
-            </div>
-            {remaining > 0 && (
-              <span className="font-display text-[10px] text-white/30 ml-2">
-                +{remaining}
-              </span>
-            )}
-          </div>
-        )}
-
         <span className="text-white/20 text-[16px] group-hover:text-white/50 transition-colors ml-3">
           ›
         </span>

@@ -17,6 +17,7 @@ function TrainerLayout({ user }) {
   const { page, selectedClient, navigateTo, deselectClient } = useTrainerNav()
   const {
     clients, isLoading, fetchError,
+    fetchClients,
     handleAddClient, handleCampionamento, handleDeleteClient,
   } = useClients(user.uid)
   const CurrentPage = PAGES[page] ?? PAGES.clients
@@ -39,6 +40,7 @@ function TrainerLayout({ user }) {
           clientsLoading={isLoading}
           clientsError={fetchError}
           onAddClient={handleAddClient}
+          onRefreshClients={fetchClients}
         />
       )}
     </TrainerShell>

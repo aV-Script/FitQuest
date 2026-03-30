@@ -1,4 +1,3 @@
-import { calcSessionConfig } from '../../../utils/gamification'
 import { SLOT_STATUS } from '../../../constants/slotStatus'
 
 const STATUS_COLORS = {
@@ -15,8 +14,7 @@ const STATUS_LABELS = {
 
 /**
  * Card singolo slot nella vista giornaliera.
- * Il nuovo modello usa status + attendees + absentees.
- * Le azioni (chiudi, elimina) passano attraverso SlotPopup al click.
+ * Mostra lo status, i clienti presenti/assenti e streak + XP.
  */
 export function SlotCard({ slot, clients, onClick }) {
   const status      = slot.status ?? SLOT_STATUS.PLANNED
@@ -64,7 +62,6 @@ export function SlotCard({ slot, clients, onClick }) {
           const client     = clients.find(c => c.id === clientId)
           const isPresent  = slot.attendees?.includes(clientId)
           const isAbsent   = slot.absentees?.includes(clientId)
-          const xpPerSession = calcSessionConfig(client?.sessionsPerWeek ?? 3).xpPerSession
 
           return (
             <div
@@ -106,7 +103,7 @@ export function SlotCard({ slot, clients, onClick }) {
 
               {isPresent && (
                 <span className="font-display text-[10px] text-emerald-400">
-                  +{xpPerSession} XP
+                  +{client?.xpPerSession ?? 0} XP {client?.streak ? `· Streak ${client.streak}` : ''}
                 </span>
               )}
               {isAbsent && (

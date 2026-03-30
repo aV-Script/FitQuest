@@ -1,9 +1,6 @@
 import { useState, useEffect } from 'react'
-import { calcSessionConfig } from '../../../utils/gamification'
-/**
- * Modal per la chiusura di una sessione.
- * Il trainer marca le presenze — XP assegnata solo ai presenti.
- */
+import { calcSessionXP, calcStreakPreview } from '../../../utils/gamification'
+
 export function CloseSessionModal({ slot, clients, onClose, onConfirm }) {
   const slotClients = slot.clientIds
     .map(id => clients.find(c => c.id === id))
@@ -25,6 +22,17 @@ export function CloseSessionModal({ slot, clients, onClose, onConfirm }) {
   const absentCount  = slot.clientIds.length - attendees.length
   const presentCount = attendees.length
 
+  // Preview XP e streak per UI
+  const calcClientPreview = (client) => {
+    const streak = calcStreakPreview(client)
+    const xp = calcSessionXP(client.baseXP ?? 50, streak)
+    return { xp, streak }
+  }
+
+  const handleConfirm = () => {
+    onConfirm(attendees)
+  }
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center px-4"
@@ -36,7 +44,11 @@ export function CloseSessionModal({ slot, clients, onClose, onConfirm }) {
         aria-modal="true"
         aria-labelledby="close-session-title"
         className="rounded-[4px] p-6 w-full max-w-sm"
-        style={{ background: '#0d1520', border: '1px solid rgba(15,214,90,0.15)', boxShadow: '0 20px 60px rgba(0,0,0,0.8)' }}
+        style={{
+          background: '#0d1520',
+          border: '1px solid rgba(15,214,90,0.15)',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.8)'
+        }}
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
@@ -58,6 +70,8 @@ export function CloseSessionModal({ slot, clients, onClose, onConfirm }) {
         <div className="flex flex-col gap-2 mb-5">
           {slotClients.map(client => {
             const isPresent = attendees.includes(client.id)
+            const { xp, streak } = calcClientPreview(client)
+
             return (
               <button
                 key={client.id}
@@ -68,7 +82,6 @@ export function CloseSessionModal({ slot, clients, onClose, onConfirm }) {
                   : { background: 'rgba(248,113,113,0.06)', borderColor: '#f8717133' }
                 }
               >
-                {/* Icona presenza */}
                 <div
                   className="w-6 h-6 rounded-[3px] flex items-center justify-center shrink-0"
                   style={{ background: isPresent ? '#34d39922' : '#f8717122' }}
@@ -79,12 +92,14 @@ export function CloseSessionModal({ slot, clients, onClose, onConfirm }) {
                 </div>
 
                 <div className="flex-1">
-                  <div className="font-body text-[13px] text-white/80">{client.name}</div>
+                  <div className="font-body text-[13px] text-white/80">
+                    {client.name}
+                  </div>
                   <div
                     className="font-display text-[10px] mt-0.5"
                     style={{ color: isPresent ? '#34d399' : '#f87171' }}
                   >
-                    {isPresent ? `+${calcXP(client)} XP` : 'Assente'}
+                    {isPresent ? `+${xp} XP · streak ${streak}` : 'Assente'}
                   </div>
                 </div>
 
@@ -102,7 +117,10 @@ export function CloseSessionModal({ slot, clients, onClose, onConfirm }) {
         {/* Riepilogo */}
         <div
           className="rounded-[3px] px-4 py-3 mb-5 flex items-center justify-between"
-          style={{ background: 'rgba(13,21,32,0.9)', border: '1px solid rgba(15,214,90,0.1)' }}
+          style={{
+            background: 'rgba(13,21,32,0.9)',
+            border: '1px solid rgba(15,214,90,0.1)'
+          }}
         >
           <div className="flex items-center gap-3">
             <span className="font-display text-[12px] text-emerald-400">
@@ -128,11 +146,15 @@ export function CloseSessionModal({ slot, clients, onClose, onConfirm }) {
           >
             ANNULLA
           </button>
+
           <button
-            onClick={() => onConfirm(attendees)}
+            onClick={handleConfirm}
             disabled={presentCount === 0 && slotClients.length > 0}
             className="flex-1 py-2.5 rounded-[3px] font-display text-[12px] cursor-pointer border-0 transition-opacity hover:opacity-85 disabled:opacity-40"
-            style={{ background: 'linear-gradient(135deg, #34d399, #059669)', color: '#fff' }}
+            style={{
+              background: 'linear-gradient(135deg, #34d399, #059669)',
+              color: '#fff'
+            }}
           >
             CHIUDI SESSIONE
           </button>
@@ -142,7 +164,3 @@ export function CloseSessionModal({ slot, clients, onClose, onConfirm }) {
   )
 }
 
-function calcXP(client) {
-  const { xpPerSession } = calcSessionConfig(client.sessionsPerWeek ?? 3)
-  return xpPerSession
-}

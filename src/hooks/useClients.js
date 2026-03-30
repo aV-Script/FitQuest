@@ -16,7 +16,7 @@ export function useClients(trainerId) {
   const toast                 = useToast()
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
-  useEffect(() => {
+  const fetchClients = useCallback(() => {
     if (!trainerId) return
     setLoading(true)
     setError(null)
@@ -25,6 +25,8 @@ export function useClients(trainerId) {
       .catch(err  => setError(err.message))
       .finally(()  => setLoading(false))
   }, [trainerId])
+
+  useEffect(() => { fetchClients() }, [fetchClients])
 
   // ── Helpers ────────────────────────────────────────────────────────────────
   const updateLocal = useCallback((id, updater) => {
@@ -110,6 +112,7 @@ export function useClients(trainerId) {
     clients,
     isLoading: loading,
     fetchError: error,
+    fetchClients,
     handleAddClient,
     handleCampionamento,
     handleAddXP,

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { getTestsForCategoria, CATEGORIE } from '../../constants'
 
-const CATEGORY_COLORS = { health: '#34d399', active: '#00c8ff', athlete: '#f59e0b' }
+const CATEGORY_COLORS = { health: '#34d399', active: '#00c8ff', athlete: '#0066cc' }
 
 export function TestGuidePage() {
   const [selectedCat,  setSelectedCat]  = useState('health')
