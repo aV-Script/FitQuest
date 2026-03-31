@@ -1,8 +1,8 @@
-import { useState, useMemo, useCallback } from 'react'
-import { WIZARD_STEPS, TOTAL_STEPS }      from './wizard.config'
+import { useState, useMemo, useCallback }   from 'react'
+import { getWizardSteps, TOTAL_STEPS_MAP } from './wizard.config'
 import { getTestsForCategoria, applyFormula, getRankFromMedia } from '../../../constants'
-import { calcPercentile, calcStatMedia }  from '../../../utils/percentile'
-import { getFirebaseErrorMessage }        from '../../../utils/firebaseErrors'
+import { calcPercentile, calcStatMedia }   from '../../../utils/percentile'
+import { getFirebaseErrorMessage }         from '../../../utils/firebaseErrors'
 import { validateEmail, validatePassword, validateAge, validateRequired, validateNumber } from '../../../utils/validation'
 
 /**
@@ -24,14 +24,18 @@ function calcTestFinalValue(test, tests) {
 }
 
 export function useWizard({ groups, onAdd, onClose, onAddGroup, onToggleClientGroup }) {
-  const [step,       setStep]       = useState(0)
-  const [anagrafica, setAnagrafica] = useState({ name: '', eta: '', sesso: 'M', peso: '', altezza: '' })
-  const [categoria,  setCategoria]  = useState('health')
-  const [tests,      setTests]      = useState({})
-  const [account,    setAccount]    = useState({ email: '', password: '' })
-  const [errors,     setErrors]     = useState({})
-  const [loading,    setLoading]    = useState(false)
+  const [step,        setStep]        = useState(0)
+  const [anagrafica,  setAnagrafica]  = useState({ name: '', eta: '', sesso: 'M', peso: '', altezza: '' })
+  const [profileType, setProfileType] = useState('tests_only')
+  const [categoria,   setCategoria]   = useState('health')
+  const [tests,       setTests]       = useState({})
+  const [account,     setAccount]     = useState({ email: '', password: '' })
+  const [errors,      setErrors]      = useState({})
+  const [loading,     setLoading]     = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
+
+  const WIZARD_STEPS = useMemo(() => getWizardSteps(profileType), [profileType])
+  const TOTAL_STEPS  = TOTAL_STEPS_MAP[profileType]
 
   const categoryTests = getTestsForCategoria(categoria)
   const currentStep   = WIZARD_STEPS[step]
@@ -84,26 +88,6 @@ export function useWizard({ groups, onAdd, onClose, onAddGroup, onToggleClientGr
     return Object.keys(e).length === 0
   }, [anagrafica])
 
-  const validateTest = useCallback(() => {
-    if (!currentTest) return true
-    if (currentTest.variables) {
-      const e = {}
-      currentTest.variables.forEach(v => {
-        if (tests[v.key] === '' || isNaN(Number(tests[v.key])))
-          e[v.key] = 'Inserisci un valore valido'
-      })
-      setErrors(e)
-      return Object.keys(e).length === 0
-    }
-    const val = Number(tests[currentTest.key])
-    if (tests[currentTest.key] === '' || isNaN(val)) {
-      setErrors({ [currentTest.key]: 'Inserisci un valore valido' })
-      return false
-    }
-    setErrors({})
-    return true
-  }, [currentTest, tests])
-
   const validateAccount = useCallback(() => {
     const email    = validateEmail(account.email)
     const password = validatePassword(account.password)
@@ -117,22 +101,9 @@ export function useWizard({ groups, onAdd, onClose, onAddGroup, onToggleClientGr
   // ── Navigazione ───────────────────────────────────────────────────────────
   const next = useCallback(() => {
     if (currentStep?.type === 'anagrafica' && !validateAnagrafica()) return
-    if (currentStep?.type === 'test') {
-      if (!validateTest()) return
-      if (currentTest?.variables && currentTest?.formulaType) {
-        const varsValues = {}
-        currentTest.variables.forEach(v => {
-          varsValues[v.key] = Number(tests[v.key])
-        })
-        const finalVal = applyFormula(currentTest, varsValues)
-        if (finalVal !== null) {
-          setTests(p => ({ ...p, [currentTest.key]: finalVal }))
-        }
-      }
-    }
     setErrors({})
     setStep(s => s + 1)
-  }, [currentStep, currentTest, tests, validateAnagrafica, validateTest])
+  }, [currentStep, validateAnagrafica])
 
   const prev = useCallback(() => {
     setErrors({})
@@ -148,35 +119,36 @@ export function useWizard({ groups, onAdd, onClose, onAddGroup, onToggleClientGr
   const handleConfirmSubmit = useCallback(async () => {
     setLoading(true)
     try {
-      const newClient = await onAdd({
+      await onAdd({
         ...anagrafica,
-        eta:             parseInt(anagrafica.eta),
-        peso:            parseFloat(anagrafica.peso),
-        altezza:         parseFloat(anagrafica.altezza),
-        categoria,
-        testValues:      { ...tests },
-        stats:           allStats,
-        email:           account.email.trim(),
-        password:        account.password,
+        eta:        parseInt(anagrafica.eta),
+        peso:       parseFloat(anagrafica.peso),
+        altezza:    parseFloat(anagrafica.altezza),
+        categoria:  profileType === 'bia_only' ? null : categoria,
+        profileType,
+        email:      account.email.trim(),
+        password:   account.password,
       })
-
-
       onClose()
     } catch (err) {
       setErrors({ email: getFirebaseErrorMessage(err, 'Impossibile creare il cliente') })
       setLoading(false)
       setShowConfirm(false)
     }
-  }, [anagrafica, categoria,  account, onAdd, onClose, onAddGroup, onToggleClientGroup])
+  }, [anagrafica, profileType, categoria, account, onAdd, onClose])
 
   return {
-    step, anagrafica, categoria,  account, errors, isLoading: loading,
+    step, anagrafica, profileType, categoria, account, errors, isLoading: loading,
     showConfirm, setShowConfirm,
     categoryTests, currentStep, currentTest,
     livePercentile, media, rankObj,
     stepTitle, progressPct,
     isLastStep: step === TOTAL_STEPS - 1,
     setAnagrafica, setCategoria, setAccount,
+    setProfileType: (type) => {
+      setProfileType(type)
+      if (type === 'bia_only') setTests({})
+    },
     next, prev,
     handleRequestSubmit,
     handleConfirmSubmit,

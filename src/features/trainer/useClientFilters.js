@@ -1,14 +1,31 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo }  from 'react'
+import { calcBiaScore }        from '../../utils/bia'
 
 /**
  * Gestisce filtri e ordinamento della lista clienti.
  * Separato da ClientsPage per mantenere il componente focalizzato sul render.
  */
 
+/**
+ * Score effettivo per ordinamento rank — dipende dal profileType:
+ * - tests_only → media test
+ * - bia_only   → BIA score
+ * - complete   → media dei due score
+ */
+function getEffectiveScore(client) {
+  const profileType = client.profileType ?? 'tests_only'
+  const testScore   = client.media ?? 0
+  const biaScore    = calcBiaScore(client.lastBia, client.sesso, client.eta)
+
+  if (profileType === 'bia_only')  return biaScore
+  if (profileType === 'complete')  return Math.round((testScore + biaScore) / 2)
+  return testScore
+}
+
 const SORT_FNS = {
   name:  (a, b) => a.name.localeCompare(b.name),
   level: (a, b) => (b.level ?? 1) - (a.level ?? 1),
-  rank:  (a, b) => (b.media ?? 0) - (a.media ?? 0),
+  rank:  (a, b) => getEffectiveScore(b) - getEffectiveScore(a),
 }
 
 export function useClientFilters(clients, groups) {

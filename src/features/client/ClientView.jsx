@@ -8,6 +8,7 @@ import { ClientDashboardPage }            from './client-view/ClientDashboardPag
 import { ClientProfilePage }              from './client-view/ClientProfilePage'
 import { ClientCalendar }                 from './ClientCalendar'
 import { NotificationsPanel }             from '../notification/NotificationsPanel'
+import { calcBiaScore, getBiaRankFromScore } from '../../utils/bia'
 
 // Mappa pagina → componente
 const PAGES = {
@@ -22,7 +23,14 @@ const PAGES = {
  */
 export default function ClientView({ clientId }) {
   const { client, loading } = useClient(clientId)
-  const { rankObj, color }  = useClientRank(client)
+  const { rankObj: testRankObj, color: testColor } = useClientRank(client)
+
+  const profileType = client?.profileType ?? 'tests_only'
+  const biaScore    = calcBiaScore(client?.lastBia, client?.sesso, client?.eta)
+  const biaRankObj  = biaScore > 0 ? getBiaRankFromScore(biaScore) : { label: 'F', color: '#4a5568' }
+
+  const rankObj = profileType === 'bia_only' ? biaRankObj : testRankObj
+  const color   = profileType === 'bia_only' ? biaRankObj.color : testColor
   const { notifications, unreadCount, markAllRead, remove } = useNotifications(clientId)
 
   const [view,        setView]        = useState('dashboard') // 'dashboard' | 'card'
@@ -57,6 +65,7 @@ export default function ClientView({ clientId }) {
           client={client}
           color={color}
           rankObj={rankObj}
+          biaRankObj={profileType === 'complete' ? biaRankObj : null}
         />
       )}
 

@@ -1,5 +1,6 @@
 import { TESTS }          from './tests.js'
 import { applyFormula }   from './formulas.js'
+export { PROFILE_CATEGORIES, getProfileCategory, BIA_PARAMS, BIA_EMPTY } from './bia'
 
 // ── Test ──────────────────────────────────────────────────────────────────────
 export const ALL_TESTS = TESTS
@@ -83,6 +84,11 @@ export const NEW_CLIENT_DEFAULTS = {
   lastSessionDate:    null,
   baseXP:             50,
   maxMonthlySessions: 20,
+  sessionsPerWeek:    3,
+  categoria:          'tests_only',
+  profileType:        'tests_only',  // 'tests_only' | 'bia_only' | 'complete'
+  biaHistory:         [],
+  lastBia:            null,
 }
 
 // ── Costanti gamification ─────────────────────────────────────────────────────

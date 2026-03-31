@@ -1,53 +1,56 @@
-import { useState } from 'react'
-import {
-  LineChart, Line, XAxis, YAxis, Tooltip,
-  ResponsiveContainer, CartesianGrid
-} from 'recharts'
-import { Card, SectionLabel } from '../../components/ui'
-import { getStatsConfig }     from '../../constants'
+import { useState }                                    from 'react'
+import { LineChart, Line, XAxis, YAxis, Tooltip,
+         ResponsiveContainer, CartesianGrid }          from 'recharts'
+import { SectionLabel }                                from '../../../components/ui'
+import { BIA_PARAMS }                                  from '../../../constants/bia'
 
-export function StatsChart({ campionamenti, color, categoria = 'health' }) {
-  const config = getStatsConfig(categoria)
+/**
+ * Grafico andamento storico BIA.
+ */
+export function BiaHistoryChart({ biaHistory, color }) {
+  const displayParams  = BIA_PARAMS.filter(p => !p.computed)
+  const [selectedParam, setSelectedParam] = useState(displayParams[0].key)
 
-  // ── Hook prima di qualsiasi return condizionale ───────────────────────────
-  const [selectedStat, setSelectedStat] = useState(config[0]?.stat ?? '')
-
-  // ── Guard — almeno 2 campionamenti ────────────────────────────────────────
-  if (!campionamenti || campionamenti.length < 2) {
+  if (!biaHistory || biaHistory.length < 2) {
     return (
-      <Card>
-        <SectionLabel>◈ Andamento</SectionLabel>
+      <div
+        className="rounded-[4px] p-5"
+        style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}
+      >
+        <SectionLabel>◈ Andamento BIA</SectionLabel>
         <p className="text-white/20 font-body text-[13px] text-center py-4">
-          Servono almeno 2 campionamenti per visualizzare l'andamento.
+          Servono almeno 2 misurazioni per visualizzare l'andamento.
         </p>
-      </Card>
+      </div>
     )
   }
 
-  const stat      = config.find(s => s.stat === selectedStat)
-  const chartData = [...campionamenti].reverse().map(c => ({
-    name:  c.date,
-    value: c.stats?.[selectedStat] ?? 0,
-    media: c.media ?? 0,
+  const param     = displayParams.find(p => p.key === selectedParam)
+  const chartData = [...biaHistory].reverse().map(b => ({
+    name:  b.date,
+    value: b[selectedParam] ?? 0,
   }))
 
   return (
-    <Card>
-      <SectionLabel>◈ Andamento Statistiche</SectionLabel>
+    <div
+      className="rounded-[4px] p-5"
+      style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}
+    >
+      <SectionLabel>◈ Andamento BIA</SectionLabel>
 
-      {/* Selector stat */}
+      {/* Selector parametro */}
       <div className="flex gap-1.5 flex-wrap mb-4">
-        {config.map(s => (
+        {displayParams.map(p => (
           <button
-            key={s.stat}
-            onClick={() => setSelectedStat(s.stat)}
+            key={p.key}
+            onClick={() => setSelectedParam(p.key)}
             className="px-3 py-1 rounded-[3px] font-display text-[11px] border cursor-pointer transition-all"
-            style={selectedStat === s.stat
+            style={selectedParam === p.key
               ? { background: color + '33', borderColor: color + '55', color }
               : { background: 'transparent', borderColor: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.3)' }
             }
           >
-            {s.label}
+            {p.label}
           </button>
         ))}
       </div>
@@ -64,19 +67,18 @@ export function StatsChart({ campionamenti, color, categoria = 'health' }) {
               tickLine={false}
             />
             <YAxis
-              domain={[0, 100]}
               tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 10, fontFamily: 'Inter' }}
               axisLine={false}
               tickLine={false}
             />
             <Tooltip
-              formatter={(v) => [v, stat?.label]}
+              formatter={(v) => [`${v} ${param?.unit ?? ''}`, param?.label]}
               contentStyle={{
-                background: '#0d1520',
-                border: '1px solid rgba(15,214,90,0.15)',
+                background:   '#0d1520',
+                border:       '1px solid rgba(15,214,90,0.15)',
                 borderRadius: 4,
-                fontFamily: 'Inter',
-                fontSize: 12,
+                fontFamily:   'Inter',
+                fontSize:     12,
               }}
               labelStyle={{ color: 'rgba(255,255,255,0.4)', fontWeight: 400 }}
               itemStyle={{ color, fontWeight: 400 }}
@@ -92,6 +94,6 @@ export function StatsChart({ campionamenti, color, categoria = 'health' }) {
           </LineChart>
         </ResponsiveContainer>
       </div>
-    </Card>
+    </div>
   )
 }

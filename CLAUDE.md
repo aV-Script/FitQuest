@@ -1,769 +1,1744 @@
-# RankEX — Aggiornamento Palette
-
-## Obiettivo
-Aggiorna tutti i file del progetto per rispecchiare
-esattamente i colori del logo RankEX ufficiale.
-
-Leggi CLAUDE.md prima di iniziare.
+Perfetto. Ho tutto quello che serve. Prima dello script, definiamo i range clinici BIA e la logica XP.
 
 ---
 
-## FASE 1 — Aggiorna src/config/theme.js
+## Range clinici BIA per età/sesso
 
-Sostituisci completamente il file con questa palette:
+```js
+// Massa grassa % — OMS/ACSM
+FAT_MASS_RANGES = {
+  M: {
+    '18-39': { excellent: [0,8],   good: [8,15],  normal: [15,20], high: [20,25],  obese: [25,100] },
+    '40-59': { excellent: [0,11],  good: [11,18], normal: [18,22], high: [22,28],  obese: [28,100] },
+    '60+':   { excellent: [0,13],  good: [13,20], normal: [20,25], high: [25,30],  obese: [30,100] },
+  },
+  F: {
+    '18-39': { excellent: [0,20],  good: [20,25], normal: [25,30], high: [30,35],  obese: [35,100] },
+    '40-59': { excellent: [0,23],  good: [23,28], normal: [28,33], high: [33,38],  obese: [38,100] },
+    '60+':   { excellent: [0,25],  good: [25,30], normal: [30,35], high: [35,40],  obese: [40,100] },
+  },
+}
+
+// Acqua corporea % — Bioelectrical Impedance standard
+WATER_RANGES = {
+  M: { low: [0,55], normal: [55,65], optimal: [65,70], high: [70,100] },
+  F: { low: [0,50], normal: [50,60], optimal: [60,65], high: [65,100] },
+}
+
+// Grasso viscerale — scala 1-12 Tanita/InBody
+VISCERAL_RANGES = {
+  optimal: [1,4],   // verde
+  normal:  [5,7],   // giallo
+  high:    [8,10],  // arancio
+  obese:   [11,12], // rosso
+}
+
+// BMI — OMS
+BMI_RANGES = {
+  underweight: [0,18.5],
+  normal:      [18.5,25],
+  overweight:  [25,30],
+  obese:       [30,100],
+}
+
+// Età metabolica — relativa all'età anagrafica
+// se età metabolica < età anagrafica → verde
+// se uguale → giallo
+// se maggiore → rosso
+
+// Massa muscolare e ossea → percentile per sesso/età
+// (tabelle simili a quelle dei test atletici)
+```
+
+---
+
+## Logica XP BIA
+
+```js
+XP_BIA = {
+  first_measurement: 100,  // prima BIA in assoluto
+  improvement:       75,   // almeno 1 parametro migliorato
+  maintenance:       25,   // nessun miglioramento ma nessun peggioramento
+  regression:        0,    // peggioramento generale
+}
+
+// "Miglioramento" = almeno 2 parametri chiave migliorati:
+// fat_mass_percent (↓), muscle_mass_kg (↑), water_percent (↑), visceral_fat (↓)
+```
+
+---
+
+## Wizard — Step categoria aggiornato
+
+```
+Step 1 — Anagrafica
+Step 2 — Categoria profilo ← NUOVO (tests_only/bia_only/complete)
+Step 3-7 — Test atletici (solo se tests_only o complete)
+Step 3-7 — BIA (solo se bia_only) ← NUOVO
+Step 8 — Impostazioni allenamento
+Step 9 — Account
+```
+
+Per `bia_only` i 5 step test diventano 1 step BIA.
+Per `complete` si fanno entrambi — wizard più lungo.
+
+---
+
+Ora lo script completo.
+
+---
+
+**`BIA_FEATURE.md`**
+
+```markdown
+# FitQuest/RankEX — Feature BIA (Bioimpedenziometria)
+
+## Leggi CLAUDE.md prima di iniziare.
+## Esegui le fasi in ordine. Build dopo ogni fase.
+
+---
+
+## FASE 1 — Costanti e tipi
+
+### 1A — Crea src/constants/bia.js
+
 ```js
 /**
- * RankEX Design System — Palette ufficiale
- * Estratta dal logo RankEX Youth Soccer Project.
- *
- * Verde  → R e gemme verdi del logo
- * Ciano  → fulmine elettrico
- * Blu    → freccia della X
- * Metallo → struttura pentagonale
+ * Costanti BIA — Bioimpedenziometria.
+ * Range clinici basati su standard OMS/ACSM/Tanita.
  */
-export const theme = {
-  colors: {
-    // ── Sfondi ──────────────────────────────────────────────
-    background:   '#080c12',   // background profondo del logo
-    surface:      '#0d1520',   // pannelli metallici
-    surfaceAlt:   '#111820',   // texture esagonale
-    surfaceHover: '#161e2e',   // hover state
 
-    // ── Bordi ───────────────────────────────────────────────
-    border:       'rgba(10,215,90,0.15)',   // verde sottile
-    borderHover:  'rgba(10,215,90,0.35)',
-    borderActive: 'rgba(10,215,90,0.6)',
-    borderMetal:  'rgba(138,155,176,0.15)', // metallico
-
-    // ── Testo ───────────────────────────────────────────────
-    text:          '#ffffff',
-    textSecondary: '#c8d4e0',
-    textMuted:     'rgba(200,212,224,0.4)',
-    textDisabled:  'rgba(200,212,224,0.2)',
-
-    // ── Verde (dalla R del logo) ─────────────────────────────
-    green:       '#0fd65a',   // verde corpo
-    greenBright: '#1aff6e',   // verde bordi luminosi
-    greenDark:   '#0a8a3a',   // verde ombra
-    greenGlow:   'rgba(15,214,90,0.15)',
-
-    // ── Ciano/Blu (dal fulmine) ──────────────────────────────
-    cyan:        '#00c8ff',   // ciano elettrico
-    cyanBright:  '#4db8ff',   // alone del fulmine
-    blue:        '#0066cc',   // blu profondo
-    blueGlow:    'rgba(0,200,255,0.15)',
-
-    // ── Metallico (dalla struttura) ──────────────────────────
-    metalLight:  '#8a9bb0',
-    metalMid:    '#4a5568',
-    metalDark:   '#1e2a38',
-
-    // ── Gradienti principali ─────────────────────────────────
-    gradientPrimary:
-      'linear-gradient(135deg, #1aff6e 0%, #0fd65a 30%, #00c8ff 70%, #4db8ff 100%)',
-    gradientGreen:
-      'linear-gradient(135deg, #0a8a3a 0%, #0fd65a 50%, #1aff6e 100%)',
-    gradientCyan:
-      'linear-gradient(135deg, #0066cc 0%, #00c8ff 50%, #4db8ff 100%)',
-    gradientMetal:
-      'linear-gradient(135deg, #1e2a38 0%, #4a5568 50%, #8a9bb0 100%)',
-    gradientSubtle:
-      'linear-gradient(135deg, rgba(15,214,90,0.08) 0%, rgba(0,200,255,0.08) 100%)',
-
-    // ── Glow ────────────────────────────────────────────────
-    glowGreen: 'rgba(15,214,90,0.25)',
-    glowCyan:  'rgba(0,200,255,0.25)',
-    glowMetal: 'rgba(138,155,176,0.1)',
-
-    // ── Stato ───────────────────────────────────────────────
-    success: '#0fd65a',   // verde logo
-    warning: '#f59e0b',
-    error:   '#f87171',
-    info:    '#00c8ff',   // ciano logo
-
-    // ── Decorativo ──────────────────────────────────────────
-    hexGrid:    'rgba(0,200,255,0.04)',  // reticolo esagonale
-    dataLine:   'rgba(15,214,90,0.08)',
+// ── Parametri BIA ─────────────────────────────────────────────
+export const BIA_PARAMS = [
+  {
+    key:       'fatMassPercent',
+    label:     'Massa grassa',
+    unit:      '%',
+    direction: 'inverse',   // meno è meglio
+    icon:      '🔥',
   },
-
-  shadows: {
-    cardGreen:  '0 4px 24px rgba(0,0,0,0.6), 0 0 0 1px rgba(15,214,90,0.1)',
-    cardCyan:   '0 4px 24px rgba(0,0,0,0.6), 0 0 0 1px rgba(0,200,255,0.1)',
-    cardMetal:  '0 4px 24px rgba(0,0,0,0.6), 0 0 0 1px rgba(138,155,176,0.1)',
-    glowGreen:  '0 0 20px rgba(15,214,90,0.3), 0 0 40px rgba(15,214,90,0.15)',
-    glowCyan:   '0 0 20px rgba(0,200,255,0.3), 0 0 40px rgba(0,200,255,0.15)',
-    glowBright: '0 0 60px rgba(15,214,90,0.4), 0 0 20px rgba(0,200,255,0.3)',
-    text:       '0 0 10px rgba(15,214,90,0.5)',
+  {
+    key:       'muscleMassKg',
+    label:     'Massa muscolare',
+    unit:      'kg',
+    direction: 'direct',    // più è meglio
+    icon:      '💪',
   },
-
-  shape: {
-    xs:     '2px',
-    sm:     '3px',
-    md:     '4px',
-    lg:     '6px',
-    xl:     '8px',
-    card:   '4px',
-    button: '3px',
-    badge:  '2px',
+  {
+    key:       'waterPercent',
+    label:     'Acqua corporea',
+    unit:      '%',
+    direction: 'direct',
+    icon:      '💧',
   },
+  {
+    key:       'boneMassKg',
+    label:     'Massa ossea',
+    unit:      'kg',
+    direction: 'direct',
+    icon:      '🦴',
+  },
+  {
+    key:       'bmi',
+    label:     'BMI',
+    unit:      'kg/m²',
+    direction: 'neutral',   // range ottimale centrale
+    icon:      '⚖️',
+    computed:  true,        // calcolato da peso/altezza
+  },
+  {
+    key:       'bmrKcal',
+    label:     'Metabolismo basale',
+    unit:      'kcal',
+    direction: 'neutral',
+    icon:      '🔋',
+  },
+  {
+    key:       'metabolicAge',
+    label:     'Età metabolica',
+    unit:      'anni',
+    direction: 'inverse',   // meglio se < età anagrafica
+    icon:      '⏱️',
+  },
+  {
+    key:       'visceralFat',
+    label:     'Grasso viscerale',
+    unit:      '/12',
+    direction: 'inverse',
+    icon:      '🎯',
+  },
+]
+
+// ── Categorie profilo ─────────────────────────────────────────
+export const PROFILE_CATEGORIES = Object.freeze([
+  {
+    id:    'tests_only',
+    label: 'Solo Test',
+    desc:  'Valutazione atletica con test fisici. Rank basato sulle performance.',
+    color: '#60a5fa',
+    icon:  '🏃',
+    hasTests: true,
+    hasBia:   false,
+  },
+  {
+    id:    'bia_only',
+    label: 'Solo BIA',
+    desc:  'Analisi della composizione corporea con bioimpedenziometria.',
+    color: '#34d399',
+    icon:  '⚡',
+    hasTests: false,
+    hasBia:   true,
+  },
+  {
+    id:    'complete',
+    label: 'Completo',
+    desc:  'Test atletici + BIA. Profilo completo con rank e composizione corporea.',
+    color: '#f59e0b',
+    icon:  '⭐',
+    hasTests: true,
+    hasBia:   true,
+  },
+])
+
+export function getProfileCategory(id) {
+  return PROFILE_CATEGORIES.find(c => c.id === id) ?? PROFILE_CATEGORIES[0]
+}
+
+// ── Range clinici massa grassa % ──────────────────────────────
+export const FAT_MASS_RANGES = {
+  M: {
+    '18-39': { excellent: [0,8],  good: [8,15],  normal: [15,20], high: [20,25],  obese: [25,100] },
+    '40-59': { excellent: [0,11], good: [11,18], normal: [18,22], high: [22,28],  obese: [28,100] },
+    '60+':   { excellent: [0,13], good: [13,20], normal: [20,25], high: [25,30],  obese: [30,100] },
+  },
+  F: {
+    '18-39': { excellent: [0,20], good: [20,25], normal: [25,30], high: [30,35],  obese: [35,100] },
+    '40-59': { excellent: [0,23], good: [23,28], normal: [28,33], high: [33,38],  obese: [38,100] },
+    '60+':   { excellent: [0,25], good: [25,30], normal: [30,35], high: [35,40],  obese: [40,100] },
+  },
+}
+
+// ── Range acqua corporea % ────────────────────────────────────
+export const WATER_RANGES = {
+  M: { low: [0,55],  normal: [55,60], optimal: [60,65], high: [65,100] },
+  F: { low: [0,50],  normal: [50,55], optimal: [55,60], high: [60,100] },
+}
+
+// ── Range grasso viscerale (scala 1-12) ───────────────────────
+export const VISCERAL_RANGES = [
+  { label: 'Ottimale', range: [1,4],   color: '#34d399' },
+  { label: 'Normale',  range: [5,7],   color: '#f59e0b' },
+  { label: 'Alto',     range: [8,10],  color: '#f97316' },
+  { label: 'Obeso',    range: [11,12], color: '#f87171' },
+]
+
+// ── Range BMI — OMS ───────────────────────────────────────────
+export const BMI_RANGES = [
+  { label: 'Sottopeso',    range: [0,18.5],  color: '#60a5fa' },
+  { label: 'Normale',      range: [18.5,25], color: '#34d399' },
+  { label: 'Sovrappeso',   range: [25,30],   color: '#f59e0b' },
+  { label: 'Obeso',        range: [30,100],  color: '#f87171' },
+]
+
+// ── XP per BIA ────────────────────────────────────────────────
+export const XP_BIA = Object.freeze({
+  FIRST_MEASUREMENT: 100,
+  IMPROVEMENT:       75,
+  MAINTENANCE:       25,
+  REGRESSION:        0,
+})
+
+// ── Parametri chiave per calcolo miglioramento ────────────────
+// Un miglioramento conta se almeno 2 di questi migliorano
+export const BIA_KEY_PARAMS = [
+  'fatMassPercent',   // deve scendere
+  'muscleMassKg',     // deve salire
+  'waterPercent',     // deve salire
+  'visceralFat',      // deve scendere
+]
+
+// ── Defaults nuova misurazione BIA ────────────────────────────
+export const BIA_EMPTY = {
+  fatMassPercent: '',
+  muscleMassKg:   '',
+  waterPercent:   '',
+  boneMassKg:     '',
+  bmi:            '',
+  bmrKcal:        '',
+  metabolicAge:   '',
+  visceralFat:    '',
 }
 ```
 
----
+### 1B — Aggiorna src/constants/index.js
 
-## FASE 2 — Aggiorna src/index.css
-
-Sostituisci completamente con:
-```css
-@import "tailwindcss";
-
-/* ── Font ──────────────────────────────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;900&family=Inter:wght@300;400;500;600&display=swap');
-
-/* ── CSS Variables ─────────────────────────────────────────── */
-:root {
-  /* Sfondi */
-  --rx-bg:          #080c12;
-  --rx-surface:     #0d1520;
-  --rx-surface-alt: #111820;
-
-  /* Verde logo */
-  --rx-green:        #0fd65a;
-  --rx-green-bright: #1aff6e;
-  --rx-green-dark:   #0a8a3a;
-  --rx-green-glow:   rgba(15,214,90,0.15);
-
-  /* Ciano/Blu logo */
-  --rx-cyan:       #00c8ff;
-  --rx-cyan-glow:  rgba(0,200,255,0.15);
-  --rx-blue:       #0066cc;
-
-  /* Metallico */
-  --rx-metal:      #8a9bb0;
-  --rx-metal-dark: #1e2a38;
-
-  /* Testo */
-  --rx-text:       #ffffff;
-  --rx-text-muted: rgba(200,212,224,0.4);
-  --rx-border:     rgba(15,214,90,0.12);
-
-  /* Gradienti */
-  --rx-gradient:
-    linear-gradient(135deg, #1aff6e 0%, #0fd65a 30%, #00c8ff 70%, #4db8ff 100%);
-  --rx-gradient-green:
-    linear-gradient(135deg, #0a8a3a, #0fd65a, #1aff6e);
-  --rx-gradient-cyan:
-    linear-gradient(135deg, #0066cc, #00c8ff, #4db8ff);
-}
-
-/* ── Base ──────────────────────────────────────────────────── */
-* { box-sizing: border-box; }
-
-html, body, #root {
-  min-height:               100vh;
-  background:               var(--rx-bg);
-  color:                    var(--rx-text);
-  font-family:              'Inter', sans-serif;
-  -webkit-font-smoothing:   antialiased;
-}
-
-/* ── Scrollbar ─────────────────────────────────────────────── */
-::-webkit-scrollbar       { width: 3px; height: 3px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb {
-  background:    rgba(15,214,90,0.2);
-  border-radius: 2px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(15,214,90,0.4);
-}
-
-/* ── Input ─────────────────────────────────────────────────── */
-.input-base {
-  background:    rgba(15,214,90,0.04);
-  border:        1px solid rgba(15,214,90,0.15);
-  border-radius: 3px;
-  padding:       10px 14px;
-  color:         #ffffff;
-  font-family:   'Inter', sans-serif;
-  font-size:     14px;
-  outline:       none;
-  transition:    border-color 200ms, box-shadow 200ms;
-  width:         100%;
-}
-.input-base:focus {
-  border-color: rgba(15,214,90,0.5);
-  box-shadow:   0 0 0 2px rgba(15,214,90,0.08);
-}
-.input-base::placeholder { color: rgba(255,255,255,0.2); }
-
-/* ── Reticolo esagonale (sfondo decorativo) ────────────────── */
-.rx-hex-bg {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='64'%3E%3Cpath d='M28 2 L54 17 L54 47 L28 62 L2 47 L2 17 Z' fill='none' stroke='rgba(0,200,255,0.06)' stroke-width='1'/%3E%3C/svg%3E");
-  background-size: 56px 64px;
-}
-
-/* ── Grid linee dati ───────────────────────────────────────── */
-.rx-grid-bg {
-  background-image:
-    linear-gradient(rgba(15,214,90,0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(15,214,90,0.03) 1px, transparent 1px);
-  background-size: 40px 40px;
-}
-
-/* ── Glow utilities ────────────────────────────────────────── */
-.rx-glow-green {
-  box-shadow: 0 0 20px rgba(15,214,90,0.25),
-              0 0 40px rgba(15,214,90,0.1);
-}
-.rx-glow-cyan {
-  box-shadow: 0 0 20px rgba(0,200,255,0.25),
-              0 0 40px rgba(0,200,255,0.1);
-}
-
-/* Testo gradiente logo */
-.rx-glow-text {
-  background:              var(--rx-gradient);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip:         text;
-}
-
-/* Solo verde */
-.rx-text-green {
-  background:              var(--rx-gradient-green);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip:         text;
-}
-
-/* Solo ciano */
-.rx-text-cyan {
-  background:              var(--rx-gradient-cyan);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip:         text;
-}
-
-/* ── Animazioni ────────────────────────────────────────────── */
-@keyframes rx-pulse-green {
-  0%, 100% { box-shadow: 0 0 10px rgba(15,214,90,0.2); }
-  50%       { box-shadow: 0 0 25px rgba(15,214,90,0.5); }
-}
-
-@keyframes rx-pulse-cyan {
-  0%, 100% { box-shadow: 0 0 10px rgba(0,200,255,0.2); }
-  50%       { box-shadow: 0 0 25px rgba(0,200,255,0.5); }
-}
-
-@keyframes rx-lightning {
-  0%, 90%, 100% { opacity: 0; }
-  92%, 96%      { opacity: 1; }
-}
-
-@keyframes rx-fadeIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes rx-scanline {
-  0%   { transform: translateY(-100%); opacity: 0.5; }
-  100% { transform: translateY(100vh); opacity: 0; }
-}
-
-.rx-animate-in      { animation: rx-fadeIn 250ms ease forwards; }
-.rx-pulse-green     { animation: rx-pulse-green 2s ease infinite; }
-.rx-pulse-cyan      { animation: rx-pulse-cyan 2s ease infinite; }
-
-/* ── Bordo metallico angolare ──────────────────────────────── */
-.rx-card {
-  background:    rgba(13,21,32,0.9);
-  border:        1px solid rgba(15,214,90,0.12);
-  border-radius: 4px;
-  box-shadow:    0 4px 24px rgba(0,0,0,0.5),
-                 inset 0 1px 0 rgba(138,155,176,0.05);
-}
-
-.rx-card:hover {
-  border-color: rgba(15,214,90,0.25);
-  box-shadow:   0 4px 24px rgba(0,0,0,0.5),
-                0 0 20px rgba(15,214,90,0.08);
-}
-
-/* ── Bottone primario ──────────────────────────────────────── */
-.rx-btn-primary {
-  background:    var(--rx-gradient);
-  border:        none;
-  border-radius: 3px;
-  color:         #ffffff;
-  font-family:   'Montserrat', sans-serif;
-  font-weight:   700;
-  letter-spacing: 0.1em;
-  transition:    opacity 200ms, box-shadow 200ms;
-}
-.rx-btn-primary:hover {
-  opacity:    0.9;
-  box-shadow: 0 0 20px rgba(15,214,90,0.3);
-}
-
-/* ── Badge rank ────────────────────────────────────────────── */
-.rx-badge {
-  font-family:   'Montserrat', sans-serif;
-  font-weight:   700;
-  font-size:     10px;
-  letter-spacing: 0.15em;
-  border-radius: 2px;
-  padding:       2px 8px;
-}
-```
-
----
-
-## FASE 3 — Aggiorna tailwind.config.js
 ```js
-export default {
-  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
-  theme: {
-    extend: {
-      fontFamily: {
-        display: ['Montserrat', 'sans-serif'],
-        body:    ['Inter', 'sans-serif'],
-      },
-      colors: {
-        rx: {
-          bg:           '#080c12',
-          surface:      '#0d1520',
-          green:        '#0fd65a',
-          'green-bright': '#1aff6e',
-          cyan:         '#00c8ff',
-          blue:         '#0066cc',
-          metal:        '#8a9bb0',
-          'metal-dark': '#1e2a38',
-        },
-      },
-      boxShadow: {
-        'glow-green':  '0 0 20px rgba(15,214,90,0.3)',
-        'glow-cyan':   '0 0 20px rgba(0,200,255,0.3)',
-        'glow-bright': '0 0 40px rgba(15,214,90,0.4)',
-        'card-rx':     '0 4px 24px rgba(0,0,0,0.5), 0 0 0 1px rgba(15,214,90,0.1)',
-      },
-      borderRadius: {
-        'rx': '4px',
-        'rx-sm': '2px',
-        'rx-lg': '8px',
-      },
+// Aggiungi export
+export { PROFILE_CATEGORIES, getProfileCategory, BIA_PARAMS } from './bia'
+
+// Aggiorna NEW_CLIENT_DEFAULTS
+export const NEW_CLIENT_DEFAULTS = {
+  level:           1,
+  rank:            'F',
+  rankColor:       '#6b7280',
+  xp:              0,
+  xpNext:          700,
+  stats:           {},
+  log:             [],
+  campionamenti:   [],
+  sessionsPerWeek: 3,
+  categoria:       'tests_only',  // categoria test atletici
+  profileType:     'tests_only',  // 'tests_only' | 'bia_only' | 'complete'
+  biaHistory:      [],
+  lastBia:         null,
+}
+```
+
+---
+
+## FASE 2 — Utils BIA
+
+### 2A — Crea src/utils/bia.js
+
+```js
+import {
+  FAT_MASS_RANGES,
+  WATER_RANGES,
+  VISCERAL_RANGES,
+  BMI_RANGES,
+  BIA_KEY_PARAMS,
+  XP_BIA,
+} from '../constants/bia'
+
+/**
+ * Restituisce il colore di stato per un parametro BIA
+ * in base ai range clinici e ai dati anagrafici del cliente.
+ *
+ * @returns {{ color: string, label: string, score: number }}
+ *          score: 0-100 per normalizzazione visiva
+ */
+export function getBiaParamStatus(key, value, sex = 'M', age = 30) {
+  if (value === null || value === undefined || value === '') {
+    return { color: 'rgba(255,255,255,0.2)', label: '—', score: 0 }
+  }
+
+  switch (key) {
+
+    case 'fatMassPercent': {
+      const ageGroup = age < 40 ? '18-39' : age < 60 ? '40-59' : '60+'
+      const ranges   = FAT_MASS_RANGES[sex]?.[ageGroup]
+      if (!ranges) return { color: '#60a5fa', label: 'N/D', score: 50 }
+      if (value <= ranges.excellent[1]) return { color: '#34d399', label: 'Eccellente', score: 100 }
+      if (value <= ranges.good[1])      return { color: '#6ee7b7', label: 'Buono',      score: 80  }
+      if (value <= ranges.normal[1])    return { color: '#f59e0b', label: 'Normale',    score: 60  }
+      if (value <= ranges.high[1])      return { color: '#f97316', label: 'Alto',       score: 35  }
+      return                                   { color: '#f87171', label: 'Obeso',      score: 10  }
+    }
+
+    case 'waterPercent': {
+      const ranges = WATER_RANGES[sex]
+      if (value < ranges.low[1])      return { color: '#f87171', label: 'Bassa',    score: 20  }
+      if (value < ranges.normal[1])   return { color: '#f59e0b', label: 'Normale',  score: 55  }
+      if (value <= ranges.optimal[1]) return { color: '#34d399', label: 'Ottimale', score: 100 }
+      return                                 { color: '#60a5fa', label: 'Alta',     score: 75  }
+    }
+
+    case 'visceralFat': {
+      const range = VISCERAL_RANGES.find(r => value >= r.range[0] && value <= r.range[1])
+      const score = Math.round(100 - ((value - 1) / 11) * 100)
+      return range
+        ? { color: range.color, label: range.label, score }
+        : { color: '#f87171', label: 'Alto', score: 10 }
+    }
+
+    case 'bmi': {
+      const range = BMI_RANGES.find(r => value >= r.range[0] && value < r.range[1])
+      const score = value >= 18.5 && value < 25 ? 100 :
+                    value >= 25   && value < 30 ? 50  :
+                    value < 18.5               ? 40  : 20
+      return range
+        ? { color: range.color, label: range.label, score }
+        : { color: '#f87171', label: 'Obeso', score: 10 }
+    }
+
+    case 'metabolicAge': {
+      // Confronta con età anagrafica passata come terzo parametro
+      const diff  = value - age
+      const color = diff < -5 ? '#34d399' :
+                    diff < 0  ? '#6ee7b7' :
+                    diff === 0 ? '#f59e0b' :
+                    diff < 5  ? '#f97316' : '#f87171'
+      const label = diff < -5 ? 'Ottima'   :
+                    diff < 0  ? 'Buona'    :
+                    diff === 0 ? 'Normale' :
+                    diff < 5  ? 'Alta'     : 'Molto alta'
+      const score = Math.max(0, Math.min(100, 75 - diff * 8))
+      return { color, label, score }
+    }
+
+    // muscleMassKg, boneMassKg, bmrKcal → visualizzazione neutra
+    default:
+      return { color: '#60a5fa', label: String(value), score: 60 }
+  }
+}
+
+/**
+ * Calcola il BMI automaticamente da peso e altezza.
+ */
+export function calcBmi(pesoKg, altezzaCm) {
+  if (!pesoKg || !altezzaCm) return null
+  const h = altezzaCm / 100
+  return Math.round((pesoKg / (h * h)) * 10) / 10
+}
+
+/**
+ * Calcola quanti XP assegnare per una misurazione BIA.
+ */
+export function calcBiaXP(newBia, prevBia) {
+  // Prima misurazione in assoluto
+  if (!prevBia) return XP_BIA.FIRST_MEASUREMENT
+
+  // Conta miglioramenti sui parametri chiave
+  let improvements = 0
+  BIA_KEY_PARAMS.forEach(key => {
+    const prev = prevBia[key]
+    const curr = newBia[key]
+    if (prev === null || curr === null) return
+    // fatMassPercent e visceralFat: migliorano se scendono
+    if (key === 'fatMassPercent' || key === 'visceralFat') {
+      if (curr < prev) improvements++
+    } else {
+      if (curr > prev) improvements++
+    }
+  })
+
+  if (improvements >= 2) return XP_BIA.IMPROVEMENT
+  if (improvements === 0) return XP_BIA.REGRESSION
+  return XP_BIA.MAINTENANCE
+}
+
+/**
+ * Calcola lo score complessivo BIA (0-100) per visualizzazione.
+ * Media pesata dei parametri chiave con status.
+ */
+export function calcBiaScore(bia, sex, age) {
+  if (!bia) return 0
+  const keyParams = ['fatMassPercent', 'waterPercent', 'visceralFat', 'bmi']
+  const scores    = keyParams
+    .map(key => getBiaParamStatus(key, bia[key], sex, age).score)
+    .filter(s => s > 0)
+  if (scores.length === 0) return 0
+  return Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
+}
+```
+
+### 2B — Aggiorna src/utils/gamification.js
+
+Aggiungi la gestione BIA in `buildNewClient` e crea `buildBiaUpdate`:
+
+```js
+import { calcBiaXP } from './bia'
+import { XP_BIA }    from '../constants/bia'
+
+/**
+ * Costruisce l'update per una nuova misurazione BIA.
+ */
+export function buildBiaUpdate(client, newBia) {
+  const today   = new Date().toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })
+  const prevBia = client.lastBia ?? null
+  const xpToAdd = calcBiaXP(newBia, prevBia)
+
+  const biaRecord   = { ...newBia, date: today }
+  const biaHistory  = [biaRecord, ...(client.biaHistory ?? [])].slice(0, 50)
+
+  const logEntry = {
+    date:   today,
+    action: `BIA — ${prevBia ? 'Aggiornamento composizione corporea' : 'Prima misurazione'}`,
+    xp:     xpToAdd,
+  }
+  const log = [logEntry, ...(client.log ?? [])].slice(0, LOG_MAX_ENTRIES)
+
+  // XP solo se c'è miglioramento
+  const { xp, xpNext, level } = calcLevelProgression(
+    (client.xp ?? 0) + xpToAdd,
+    client.xpNext,
+    client.level,
+  )
+
+  return {
+    update: {
+      lastBia:    biaRecord,
+      biaHistory,
+      log,
+      xp,
+      xpNext,
+      level,
     },
-  },
-  plugins: [],
+    xpEarned: xpToAdd,
+  }
+}
+
+/**
+ * Upgrade categoria profilo cliente.
+ * Mantiene lo storico della tipologia precedente.
+ */
+export function buildProfileUpgrade(client, newProfileType) {
+  const update = { profileType: newProfileType }
+  const today  = new Date().toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })
+
+  if (newProfileType === 'complete') {
+    if (client.profileType === 'tests_only') {
+      // Aggiunge BIA — azzera solo i dati BIA
+      update.biaHistory = []
+      update.lastBia    = null
+    } else if (client.profileType === 'bia_only') {
+      // Aggiunge test — azzera solo i dati test
+      update.stats         = {}
+      update.campionamenti = []
+      update.rank          = 'F'
+      update.rankColor     = '#6b7280'
+      update.media         = 0
+      // Mantiene categoria test di default
+      update.categoria     = 'health'
+    }
+  }
+
+  const logEntry = {
+    date:   today,
+    action: `Profilo aggiornato → ${newProfileType === 'complete' ? 'Test + BIA' : newProfileType}`,
+    xp:     0,
+  }
+  update.log = [logEntry, ...(client.log ?? [])].slice(0, LOG_MAX_ENTRIES)
+
+  return update
 }
 ```
 
 ---
 
-## FASE 4 — Aggiorna src/components/ui/index.jsx
+## FASE 3 — Hook BIA
 
-Sostituisci gli stili dei componenti base:
+### 3A — Crea src/features/bia/useBia.js
 
-### Card
-```jsx
-export function Card({ className = '', children, glow = 'green' }) {
-  return (
-    <div
-      className={`p-5 rx-card ${className}`}
-      style={glow === 'cyan'
-        ? { borderColor: 'rgba(0,200,255,0.12)' }
-        : {}
+```js
+import { useCallback }         from 'react'
+import { useTrainerDispatch, ACTIONS } from '../../context/TrainerContext'
+import { updateClient }        from '../../firebase/services/clients'
+import { addNotification }     from '../../firebase/services/notifications'
+import { buildBiaUpdate, buildProfileUpgrade } from '../../utils/gamification'
+
+/**
+ * Hook per la gestione delle misurazioni BIA.
+ * Usato nel dashboard trainer per i clienti con BIA.
+ */
+export function useBia(trainerId) {
+  const dispatch = useTrainerDispatch()
+
+  /**
+   * Salva una nuova misurazione BIA per un cliente.
+   */
+  const handleSaveBia = useCallback(async (client, biaData) => {
+    const { update, xpEarned } = buildBiaUpdate(client, biaData)
+
+    // Ottimistico
+    dispatch({
+      type:    ACTIONS.UPDATE_CLIENT,
+      payload: { id: client.id, ...update },
+    })
+    dispatch({
+      type:    ACTIONS.SELECT_CLIENT,
+      payload: { ...client, ...update },
+    })
+
+    try {
+      await updateClient(client.id, update)
+      if (client.clientAuthUid && xpEarned > 0) {
+        await addNotification({
+          clientId: client.id,
+          message:  xpEarned === 100
+            ? `Prima misurazione BIA completata! +${xpEarned} XP`
+            : `BIA aggiornata — ${xpEarned > 0 ? `+${xpEarned} XP guadagnati!` : 'continua così!'}`,
+          date:     new Date().toLocaleDateString('it-IT', { day: '2-digit', month: 'short' }),
+          type:     'bia',
+        })
       }
-    >
-      {children}
-    </div>
-  )
-}
-```
+    } catch {
+      // Rollback
+      dispatch({ type: ACTIONS.UPDATE_CLIENT, payload: client })
+      dispatch({ type: ACTIONS.SELECT_CLIENT, payload: client })
+    }
+  }, [dispatch])
 
-### SectionLabel
-```jsx
-export function SectionLabel({ children, className = '' }) {
-  return (
-    <div
-      className={`font-display text-[10px] tracking-[3px] uppercase mb-3.5 ${className}`}
-      style={{ color: '#0fd65a' }}
-    >
-      {children}
-    </div>
-  )
-}
-```
+  /**
+   * Upgrade categoria profilo cliente.
+   */
+  const handleUpgradeProfile = useCallback(async (client, newProfileType) => {
+    const update   = buildProfileUpgrade(client, newProfileType)
+    const snapshot = client
 
-### Button
-```jsx
-const VARIANT_STYLES = {
-  primary: {
-    background:   'linear-gradient(135deg, #1aff6e 0%, #0fd65a 30%, #00c8ff 70%, #4db8ff 100%)',
-    border:       'none',
-    color:        '#080c12',
-    fontWeight:   700,
-  },
-  danger: {
-    background:   'linear-gradient(135deg, #f59e0b, #ef4444)',
-    border:       'none',
-    color:        '#ffffff',
-  },
-  ghost: {
-    background:   'transparent',
-    border:       '1px solid rgba(15,214,90,0.3)',
-    color:        '#0fd65a',
-  },
-}
+    dispatch({
+      type:    ACTIONS.UPDATE_CLIENT,
+      payload: { id: client.id, ...update },
+    })
+    dispatch({
+      type:    ACTIONS.SELECT_CLIENT,
+      payload: { ...client, ...update },
+    })
 
-export function Button({ variant = 'primary', loading, disabled, className = '', children, ...props }) {
-  return (
-    <button
-      disabled={loading || disabled}
-      className={`
-        px-4 font-display text-[13px] font-bold tracking-wider
-        cursor-pointer transition-all duration-200
-        ${loading || disabled ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-85'}
-        ${className}
-      `}
-      style={{
-        ...VARIANT_STYLES[variant],
-        borderRadius: '3px',
-        padding:      '12px 16px',
-      }}
-      {...props}
-    >
-      {loading ? 'ATTENDERE...' : children}
-    </button>
-  )
-}
-```
+    try {
+      await updateClient(client.id, update)
+      if (client.clientAuthUid) {
+        await addNotification({
+          clientId: client.id,
+          message:  'Il tuo profilo è stato aggiornato dal trainer.',
+          date:     new Date().toLocaleDateString('it-IT', { day: '2-digit', month: 'short' }),
+          type:     'upgrade',
+        })
+      }
+    } catch {
+      dispatch({ type: ACTIONS.UPDATE_CLIENT, payload: snapshot })
+      dispatch({ type: ACTIONS.SELECT_CLIENT, payload: snapshot })
+    }
+  }, [dispatch])
 
-### Modal
-```jsx
-export function Modal({ title, onClose, disableOverlayClose, size = 'default', children }) {
-  useEffect(() => {
-    const handler = e => { if (e.key === 'Escape') onClose() }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [onClose])
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-start lg:items-center justify-center overflow-y-auto py-4 px-4"
-      style={{ background: 'rgba(8,12,18,0.9)' }}
-      onClick={disableOverlayClose ? undefined : onClose}
-    >
-      <div
-        className={`rx-card p-6 lg:p-8 ${MODAL_WIDTHS[size]} max-w-[96vw] my-auto`}
-        style={{
-          background:   '#0d1520',
-          borderColor:  'rgba(15,214,90,0.2)',
-          boxShadow:    '0 20px 60px rgba(0,0,0,0.8), 0 0 40px rgba(15,214,90,0.1)',
-        }}
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="font-display text-white text-base m-0 tracking-wider">
-            {title}
-          </h3>
-          <button
-            onClick={onClose}
-            className="bg-transparent border-none text-white/30 text-xl cursor-pointer leading-none hover:text-white/70 transition-colors"
-          >
-            ✕
-          </button>
-        </div>
-        {children}
-      </div>
-    </div>
-  )
-}
-```
-
-### Divider
-```jsx
-export function Divider({ color }) {
-  return (
-    <div className="px-6 my-1">
-      <div
-        className="w-full h-px"
-        style={{
-          background: color
-            ? `linear-gradient(90deg, transparent, ${color}55, transparent)`
-            : 'linear-gradient(90deg, transparent, rgba(15,214,90,0.2), transparent)',
-        }}
-      />
-    </div>
-  )
+  return { handleSaveBia, handleUpgradeProfile }
 }
 ```
 
 ---
 
-## FASE 5 — Aggiorna trainer-shell/constants.jsx
+## FASE 4 — Componenti BIA
 
-### Logo RX con gradiente logo
+### 4A — Crea src/features/bia/bia-view/BiaGaugeBar.jsx
+
 ```jsx
-export const LogoMark = () => (
-  <span className="rx-glow-text font-display font-black text-[14px] leading-none tracking-wider">
-    RX
-  </span>
-)
+import { getBiaParamStatus } from '../../../utils/bia'
 
-export const LogoFull = () => (
-  <div>
-    <span className="rx-glow-text font-display font-black text-[18px] leading-none">
-      RankEX
-    </span>
-  </div>
-)
-```
+/**
+ * Barra gauge per un singolo parametro BIA.
+ * Mostra valore attuale, range di riferimento e delta dal precedente.
+ */
+export function BiaGaugeBar({ param, value, prevValue, sex, age }) {
+  const status    = getBiaParamStatus(param.key, value, sex, age)
+  const prevStatus = prevValue !== undefined && prevValue !== null
+    ? getBiaParamStatus(param.key, prevValue, sex, age)
+    : null
 
-### SidebarIcon aggiornato
-```jsx
-function SidebarIcon({ item, active, onClick }) {
-  return (
-    <div className="relative group">
-      <button
-        onClick={onClick}
-        data-active={active}
-        aria-label={item.label}
-        className="w-10 h-10 flex items-center justify-center cursor-pointer transition-all"
-        style={active ? {
-          background:   'rgba(15,214,90,0.1)',
-          border:       '1px solid rgba(15,214,90,0.35)',
-          borderRadius: '4px',
-          color:        '#0fd65a',
-          boxShadow:    '0 0 12px rgba(15,214,90,0.15)',
-        } : {
-          background:   'transparent',
-          border:       '1px solid transparent',
-          borderRadius: '4px',
-          color:        'rgba(200,212,224,0.3)',
-        }}
-        onMouseEnter={e => {
-          if (!active) {
-            e.currentTarget.style.borderColor = 'rgba(15,214,90,0.2)'
-            e.currentTarget.style.color       = 'rgba(15,214,90,0.8)'
-          }
-        }}
-        onMouseLeave={e => {
-          if (!active) {
-            e.currentTarget.style.borderColor = 'transparent'
-            e.currentTarget.style.color       = 'rgba(200,212,224,0.3)'
-          }
-        }}
-      >
-        {item.icon}
-      </button>
+  const delta = (prevValue !== null && prevValue !== undefined && value !== null && value !== '')
+    ? (Number(value) - Number(prevValue)).toFixed(1)
+    : null
 
-      {/* Tooltip */}
-      <div className="
-        absolute left-[52px] top-1/2 -translate-y-1/2
-        pointer-events-none opacity-0 group-hover:opacity-100
-        transition-opacity duration-150 z-50
-        px-2.5 py-1.5 whitespace-nowrap
-      "
-        style={{
-          background:   'rgba(8,12,18,0.97)',
-          border:       '1px solid rgba(15,214,90,0.2)',
-          borderRadius: '3px',
-          boxShadow:    '0 4px 12px rgba(0,0,0,0.5)',
-        }}
-      >
-        <span className="font-display text-[10px] tracking-[2px]"
-          style={{ color: '#0fd65a' }}>
-          {item.label.toUpperCase()}
-        </span>
-      </div>
-    </div>
+  const isGoodDelta = delta !== null && (
+    param.direction === 'direct'  ?  Number(delta) > 0 :
+    param.direction === 'inverse' ?  Number(delta) < 0 :
+    false
   )
-}
-```
+  const isBadDelta = delta !== null && (
+    param.direction === 'direct'  ?  Number(delta) < 0 :
+    param.direction === 'inverse' ?  Number(delta) > 0 :
+    false
+  )
 
-### TabItem mobile aggiornato
-```jsx
-function TabItem({ item, active, onClick }) {
   return (
-    <button
-      onClick={onClick}
-      className="flex-1 flex flex-col items-center gap-1 py-2.5 cursor-pointer transition-all relative border-none bg-transparent"
-    >
-      {active && (
+    <div className="flex flex-col gap-1.5">
+      {/* Label + valore */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-[14px]">{param.icon}</span>
+          <span className="font-body text-[13px] text-white/70">{param.label}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          {delta !== null && (
+            <span
+              className="font-display text-[10px]"
+              style={{
+                color: isGoodDelta ? '#34d399' :
+                       isBadDelta  ? '#f87171' :
+                       'rgba(255,255,255,0.3)',
+              }}
+            >
+              {Number(delta) > 0 ? `▲ +${delta}` : Number(delta) < 0 ? `▼ ${delta}` : '— '}
+              {param.unit}
+            </span>
+          )}
+          <span
+            className="font-display font-black text-[15px]"
+            style={{ color: value !== '' ? status.color : 'rgba(255,255,255,0.2)' }}
+          >
+            {value !== '' ? `${value}${param.unit}` : '—'}
+          </span>
+        </div>
+      </div>
+
+      {/* Barra gauge */}
+      <div
+        className="h-[6px] rounded-full overflow-hidden"
+        style={{ background: 'rgba(255,255,255,0.06)' }}
+      >
         <div
-          className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] w-8"
+          className="h-full rounded-full transition-[width] duration-700"
           style={{
-            background:   'linear-gradient(90deg, #0fd65a, #00c8ff)',
-            borderRadius: '1px',
-            boxShadow:    '0 0 8px rgba(15,214,90,0.5)',
+            width:      `${value !== '' ? status.score : 0}%`,
+            background: value !== '' ? status.color : 'transparent',
+            boxShadow:  value !== '' ? `0 0 8px ${status.color}88` : 'none',
           }}
         />
+      </div>
+
+      {/* Label status */}
+      {value !== '' && (
+        <div
+          className="font-display text-[9px] tracking-[1px] text-right"
+          style={{ color: status.color + 'aa' }}
+        >
+          {status.label.toUpperCase()}
+        </div>
       )}
-      <span style={{ color: active ? '#0fd65a' : 'rgba(200,212,224,0.3)' }}>
-        {item.icon}
-      </span>
-      <span
-        className="font-display text-[9px] tracking-[0.5px]"
-        style={{ color: active ? '#0fd65a' : 'rgba(200,212,224,0.3)' }}
-      >
-        {item.label.toUpperCase()}
-      </span>
-    </button>
+    </div>
   )
 }
 ```
 
----
+### 4B — Crea src/features/bia/bia-view/BiaHistoryChart.jsx
 
-## FASE 6 — Aggiorna BrandingPanel login
 ```jsx
-export function BrandingPanel() {
+import { useState }                                    from 'react'
+import { LineChart, Line, XAxis, YAxis, Tooltip,
+         ResponsiveContainer, CartesianGrid }          from 'recharts'
+import { SectionLabel }                                from '../../../components/ui'
+import { BIA_PARAMS }                                  from '../../../constants/bia'
+
+/**
+ * Grafico andamento storico BIA.
+ * Stesso pattern di StatsChart ma per i parametri BIA.
+ */
+export function BiaHistoryChart({ biaHistory, color }) {
+  const displayParams = BIA_PARAMS.filter(p => !p.computed)
+  const [selectedParam, setSelectedParam] = useState(displayParams[0].key)
+
+  if (!biaHistory || biaHistory.length < 2) {
+    return (
+      <div
+        className="rounded-2xl p-5"
+        style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}
+      >
+        <SectionLabel>📈 Andamento BIA</SectionLabel>
+        <p className="text-white/20 font-body text-[13px] text-center py-4">
+          Servono almeno 2 misurazioni per visualizzare l'andamento.
+        </p>
+      </div>
+    )
+  }
+
+  const param     = displayParams.find(p => p.key === selectedParam)
+  const chartData = [...biaHistory].reverse().map(b => ({
+    name:  b.date,
+    value: b[selectedParam] ?? 0,
+  }))
+
   return (
     <div
-      className="hidden lg:flex flex-col justify-between p-12 rx-hex-bg"
-      style={{ background: '#080c12' }}
+      className="rounded-2xl p-5"
+      style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}
     >
-      {/* Logo */}
-      <div>
-        <div className="rx-glow-text font-display font-black leading-none"
-          style={{ fontSize: 52 }}>
-          RankEX
-        </div>
-        <div
-          className="font-display text-[12px] tracking-[4px] mt-3"
-          style={{ color: 'rgba(200,212,224,0.4)' }}
-        >
-          YOUTH SOCCER PROJECT
-        </div>
+      <SectionLabel>📈 Andamento BIA</SectionLabel>
 
-        {/* Linea decorativa */}
-        <div className="mt-4 h-px w-24"
-          style={{ background: 'linear-gradient(90deg, #0fd65a, transparent)' }}
-        />
-      </div>
-
-      {/* Pillole feature */}
-      <div className="flex flex-col gap-5">
-        {[
-          { icon: '⚡', label: 'PERFORMANCE TRACKING',  desc: 'Monitora le prestazioni atletiche' },
-          { icon: '🏆', label: 'SISTEMA RANK',          desc: 'Da F a EX — scala la classifica' },
-          { icon: '📊', label: 'ANALISI DATI',          desc: 'Percentili e statistiche avanzate' },
-          { icon: '📅', label: 'GESTIONE ALLENAMENTI',  desc: 'Calendario e presenze' },
-        ].map(item => (
-          <div key={item.label} className="flex items-start gap-3">
-            <span className="text-[20px] shrink-0 mt-0.5">{item.icon}</span>
-            <div>
-              <div
-                className="font-display text-[11px] font-bold tracking-[2px]"
-                style={{ color: '#0fd65a' }}
-              >
-                {item.label}
-              </div>
-              <div
-                className="font-body text-[12px] mt-0.5"
-                style={{ color: 'rgba(200,212,224,0.4)' }}
-              >
-                {item.desc}
-              </div>
-            </div>
-          </div>
+      {/* Selector parametro */}
+      <div className="flex gap-1.5 flex-wrap mb-4">
+        {displayParams.map(p => (
+          <button
+            key={p.key}
+            onClick={() => setSelectedParam(p.key)}
+            className="px-3 py-1 rounded-lg font-display text-[11px] border cursor-pointer transition-all"
+            style={selectedParam === p.key
+              ? { background: color + '33', borderColor: color + '55', color }
+              : { background: 'transparent', borderColor: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.3)' }
+            }
+          >
+            {p.icon} {p.label}
+          </button>
         ))}
       </div>
 
-      {/* Footer */}
-      <div
-        className="font-body text-[11px]"
-        style={{ color: 'rgba(200,212,224,0.2)' }}
-      >
-        © RankEX Youth Soccer Project
+      {/* Grafico */}
+      <div className="h-40">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={chartData} margin={{ top: 5, right: 5, bottom: 0, left: -20 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+            <XAxis
+              dataKey="name"
+              tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 10, fontFamily: 'Montserrat' }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <YAxis
+              tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 10, fontFamily: 'Montserrat' }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <Tooltip
+              formatter={(v) => [`${v} ${param?.unit ?? ''}`, param?.label]}
+              contentStyle={{
+                background:   'rgba(10,15,30,0.97)',
+                border:       '1px solid rgba(255,255,255,0.1)',
+                borderRadius: 6,
+                fontFamily:   'Inter',
+                fontSize:     12,
+              }}
+              labelStyle={{ color: 'rgba(255,255,255,0.4)' }}
+              itemStyle={{ color }}
+            />
+            <Line
+              type="monotone"
+              dataKey="value"
+              stroke={color}
+              strokeWidth={2}
+              dot={{ fill: color, r: 3 }}
+              activeDot={{ fill: color, r: 5 }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
       </div>
     </div>
   )
 }
 ```
 
----
+### 4C — Crea src/features/bia/BiaLockedPanel.jsx
 
-## FASE 7 — Aggiorna ConfirmDialog e DeleteDialog
 ```jsx
-// Pattern comune per tutti i dialog
-style={{
-  background:   '#0d1520',
-  border:       '1px solid rgba(15,214,90,0.15)',
-  borderRadius: '4px',
-  boxShadow:    '0 20px 60px rgba(0,0,0,0.8)',
-}}
+/**
+ * Pannello BIA bloccato — mostrato al cliente che non ha la BIA.
+ * Stile "contenuto sbloccabile" come in un videogioco.
+ */
+export function BiaLockedPanel({ profileType, color }) {
+  const isTestsOnly = profileType === 'tests_only'
+  const lockedLabel = isTestsOnly
+    ? 'Bioimpedenziometria'
+    : 'Test atletici'
+  const lockedDesc = isTestsOnly
+    ? 'Analisi completa della composizione corporea: massa grassa, muscolare, acqua e molto altro.'
+    : 'Valutazione atletica completa con test fisici standardizzati e sistema di ranking.'
 
-// Bottone conferma standard
-style={{
-  background:   'linear-gradient(135deg, #1aff6e, #0fd65a, #00c8ff)',
-  borderRadius: '3px',
-  color:        '#080c12',
-  fontWeight:   700,
-}}
+  return (
+    <section className="px-6 py-6 relative">
+      <div className="rounded-2xl overflow-hidden relative">
 
-// Bottone conferma distruttivo (elimina)
-style={{
-  background:   'linear-gradient(135deg, #f59e0b, #ef4444)',
-  borderRadius: '3px',
-  color:        '#ffffff',
-}}
+        {/* Contenuto sfocato in background — silhouette */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{ filter: 'blur(6px)', opacity: 0.25 }}
+        >
+          <div className="p-5">
+            <div className="h-4 w-32 rounded mb-3" style={{ background: color }} />
+            <div className="flex gap-3 mb-4">
+              {[1,2,3,4].map(i => (
+                <div
+                  key={i}
+                  className="flex-1 h-16 rounded-xl"
+                  style={{ background: 'rgba(255,255,255,0.1)' }}
+                />
+              ))}
+            </div>
+            <div className="h-32 rounded-xl" style={{ background: 'rgba(255,255,255,0.05)' }} />
+          </div>
+        </div>
+
+        {/* Overlay con messaggio */}
+        <div
+          className="relative z-10 p-8 flex flex-col items-center justify-center text-center gap-4"
+          style={{
+            background:   'rgba(7,9,14,0.85)',
+            border:       '1px solid rgba(255,255,255,0.07)',
+            borderRadius: '16px',
+            minHeight:    220,
+          }}
+        >
+          {/* Icona lucchetto */}
+          <div
+            className="w-14 h-14 rounded-2xl flex items-center justify-center"
+            style={{
+              background: 'rgba(255,255,255,0.04)',
+              border:     '1px solid rgba(255,255,255,0.1)',
+            }}
+          >
+            <svg
+              width="24" height="24" viewBox="0 0 24 24"
+              fill="none" stroke="rgba(255,255,255,0.3)"
+              strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+            >
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+          </div>
+
+          {/* Titolo */}
+          <div>
+            <div className="font-display font-black text-[16px] text-white mb-1">
+              {lockedLabel}
+            </div>
+            <div className="font-body text-[13px] text-white/40 max-w-xs">
+              {lockedDesc}
+            </div>
+          </div>
+
+          {/* Badge sbloccabile */}
+          <div
+            className="flex items-center gap-2 px-4 py-2 rounded-xl"
+            style={{
+              background: 'rgba(255,255,255,0.04)',
+              border:     '1px solid rgba(255,255,255,0.08)',
+            }}
+          >
+            <span className="text-[14px]">🔓</span>
+            <span className="font-display text-[11px] text-white/40 tracking-[1px]">
+              CONTATTA IL TUO TRAINER PER SBLOCCARE
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+```
+
+### 4D — Crea src/features/bia/BiaView.jsx
+
+```jsx
+import { useState, useCallback }          from 'react'
+import { Button, SectionLabel }           from '../../components/ui'
+import { ConfirmDialog }                  from '../../components/common/ConfirmDialog'
+import { BiaGaugeBar }                    from './bia-view/BiaGaugeBar'
+import { BIA_PARAMS, BIA_EMPTY }          from '../../constants/bia'
+import { calcBmi }                        from '../../utils/bia'
+
+/**
+ * View inline per il campionamento BIA.
+ * Stesso pattern di CampionamentoView.
+ */
+export function BiaView({ client, color, onSave, onBack }) {
+  const [values,      setValues]      = useState(BIA_EMPTY)
+  const [errors,      setErrors]      = useState({})
+  const [loading,     setLoading]     = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
+
+  // Auto-calcola BMI da peso/altezza cliente
+  const bmiComputed = calcBmi(client.peso, client.altezza)
+
+  const updateValue = (key) => (e) => {
+    setValues(p => ({ ...p, [key]: e.target.value }))
+  }
+
+  const validate = useCallback(() => {
+    const e = {}
+    const required = ['fatMassPercent', 'muscleMassKg', 'waterPercent', 'visceralFat']
+    required.forEach(key => {
+      const val = Number(values[key])
+      if (values[key] === '' || isNaN(val) || val < 0) {
+        e[key] = 'Valore richiesto'
+      }
+    })
+    setErrors(e)
+    return Object.keys(e).length === 0
+  }, [values])
+
+  const handleRequestSave = useCallback(() => {
+    if (!validate()) return
+    setShowConfirm(true)
+  }, [validate])
+
+  const handleConfirmSave = useCallback(async () => {
+    setLoading(true)
+    try {
+      const finalValues = {
+        ...values,
+        bmi: bmiComputed ?? values.bmi,
+      }
+      // Converti stringhe in numeri
+      const parsed = {}
+      Object.entries(finalValues).forEach(([k, v]) => {
+        parsed[k] = v !== '' ? Number(v) : null
+      })
+      await onSave(parsed)
+      onBack()
+    } catch {
+      setLoading(false)
+      setShowConfirm(false)
+    }
+  }, [values, bmiComputed, onSave, onBack])
+
+  const prevBia = client.lastBia ?? null
+
+  return (
+    <div className="min-h-screen text-white">
+
+      {/* Header */}
+      <div className="flex items-center justify-between px-6 py-4 border-b border-white/[.05]">
+        <button
+          onClick={onBack}
+          className="flex items-center gap-1.5 bg-transparent border-none text-white/30 font-body text-[13px] cursor-pointer hover:text-white/60 transition-colors p-0"
+        >
+          ‹ Dashboard
+        </button>
+        <span className="font-display font-black text-[16px] text-white">
+          Nuova misurazione BIA
+        </span>
+        <button
+          onClick={handleRequestSave}
+          className="font-display text-[11px] px-3 py-1.5 rounded-lg cursor-pointer border transition-all hover:opacity-80"
+          style={{ color, borderColor: color + '55', background: color + '11' }}
+        >
+          SALVA BIA
+        </button>
+      </div>
+
+      {/* Contenuto */}
+      <div className="max-w-5xl mx-auto px-6 py-8">
+        <p className="font-body text-[13px] text-white/40 mb-6">
+          {client.name} · {client.sesso} · {client.eta} anni
+          {bmiComputed && (
+            <span className="ml-3 font-display text-[11px]" style={{ color: color + 'aa' }}>
+              BMI calcolato: {bmiComputed}
+            </span>
+          )}
+        </p>
+
+        <div className="flex gap-8 items-start">
+
+          {/* Colonna sinistra — input parametri */}
+          <div className="flex-1 min-w-0 flex flex-col gap-4">
+            {BIA_PARAMS.filter(p => !p.computed).map(param => (
+              <div
+                key={param.key}
+                className="rounded-2xl p-4"
+                style={{
+                  background: 'rgba(255,255,255,0.02)',
+                  border:     `1px solid ${
+                    values[param.key] !== ''
+                      ? color + '33'
+                      : 'rgba(255,255,255,0.06)'
+                  }`,
+                }}
+              >
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-[18px]">{param.icon}</span>
+                  <span className="font-display text-[13px] text-white/80">{param.label}</span>
+                  <span className="font-body text-[11px] text-white/30 ml-1">({param.unit})</span>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <input
+                    type="number"
+                    step="0.1"
+                    placeholder="0"
+                    value={values[param.key]}
+                    onChange={updateValue(param.key)}
+                    className="input-base flex-1"
+                    style={{ maxWidth: 140 }}
+                  />
+                  {prevBia?.[param.key] != null && (
+                    <span className="font-body text-[12px] text-white/25">
+                      Prec: <strong style={{ color: 'rgba(255,255,255,0.5)' }}>
+                        {prevBia[param.key]}{param.unit}
+                      </strong>
+                    </span>
+                  )}
+                </div>
+
+                {errors[param.key] && (
+                  <p className="font-body text-[11px] text-red-400 mt-1.5 m-0">
+                    {errors[param.key]}
+                  </p>
+                )}
+
+                {/* Preview gauge live */}
+                {values[param.key] !== '' && (
+                  <div className="mt-3">
+                    <BiaGaugeBar
+                      param={param}
+                      value={Number(values[param.key])}
+                      prevValue={prevBia?.[param.key] ?? null}
+                      sex={client.sesso}
+                      age={client.eta}
+                    />
+                  </div>
+                )}
+              </div>
+            ))}
+
+            {/* BMI calcolato automaticamente */}
+            {bmiComputed && (
+              <div
+                className="rounded-xl px-4 py-3 flex items-center gap-3"
+                style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}
+              >
+                <span className="text-[16px]">⚖️</span>
+                <div>
+                  <span className="font-display text-[11px] text-white/40">BMI calcolato automaticamente</span>
+                  <div className="font-display font-black text-[18px]" style={{ color }}>
+                    {bmiComputed}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Colonna destra — preview live */}
+          <div className="hidden lg:flex flex-col gap-4 w-72 shrink-0 sticky top-6">
+
+            {/* Riepilogo parametri compilati */}
+            <div
+              className="rounded-2xl p-5"
+              style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}
+            >
+              <SectionLabel>ANTEPRIMA</SectionLabel>
+              <div className="flex flex-col gap-3">
+                {BIA_PARAMS.filter(p => !p.computed && values[p.key] !== '').map(param => (
+                  <BiaGaugeBar
+                    key={param.key}
+                    param={param}
+                    value={Number(values[param.key])}
+                    prevValue={prevBia?.[param.key] ?? null}
+                    sex={client.sesso}
+                    age={client.eta}
+                  />
+                ))}
+                {BIA_PARAMS.filter(p => !p.computed && values[p.key] !== '').length === 0 && (
+                  <p className="font-body text-[12px] text-white/20 text-center py-4">
+                    Inserisci i valori per vedere l'anteprima
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Contatore parametri */}
+            <div
+              className="rounded-xl px-4 py-3 flex items-center justify-between"
+              style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}
+            >
+              <span className="font-body text-[12px] text-white/40">Parametri inseriti</span>
+              <span
+                className="font-display text-[14px]"
+                style={{
+                  color: BIA_PARAMS.filter(p => !p.computed && values[p.key] !== '').length ===
+                         BIA_PARAMS.filter(p => !p.computed).length
+                    ? '#34d399' : '#f59e0b',
+                }}
+              >
+                {BIA_PARAMS.filter(p => !p.computed && values[p.key] !== '').length}/
+                {BIA_PARAMS.filter(p => !p.computed).length}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {showConfirm && (
+        <ConfirmDialog
+          title="Salvare la misurazione BIA?"
+          description={`Stai per aggiornare la composizione corporea di ${client.name}.`}
+          confirmLabel="SALVA"
+          loading={loading}
+          onConfirm={handleConfirmSave}
+          onCancel={() => setShowConfirm(false)}
+        />
+      )}
+    </div>
+  )
+}
+```
+
+### 4E — Crea src/features/bia/bia-view/BiaSummary.jsx
+
+```jsx
+import { SectionLabel }        from '../../../components/ui'
+import { BiaGaugeBar }         from './BiaGaugeBar'
+import { BIA_PARAMS }          from '../../../constants/bia'
+import { calcBiaScore }        from '../../../utils/bia'
+
+/**
+ * Riepilogo BIA attuale — mostrato nel dashboard cliente e trainer.
+ * Sostituisce il pentagon per i profili BIA.
+ */
+export function BiaSummary({ bia, prevBia, sex, age, color }) {
+  if (!bia) return null
+
+  const score = calcBiaScore(bia, sex, age)
+  const displayParams = BIA_PARAMS.filter(p => !p.computed)
+
+  return (
+    <div
+      className="rounded-2xl p-5"
+      style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}
+    >
+      <div className="flex items-center justify-between mb-4">
+        <SectionLabel className="mb-0">◈ Composizione corporea</SectionLabel>
+        <div
+          className="flex items-center gap-2 px-3 py-1 rounded-lg"
+          style={{ background: color + '11', border: `1px solid ${color}33` }}
+        >
+          <span className="font-display text-[10px] text-white/40">SCORE</span>
+          <span className="font-display font-black text-[16px]" style={{ color }}>
+            {score}
+          </span>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {displayParams.map(param => (
+          <BiaGaugeBar
+            key={param.key}
+            param={param}
+            value={bia[param.key]}
+            prevValue={prevBia?.[param.key] ?? null}
+            sex={sex}
+            age={age}
+          />
+        ))}
+      </div>
+
+      {bia.date && (
+        <div className="mt-4 font-body text-[11px] text-white/20 text-right">
+          Ultima misurazione: {bia.date}
+        </div>
+      )}
+    </div>
+  )
+}
+```
+
+### 4F — Crea src/features/bia/UpgradeCategoryBanner.jsx
+
+```jsx
+import { useState }            from 'react'
+import { ConfirmDialog }       from '../../components/common/ConfirmDialog'
+import { getProfileCategory }  from '../../constants/bia'
+
+/**
+ * Banner upgrade categoria — mostrato nel dashboard trainer
+ * quando il cliente non ha uno dei due moduli.
+ */
+export function UpgradeCategoryBanner({ client, color, onUpgrade }) {
+  const [showConfirm, setShowConfirm] = useState(false)
+  const [loading,     setLoading]     = useState(false)
+
+  const profileType = client.profileType ?? 'tests_only'
+  const current     = getProfileCategory(profileType)
+
+  // Non mostrare se già completo
+  if (profileType === 'complete') return null
+
+  const missingLabel = profileType === 'tests_only'
+    ? 'Bioimpedenziometria (BIA)'
+    : 'Test atletici'
+  const missingDesc = profileType === 'tests_only'
+    ? 'Questo cliente non ha la BIA nel suo profilo. Puoi aggiungere la bioimpedenziometria per un profilo completo.'
+    : 'Questo cliente non ha i test atletici nel suo profilo. Puoi aggiungere i test per un profilo completo con ranking.'
+
+  const handleConfirm = async () => {
+    setLoading(true)
+    try {
+      await onUpgrade(client, 'complete')
+      setShowConfirm(false)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <>
+      <div
+        className="mx-6 mb-4 rounded-xl px-5 py-4 flex items-center justify-between gap-4"
+        style={{
+          background: 'rgba(245,158,11,0.06)',
+          border:     '1px solid rgba(245,158,11,0.2)',
+        }}
+      >
+        <div className="flex items-start gap-3 flex-1 min-w-0">
+          <span className="text-[18px] shrink-0 mt-0.5">⚠️</span>
+          <div>
+            <div className="font-display text-[12px] text-amber-400 tracking-wider mb-0.5">
+              {missingLabel} non attiva
+            </div>
+            <div className="font-body text-[12px] text-white/40">
+              {missingDesc}
+            </div>
+          </div>
+        </div>
+        <button
+          onClick={() => setShowConfirm(true)}
+          className="shrink-0 font-display text-[11px] px-4 py-2 rounded-lg cursor-pointer border-0 transition-opacity hover:opacity-85"
+          style={{
+            background:    'linear-gradient(135deg, #f59e0b, #d97706)',
+            color:         '#07090e',
+            borderRadius:  '6px',
+            fontWeight:    700,
+            letterSpacing: '0.05em',
+          }}
+        >
+          AGGIUNGI AL PROFILO
+        </button>
+      </div>
+
+      {showConfirm && (
+        <ConfirmDialog
+          title="Aggiornare il profilo?"
+          description={`${client.name} passerà al profilo Completo (Test + BIA). Lo storico esistente verrà mantenuto.`}
+          confirmLabel="AGGIORNA"
+          loading={loading}
+          onConfirm={handleConfirm}
+          onCancel={() => setShowConfirm(false)}
+        />
+      )}
+    </>
+  )
+}
 ```
 
 ---
 
-## FASE 8 — Verifica finale
+## FASE 5 — Integrazione nel dashboard trainer
+
+### 5A — Aggiorna src/features/client/ClientDashboard.jsx
+
+```jsx
+import { useBia }                  from '../bia/useBia'
+import { BiaView }                 from '../bia/BiaView'
+import { BiaSummary }              from '../bia/bia-view/BiaSummary'
+import { BiaHistoryChart }         from '../bia/bia-view/BiaHistoryChart'
+import { UpgradeCategoryBanner }   from '../bia/UpgradeCategoryBanner'
+import { getProfileCategory }      from '../../constants/bia'
+
+// Aggiorna lo stato view
+const [view, setView] = useState('dashboard') // 'dashboard' | 'campionamento' | 'bia'
+
+// Aggiunge hook BIA
+const { handleSaveBia, handleUpgradeProfile } = useBia(trainerId)
+
+// Profilo cliente
+const profileType = client.profileType ?? 'tests_only'
+const profile     = getProfileCategory(profileType)
+
+// View BIA
+if (view === 'bia') {
+  return (
+    <BiaView
+      client={client}
+      color={color}
+      onSave={(biaData) => handleSaveBia(client, biaData)}
+      onBack={() => setView('dashboard')}
+    />
+  )
+}
+
+// Nel render del dashboard — dopo la sezione Status:
+
+{/* Banner upgrade se profilo incompleto */}
+<UpgradeCategoryBanner
+  client={client}
+  color={color}
+  onUpgrade={handleUpgradeProfile}
+/>
+
+{/* Sezione BIA — solo se il profilo include BIA */}
+{profile.hasBia && (
+  <>
+    <Divider color={color} />
+    <section className="px-6 pt-6 pb-4">
+      <div
+        className="rounded-2xl p-5"
+        style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <SectionLabel className="mb-0">◈ BIA</SectionLabel>
+          <button
+            onClick={() => setView('bia')}
+            className="text-[11px] font-display px-3 py-1.5 rounded-lg cursor-pointer border transition-all hover:opacity-80"
+            style={{ color, borderColor: color + '55', background: color + '11' }}
+          >
+            NUOVA MISURAZIONE
+          </button>
+        </div>
+        <BiaSummary
+          bia={client.lastBia}
+          prevBia={client.biaHistory?.[1] ?? null}
+          sex={client.sesso}
+          age={client.eta}
+          color={color}
+        />
+      </div>
+    </section>
+
+    <Divider color={color} />
+
+    <section className="px-6 py-6">
+      <BiaHistoryChart biaHistory={client.biaHistory} color={color} />
+    </section>
+  </>
+)}
+```
+
+---
+
+## FASE 6 — Integrazione nel dashboard cliente
+
+### 6A — Aggiorna src/features/client/client-view/ClientDashboardPage.jsx
+
+```jsx
+import { BiaSummary }      from '../../bia/bia-view/BiaSummary'
+import { BiaHistoryChart } from '../../bia/bia-view/BiaHistoryChart'
+import { BiaLockedPanel }  from '../../bia/BiaLockedPanel'
+import { getProfileCategory } from '../../../constants/bia'
+
+// Nel componente ClientDashboardPage
+const profileType = client.profileType ?? 'tests_only'
+const profile     = getProfileCategory(profileType)
+
+// Nel render — dopo la sezione Status:
+
+{/* Sezione test — solo se il profilo include test */}
+{!profile.hasTests && (
+  <BiaLockedPanel profileType={profileType} color={color} />
+)}
+
+{/* Sezione BIA */}
+{profile.hasBia ? (
+  <>
+    <Divider color={color} />
+    <section className="px-6 py-6">
+      <BiaSummary
+        bia={client.lastBia}
+        prevBia={client.biaHistory?.[1] ?? null}
+        sex={client.sesso}
+        age={client.eta}
+        color={color}
+      />
+    </section>
+    <Divider color={color} />
+    <section className="px-6 py-6">
+      <BiaHistoryChart biaHistory={client.biaHistory} color={color} />
+    </section>
+  </>
+) : (
+  <BiaLockedPanel profileType={profileType} color={color} />
+)}
+```
+
+---
+
+## FASE 7 — Wizard aggiornato
+
+### 7A — Aggiorna wizard.config.js
+
+```js
+import { PROFILE_CATEGORIES } from '../../../constants/bia'
+
+/**
+ * Gli step del wizard variano in base alla categoria profilo.
+ * getWizardSteps(profileType) → array di step
+ */
+export function getWizardSteps(profileType = 'tests_only') {
+  const base = [
+    { type: 'anagrafica',    title: 'Dati anagrafici' },
+    { type: 'profileType',   title: 'Tipologia profilo' }, // ← NUOVO
+  ]
+
+  const testSteps = [
+    { type: 'categoria',   title: 'Categoria test' },
+    { type: 'test',        title: null, index: 0 },
+    { type: 'test',        title: null, index: 1 },
+    { type: 'test',        title: null, index: 2 },
+    { type: 'test',        title: null, index: 3 },
+    { type: 'test',        title: null, index: 4 },
+  ]
+
+  const biaStep = [
+    { type: 'bia', title: 'Misurazione BIA iniziale' }, // ← NUOVO
+  ]
+
+  const tail = [
+    { type: 'settings', title: 'Impostazioni allenamento' },
+    { type: 'account',  title: 'Account cliente' },
+  ]
+
+  if (profileType === 'tests_only') return [...base, ...testSteps, ...tail]
+  if (profileType === 'bia_only')   return [...base, ...biaStep,   ...tail]
+  return [...base, ...testSteps, ...biaStep, ...tail] // complete
+}
+
+export const TOTAL_STEPS_MAP = {
+  tests_only: 11,
+  bia_only:   5,
+  complete:   12,
+}
+```
+
+### 7B — Crea step StepProfileType
+
+**`src/components/modals/new-client-wizard/steps/StepProfileType.jsx`**
+
+```jsx
+import { PROFILE_CATEGORIES } from '../../../../constants/bia'
+
+export function StepProfileType({ profileType, setProfileType }) {
+  return (
+    <div className="flex flex-col gap-3">
+      <p className="font-body text-[13px] text-white/40 m-0">
+        Scegli il tipo di valutazione per questo cliente.
+        Potrai sempre aggiornarlo in seguito.
+      </p>
+
+      {PROFILE_CATEGORIES.map(cat => (
+        <button
+          key={cat.id}
+          onClick={() => setProfileType(cat.id)}
+          className="flex items-start gap-4 p-4 rounded-2xl cursor-pointer border transition-all text-left"
+          style={profileType === cat.id
+            ? { background: cat.color + '12', borderColor: cat.color + '44' }
+            : { background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.07)' }
+          }
+        >
+          <div
+            className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-[20px]"
+            style={{
+              background: profileType === cat.id ? cat.color + '22' : 'rgba(255,255,255,0.05)',
+              border:     `1px solid ${profileType === cat.id ? cat.color + '44' : 'rgba(255,255,255,0.1)'}`,
+            }}
+          >
+            {cat.icon}
+          </div>
+          <div className="flex-1">
+            <div
+              className="font-display font-black text-[14px] mb-1"
+              style={{ color: profileType === cat.id ? cat.color : 'rgba(255,255,255,0.7)' }}
+            >
+              {cat.label}
+            </div>
+            <div className="font-body text-[12px] text-white/40">
+              {cat.desc}
+            </div>
+            <div className="flex gap-2 mt-2">
+              {cat.hasTests && (
+                <span
+                  className="font-display text-[9px] px-2 py-0.5 rounded-md"
+                  style={{ background: cat.color + '18', color: cat.color + 'cc' }}
+                >
+                  TEST ATLETICI
+                </span>
+              )}
+              {cat.hasBia && (
+                <span
+                  className="font-display text-[9px] px-2 py-0.5 rounded-md"
+                  style={{ background: cat.color + '18', color: cat.color + 'cc' }}
+                >
+                  BIOIMPEDENZIOMETRIA
+                </span>
+              )}
+            </div>
+          </div>
+        </button>
+      ))}
+    </div>
+  )
+}
+```
+
+### 7C — Crea step StepBia
+
+**`src/components/modals/new-client-wizard/steps/StepBia.jsx`**
+
+```jsx
+import { BIA_PARAMS, BIA_EMPTY }   from '../../../../constants/bia'
+import { getBiaParamStatus }        from '../../../../utils/bia'
+import { calcBmi }                  from '../../../../utils/bia'
+import { Field }                    from '../../../ui'
+
+export function StepBia({ biaValues, setBiaValues, errors, anagrafica }) {
+  const bmiComputed = calcBmi(
+    parseFloat(anagrafica.peso),
+    parseFloat(anagrafica.altezza)
+  )
+
+  const update = (key) => (e) =>
+    setBiaValues(p => ({ ...p, [key]: e.target.value }))
+
+  return (
+    <div className="flex flex-col gap-3">
+      <p className="font-body text-[13px] text-white/40 m-0">
+        Inserisci i valori della prima misurazione BIA.
+        Puoi saltare i parametri non disponibili.
+      </p>
+
+      {bmiComputed && (
+        <div
+          className="rounded-xl px-4 py-2.5 flex items-center gap-3"
+          style={{ background: 'rgba(96,165,250,0.08)', border: '1px solid rgba(96,165,250,0.2)' }}
+        >
+          <span>⚖️</span>
+          <span className="font-display text-[11px] text-blue-400">
+            BMI calcolato automaticamente: <strong>{bmiComputed}</strong>
+          </span>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {BIA_PARAMS.filter(p => !p.computed).map(param => {
+          const val    = biaValues[param.key]
+          const status = val !== '' ? getBiaParamStatus(param.key, Number(val), anagrafica.sesso, parseInt(anagrafica.eta)) : null
+          return (
+            <Field
+              key={param.key}
+              label={`${param.icon} ${param.label} (${param.unit})`}
+              error={errors[param.key]}
+            >
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  step="0.1"
+                  placeholder="—"
+                  value={val}
+                  onChange={update(param.key)}
+                  className="input-base flex-1"
+                />
+                {status && (
+                  <span
+                    className="font-display text-[10px] shrink-0 px-2 py-1 rounded-md"
+                    style={{ background: status.color + '22', color: status.color }}
+                  >
+                    {status.label}
+                  </span>
+                )}
+              </div>
+            </Field>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+```
+
+### 7D — Aggiorna useWizard.js
+
+```js
+// Aggiunge stato profileType e biaValues
+const [profileType, setProfileType] = useState('tests_only')
+const [biaValues,   setBiaValues]   = useState(BIA_EMPTY)
+
+// Aggiorna getWizardSteps dinamicamente
+import { getWizardSteps, TOTAL_STEPS_MAP } from './wizard.config'
+
+const WIZARD_STEPS = getWizardSteps(profileType)
+const TOTAL_STEPS  = TOTAL_STEPS_MAP[profileType]
+
+// Aggiorna handleConfirmSubmit per includere BIA e profileType
+const newClient = await onAdd({
+  ...anagrafica,
+  eta:             parseInt(anagrafica.eta),
+  peso:            parseFloat(anagrafica.peso),
+  altezza:         parseFloat(anagrafica.altezza),
+  categoria:       profileType === 'bia_only' ? null : categoria,
+  profileType,
+  testValues:      profileType !== 'bia_only' ? { ...tests } : {},
+  stats:           profileType !== 'bia_only' ? allStats : {},
+  biaHistory:      profileType !== 'tests_only'
+    ? [{ ...parsedBiaValues, date: today }]
+    : [],
+  lastBia:         profileType !== 'tests_only' ? parsedBiaValues : null,
+  email:           account.email.trim(),
+  password:        account.password,
+  sessionsPerWeek: parseInt(settings.sessionsPerWeek) || 3,
+})
+
+// Aggiorna StepContent per gestire profileType e bia
+if (currentStep?.type === 'profileType') return (
+  <StepProfileType
+    profileType={profileType}
+    setProfileType={(type) => {
+      setProfileType(type)
+      // Resetta i dati dell'altra tipologia se cambia
+      if (type === 'bia_only') setTests({})
+      if (type === 'tests_only') setBiaValues(BIA_EMPTY)
+    }}
+  />
+)
+
+if (currentStep?.type === 'bia') return (
+  <StepBia
+    biaValues={biaValues}
+    setBiaValues={setBiaValues}
+    errors={errors}
+    anagrafica={anagrafica}
+  />
+)
+
+// Esponi nel return
+// profileType, setProfileType, biaValues, setBiaValues
+```
+
+---
+
+## FASE 8 — Verifica
 
 ### 8A — Build
 ```bash
 npm run build
-npm run preview
 ```
 
-### 8B — Cerca residui colori FitQuest
+### 8B — Checklist funzionale
+
+**Wizard:**
+- [ ] Step profileType mostra 3 opzioni
+- [ ] tests_only → wizard con step test, no step BIA
+- [ ] bia_only   → wizard con step BIA, no step test e no step categoria
+- [ ] complete   → wizard con step test + step BIA
+- [ ] Dati salvati correttamente su Firestore
+
+**Dashboard trainer:**
+- [ ] tests_only → mostra banner upgrade BIA, nessuna sezione BIA
+- [ ] bia_only   → mostra sezione BIA, banner upgrade test
+- [ ] complete   → mostra tutto senza banner
+- [ ] Bottone NUOVA MISURAZIONE apre BiaView
+- [ ] Bottone AGGIUNGI AL PROFILO fa upgrade a complete
+- [ ] Storico precedente mantenuto dopo upgrade
+
+**Dashboard cliente:**
+- [ ] tests_only → sezione BIA bloccata con silhouette
+- [ ] bia_only   → sezione test bloccata con silhouette
+- [ ] complete   → tutto visibile
+
+**BiaView:**
+- [ ] Input parametri con preview gauge live
+- [ ] BMI calcolato automaticamente
+- [ ] Delta dal precedente mostrato
+- [ ] Conferma prima di salvare
+- [ ] XP assegnata correttamente
+
+### 8C — Verifica Firestore
 ```bash
-grep -rn "#8b5cf6\|#7c3aed\|#60a5fa\|violet\|purple\|indigo" \
-  src --include="*.jsx" --include="*.js" --include="*.css"
+# Controlla che i nuovi campi siano scritti correttamente
+# Apri Firebase Console → clients → documento cliente
+# Verifica: profileType, biaHistory, lastBia
 ```
-
-### 8C — Cerca Rajdhani
-```bash
-grep -rn "Rajdhani\|rajdhani" \
-  src public index.html \
-  --include="*.jsx" --include="*.js" --include="*.css" --include="*.html"
-```
-
-### 8D — Checklist visiva
-Verifica manualmente ogni schermata:
-- [ ] Login — logo RankEX, sfondo esagonale, verde/ciano
-- [ ] Sidebar — icone verdi, glow al hover
-- [ ] Tab bar mobile — indicatore verde con glow
-- [ ] Lista allievi — card con bordo verde sottile
-- [ ] Modal — sfondo scuro, bordo verde
-- [ ] Bottoni — gradiente verde→ciano
-- [ ] Input — bordo verde, focus verde
-- [ ] Separatori — gradiente verde
-- [ ] Section labels — testo verde
-- [ ] PlayerCard — stile carta calciatore hi-tech
 ```
 
 ---
 
 ## Come usarlo in Claude Code
+
 ```
-Leggi CLAUDE.md del progetto RankEX.
-Poi esegui RANKEX_PALETTE.md fase per fase.
+Leggi CLAUDE.md del progetto.
+Poi esegui BIA_FEATURE.md fase per fase.
 
-Inizia dalla FASE 1 — aggiorna theme.js.
-Dopo ogni fase esegui npm run build per verificare.
-Non procedere alla fase successiva se ci sono errori.
+Inizia dalla FASE 1 — crea i file delle costanti.
+Esegui npm run build dopo ogni fase.
+Non procedere se ci sono errori.
 
-Nota: i colori primari di RankEX sono:
-- Verde logo:  #0fd65a / #1aff6e
-- Ciano logo:  #00c8ff
-- Sfondo:      #080c12
-- Bordi:       rgba(15,214,90,0.12)
-
-Tutto il viola/indigo di FitQuest va sostituito con
-il verde/ciano di RankEX.
+Punti critici da verificare:
+1. useWizard.js — i wizard steps cambiano dinamicamente
+   in base a profileType
+2. ClientDashboard — le sezioni si mostrano/nascondono
+   in base a profile.hasTests e profile.hasBia
+3. buildBiaUpdate in gamification.js — la logica XP
+   dipende dal confronto con la misurazione precedente
+```

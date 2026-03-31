@@ -5,6 +5,7 @@ import {
   ALL_TESTS,
 } from '../constants'
 import { calcStatMedia } from './percentile'
+import { calcBiaXP }    from './bia'
 
 // ── Streak sessioni ───────────────────────────────────────────────────────────
 // La streak conta sessioni consecutive chiuse con presenza.
@@ -238,6 +239,75 @@ export function buildCampionamentoUpdate(client, newStats, testValues) {
 }
 
 /**
+ * Costruisce l'update per una nuova misurazione BIA.
+ */
+export function buildBiaUpdate(client, newBia) {
+  const today   = new Date().toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })
+  const prevBia = client.lastBia ?? null
+  const xpToAdd = calcBiaXP(newBia, prevBia)
+
+  const biaRecord  = { ...newBia, date: today }
+  const biaHistory = [biaRecord, ...(client.biaHistory ?? [])].slice(0, 50)
+
+  const logEntry = {
+    date:   today,
+    action: `BIA — ${prevBia ? 'Aggiornamento composizione corporea' : 'Prima misurazione'}`,
+    xp:     xpToAdd,
+  }
+  const log = [logEntry, ...(client.log ?? [])].slice(0, LOG_MAX_ENTRIES)
+
+  const { xp, xpNext, level } = calcLevelProgression(
+    (client.xp ?? 0) + xpToAdd,
+    client.xpNext,
+    client.level,
+  )
+
+  return {
+    update: {
+      lastBia:    biaRecord,
+      biaHistory,
+      log,
+      xp,
+      xpNext,
+      level,
+    },
+    xpEarned: xpToAdd,
+  }
+}
+
+/**
+ * Upgrade categoria profilo cliente.
+ * Mantiene lo storico della tipologia precedente.
+ */
+export function buildProfileUpgrade(client, newProfileType) {
+  const update = { profileType: newProfileType }
+  const today  = new Date().toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })
+
+  if (newProfileType === 'complete') {
+    if (client.profileType === 'tests_only') {
+      update.biaHistory = []
+      update.lastBia    = null
+    } else if (client.profileType === 'bia_only') {
+      update.stats         = {}
+      update.campionamenti = []
+      update.rank          = 'F'
+      update.rankColor     = '#6b7280'
+      update.media         = 0
+      update.categoria     = 'health'
+    }
+  }
+
+  const logEntry = {
+    date:   today,
+    action: `Profilo aggiornato → ${newProfileType === 'complete' ? 'Test + BIA' : newProfileType}`,
+    xp:     0,
+  }
+  update.log = [logEntry, ...(client.log ?? [])].slice(0, LOG_MAX_ENTRIES)
+
+  return update
+}
+
+/**
  * Costruisce l'oggetto cliente completo da persistere su Firestore alla creazione.
  * @param {string} trainerId — uid del trainer
  * @param {object} formData  — dati dal wizard (anagrafica + stats + testValues + account)
@@ -246,19 +316,22 @@ export function buildCampionamentoUpdate(client, newStats, testValues) {
  */
 export function buildNewClient(trainerId, formData, defaults) {
   const today = new Date().toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })
-  const { testValues, stats, ...anagrafica } = formData
-  const media   = calcStatMedia(stats)
+  const { testValues = {}, stats = {}, ...anagrafica } = formData
+  const profileType = anagrafica.profileType ?? 'tests_only'
+  const hasTests    = profileType !== 'bia_only'
+
+  const media   = hasTests ? calcStatMedia(stats) : 0
   const rankObj = getRankFromMedia(media)
 
   return {
     ...defaults,
     ...anagrafica,
     trainerId,
-    stats,
-    rank:      rankObj.label,
-    rankColor: rankObj.color,
-    media,
-    campionamenti: [{ date: today, stats, tests: testValues, media }],
+    stats:         hasTests ? stats : {},
+    rank:          hasTests ? rankObj.label : 'F',
+    rankColor:     hasTests ? rankObj.color : '#4a5568',
+    media:         hasTests ? media : 0,
+    campionamenti: hasTests ? [{ date: today, stats, tests: testValues, media }] : [],
     log: [{ date: today, action: 'Benvenuto nel programma!', xp: 0 }],
   }
 }

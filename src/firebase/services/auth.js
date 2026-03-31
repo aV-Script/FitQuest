@@ -1,6 +1,7 @@
 import {
   getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword,
   signOut, onAuthStateChanged, sendPasswordResetEmail,
+  updatePassword, reauthenticateWithCredential, EmailAuthProvider,
 } from 'firebase/auth'
 import { initializeApp } from 'firebase/app'
 import app from '../config'
@@ -26,6 +27,13 @@ export const logout        = ()          => signOut(auth)
 export const resetPassword = (email)     => sendPasswordResetEmail(auth, email)
 export const onAuthChange  = (cb)        => onAuthStateChanged(auth, cb)
 export const getCurrentUser = ()         => auth.currentUser
+
+export async function changeTrainerPassword(currentPw, newPw) {
+  const user       = auth.currentUser
+  const credential = EmailAuthProvider.credential(user.email, currentPw)
+  await reauthenticateWithCredential(user, credential)
+  await updatePassword(user, newPw)
+}
 
 export async function createClientAccount(email, password) {
   const cred = await createUserWithEmailAndPassword(secondaryAuth, email, password)
