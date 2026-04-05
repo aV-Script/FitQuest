@@ -1,7 +1,7 @@
 const DAY_LABELS = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab']
 
 const STATUS_COLORS = {
-  active:    '#0fd65a',
+  active:    'var(--green-400)',
   ended:     '#6b7280',
   cancelled: '#f87171',
 }
@@ -23,17 +23,17 @@ export function RecurrenceCard({ recurrence, clients, onClick }) {
       onClick={onClick}
       className="w-full text-left p-4 cursor-pointer border transition-all hover:opacity-90"
       style={{
-        background:   'rgba(13,21,32,0.9)',
-        borderColor:  'rgba(15,214,90,0.12)',
+        background:   'var(--bg-surface)',
+        borderColor:  'rgba(14,196,82,0.12)',
         borderRadius: '4px',
       }}
       onMouseEnter={e => {
-        e.currentTarget.style.background   = 'rgba(15,214,90,0.04)'
-        e.currentTarget.style.borderColor  = 'rgba(15,214,90,0.25)'
+        e.currentTarget.style.background   = 'rgba(14,196,82,0.04)'
+        e.currentTarget.style.borderColor  = 'rgba(14,196,82,0.25)'
       }}
       onMouseLeave={e => {
-        e.currentTarget.style.background   = 'rgba(13,21,32,0.9)'
-        e.currentTarget.style.borderColor  = 'rgba(15,214,90,0.12)'
+        e.currentTarget.style.background   = 'var(--bg-surface)'
+        e.currentTarget.style.borderColor  = 'rgba(14,196,82,0.12)'
       }}
     >
       <div className="flex items-start justify-between mb-3">

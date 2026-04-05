@@ -14,18 +14,18 @@ export function TabItem({ item, active, onClick }) {
         <div
           className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] w-8"
           style={{
-            background:   'linear-gradient(90deg, #0fd65a, #00c8ff)',
+            background:   'var(--gradient-primary)',
             borderRadius: '1px',
-            boxShadow:    '0 0 8px rgba(15,214,90,0.5)',
+            boxShadow:    '0 0 8px rgba(14,196,82,0.5)',
           }}
         />
       )}
-      <span style={{ color: active ? '#0fd65a' : 'rgba(200,212,224,0.3)' }}>
+      <span style={{ color: active ? 'var(--green-400)' : 'var(--text-tertiary)' }}>
         {item.icon}
       </span>
       <span
         className="font-display text-[9px] tracking-[0.5px]"
-        style={{ color: active ? '#0fd65a' : 'rgba(200,212,224,0.3)' }}
+        style={{ color: active ? 'var(--green-400)' : 'var(--text-tertiary)' }}
       >
         {item.label.toUpperCase()}
       </span>

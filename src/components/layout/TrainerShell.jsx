@@ -12,29 +12,49 @@ import { MobileNav } from './trainer-shell/MobileNav'
  *   onNavigate — callback chiamato al cambio pagina
  *   children   — contenuto della pagina corrente
  */
-export function TrainerShell({ page, onNavigate, children }) {
+export function TrainerShell({ page, onNavigate, children, isOrgAdmin = false, onNavigateOrg }) {
   return (
-    <div className="min-h-screen text-white flex flex-col lg:flex-row">
-
+    <div
+      style={{
+        display:    'flex',
+        height:     '100vh',
+        overflow:   'hidden',
+        background: 'var(--bg-base)',
+        color:      'var(--text-primary)',
+      }}
+    >
       <Sidebar
         page={page}
         onNavigate={onNavigate}
         onLogout={logout}
+        isOrgAdmin={isOrgAdmin}
+        onNavigateOrg={onNavigateOrg}
       />
 
-      <MobileNav
-        page={page}
-        onNavigate={onNavigate}
-        onLogout={logout}
-      />
-
-      <main
-        className="flex-1 min-w-0"
-        aria-label="Contenuto principale"
+      <div
+        style={{
+          flex:          1,
+          display:       'flex',
+          flexDirection: 'column',
+          overflow:      'hidden',
+          minWidth:      0,
+        }}
       >
-        {children}
-      </main>
+        <MobileNav
+          page={page}
+          onNavigate={onNavigate}
+          onLogout={logout}
+          isOrgAdmin={isOrgAdmin}
+          onNavigateOrg={onNavigateOrg}
+        />
 
+        <main
+          style={{ flex: 1, overflowY: 'auto', overscrollBehavior: 'contain' }}
+          aria-label="Contenuto principale"
+        >
+          {children}
+        </main>
+      </div>
     </div>
   )
 }

@@ -10,7 +10,7 @@ import {
 
 const CLIENTS_PAGE_SIZE = 8
 
-export function GroupDetailView({ group, clients, trainerId, onToggleClient, onRename, onDelete, onBack }) {
+export function GroupDetailView({ group, clients, orgId, onToggleClient, onRename, onDelete, onBack }) {
   const [clientSearch, setClientSearch] = useState('')
   const [isEditing,    setIsEditing]    = useState(false)
   const [editingName,  setEditingName]  = useState(group.name)
@@ -50,16 +50,16 @@ export function GroupDetailView({ group, clients, trainerId, onToggleClient, onR
       await onToggleClient(group.id, client.id)
 
       if (isRemoving) {
-        await removeClientFromGroupSlots(trainerId, group.id, client.id)
+        await removeClientFromGroupSlots(orgId, group.id, client.id)
       } else {
-        await addClientToGroupSlots(trainerId, group.id, client.id)
+        await addClientToGroupSlots(orgId, group.id, client.id)
       }
     } catch (err) {
       console.error('[GroupDetailView] toggleClient failed', err)
     } finally {
       setToggling(null)
     }
-  }, [toggleDialog, group.id, onToggleClient, trainerId])
+  }, [toggleDialog, group.id, onToggleClient, orgId])
 
   const handleRename = useCallback(async () => {
     if (!editingName.trim() || editingName === group.name) {
@@ -79,7 +79,7 @@ export function GroupDetailView({ group, clients, trainerId, onToggleClient, onR
     <div className="min-h-screen text-white">
 
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-white/[.05]">
+      <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
         <button
           onClick={onBack}
           className="flex items-center gap-1.5 bg-transparent border-none text-white/30 font-body text-[13px] cursor-pointer hover:text-white/60 transition-colors p-0"
@@ -126,9 +126,9 @@ export function GroupDetailView({ group, clients, trainerId, onToggleClient, onR
         <div className="flex items-center gap-4 mb-8">
           <div
             className="w-14 h-14 rounded-[3px] flex items-center justify-center shrink-0"
-            style={{ background: 'rgba(15,214,90,0.08)', border: '1px solid rgba(15,214,90,0.2)' }}
+            style={{ background: 'rgba(14,196,82,0.08)', border: '1px solid rgba(14,196,82,0.2)' }}
           >
-            <span className="font-display font-black text-[20px]" style={{ color: '#0fd65a' }}>
+            <span className="font-display font-black text-[20px]" style={{ color: 'var(--green-400)' }}>
               {group.name[0].toUpperCase()}
             </span>
           </div>
@@ -208,7 +208,7 @@ export function GroupDetailView({ group, clients, trainerId, onToggleClient, onR
         <GroupToggleDialog
           client={toggleDialog.client}
           group={group}
-          trainerId={trainerId}
+          orgId={orgId}
           isRemoving={toggleDialog.isRemoving}
           onConfirm={handleConfirmToggle}
           onCancel={() => setToggleDialog(null)}
@@ -236,21 +236,21 @@ function ClientRow({ client, inGroup, loading, onToggle }) {
     <div
       className="flex items-center justify-between px-4 py-3 rounded-[3px] transition-all"
       style={inGroup
-        ? { background: 'rgba(52,211,153,0.06)', border: '1px solid rgba(52,211,153,0.15)' }
-        : { background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }
+        ? { background: 'rgba(14,196,82,0.06)', border: '1px solid rgba(14,196,82,0.15)' }
+        : { background: 'var(--bg-surface)', border: '1px solid var(--border-default)' }
       }
     >
       <div className="flex items-center gap-3">
         <div
           className="w-8 h-8 rounded-[3px] flex items-center justify-center shrink-0"
           style={inGroup
-            ? { background: 'rgba(52,211,153,0.15)' }
-            : { background: 'rgba(255,255,255,0.06)' }
+            ? { background: 'rgba(14,196,82,0.15)' }
+            : { background: 'var(--bg-raised)' }
           }
         >
           <span
             className="font-display text-[11px]"
-            style={{ color: inGroup ? '#34d399' : 'rgba(255,255,255,0.4)' }}
+            style={{ color: inGroup ? 'var(--green-400)' : 'var(--text-secondary)' }}
           >
             {client.name?.[0]?.toUpperCase()}
           </span>
@@ -271,7 +271,7 @@ function ClientRow({ client, inGroup, loading, onToggle }) {
         className="font-display text-[10px] px-3 py-1.5 rounded-[3px] cursor-pointer border transition-all disabled:opacity-40"
         style={inGroup
           ? { color: '#f87171', borderColor: 'rgba(248,113,113,0.2)', background: 'transparent' }
-          : { color: '#0fd65a', borderColor: 'rgba(15,214,90,0.2)',   background: 'rgba(15,214,90,0.06)' }
+          : { color: 'var(--green-400)', borderColor: 'rgba(14,196,82,0.2)', background: 'rgba(14,196,82,0.06)' }
         }
       >
         {loading ? '...' : inGroup ? 'RIMUOVI' : 'AGGIUNGI'}
@@ -289,7 +289,7 @@ function ActionBtn({ onClick, children, color, danger, muted }) {
         danger ? { color: '#f87171', borderColor: 'rgba(248,113,113,0.2)', background: 'transparent' } :
         muted  ? { color: 'rgba(255,255,255,0.3)', borderColor: 'rgba(255,255,255,0.1)', background: 'transparent' } :
         color  ? { color, borderColor: color + '44', background: color + '11' } :
-                 { color: 'rgba(255,255,255,0.4)', borderColor: 'rgba(255,255,255,0.1)', background: 'transparent' }
+                 { color: 'var(--text-secondary)', borderColor: 'var(--border-default)', background: 'transparent' }
       }
     >
       {children}

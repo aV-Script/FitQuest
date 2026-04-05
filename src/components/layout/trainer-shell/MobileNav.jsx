@@ -1,31 +1,59 @@
-import { TabItem }              from './TabItem'
-import { NAV_ITEMS, LogoutIcon } from './navItems.config'
+import { TabItem }                                from './TabItem'
+import { NAV_ITEMS, ORG_ADMIN_NAV_ITEMS, LogoutIcon } from './navItems.config'
 
-/**
- * Navigazione mobile — header fisso + tab bar.
- * onLogout viene dall'esterno per le stesse ragioni della Sidebar.
- */
-export function MobileNav({ page, onNavigate, onLogout }) {
+export function MobileNav({ page, onNavigate, onLogout, isOrgAdmin, onNavigateOrg }) {
+  const handleNav = (id) => {
+    if (isOrgAdmin && (id === 'members' || id === 'settings')) {
+      onNavigateOrg?.(id)
+    } else {
+      onNavigate(id)
+    }
+  }
+  const allItems = isOrgAdmin ? [...NAV_ITEMS, ...ORG_ADMIN_NAV_ITEMS] : NAV_ITEMS
   return (
-    <div className="lg:hidden flex-none">
+    <div className="lg:hidden" style={{ flexShrink: 0 }}>
 
       {/* Header */}
       <header
-        className="
-          flex items-center justify-between
-          px-5 py-3 border-b border-white/[.05]
-          sticky top-0 z-30 backdrop-blur-md
-        "
+        style={{
+          display:        'flex',
+          alignItems:     'center',
+          justifyContent: 'space-between',
+          padding:        '0 20px',
+          height:         52,
+          borderBottom:   '1px solid var(--border-subtle)',
+          background:     'var(--bg-subtle)',
+          position:       'sticky',
+          top:            0,
+          zIndex:         30,
+        }}
         aria-label="Header mobile"
       >
-        <span className="rx-glow-text font-display font-black text-[17px]">
-          Rank EX
+        <span
+          className="rx-glow-text"
+          style={{
+            fontFamily:    'Montserrat, sans-serif',
+            fontSize:      17,
+            fontWeight:    900,
+            lineHeight:    1,
+            letterSpacing: '-0.02em',
+          }}
+        >
+          RankEX
         </span>
 
         <button
           onClick={onLogout}
           aria-label="Logout"
-          className="text-white/30 hover:text-white/60 transition-colors bg-transparent border-none cursor-pointer"
+          style={{
+            background:  'transparent',
+            border:      'none',
+            cursor:      'pointer',
+            color:       'var(--text-tertiary)',
+            transition:  'color var(--duration-fast)',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.color = 'var(--text-secondary)' }}
+          onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-tertiary)' }}
         >
           {LogoutIcon}
         </button>
@@ -33,15 +61,22 @@ export function MobileNav({ page, onNavigate, onLogout }) {
 
       {/* Tab bar */}
       <nav
-        className="flex border-b border-white/[.05] sticky top-[49px] z-20 backdrop-blur-md"
+        style={{
+          display:     'flex',
+          borderBottom: '1px solid var(--border-subtle)',
+          position:    'sticky',
+          top:         52,
+          zIndex:      20,
+          background:  'var(--bg-subtle)',
+        }}
         aria-label="Navigazione mobile"
       >
-        {NAV_ITEMS.map(item => (
+        {allItems.map(item => (
           <TabItem
             key={item.id}
             item={item}
             active={page === item.id}
-            onClick={() => onNavigate(item.id)}
+            onClick={() => handleNav(item.id)}
           />
         ))}
       </nav>

@@ -12,27 +12,27 @@ export function SidebarIcon({ item, active, onClick }) {
         aria-current={active ? 'page' : undefined}
         className="w-10 h-10 flex items-center justify-center cursor-pointer transition-all"
         style={active ? {
-          background:   'rgba(15,214,90,0.1)',
-          border:       '1px solid rgba(15,214,90,0.35)',
-          borderRadius: '4px',
-          color:        '#0fd65a',
-          boxShadow:    '0 0 12px rgba(15,214,90,0.15)',
+          background:   'rgba(14,196,82,0.1)',
+          border:       '1px solid rgba(14,196,82,0.35)',
+          borderRadius: 'var(--radius-sm)',
+          color:        'var(--green-400)',
+          boxShadow:    '0 0 12px rgba(14,196,82,0.15)',
         } : {
           background:   'transparent',
           border:       '1px solid transparent',
-          borderRadius: '4px',
-          color:        'rgba(200,212,224,0.3)',
+          borderRadius: 'var(--radius-sm)',
+          color:        'var(--text-tertiary)',
         }}
         onMouseEnter={e => {
           if (!active) {
-            e.currentTarget.style.borderColor = 'rgba(15,214,90,0.2)'
-            e.currentTarget.style.color       = 'rgba(15,214,90,0.8)'
+            e.currentTarget.style.borderColor = 'rgba(14,196,82,0.2)'
+            e.currentTarget.style.color       = 'var(--green-400)'
           }
         }}
         onMouseLeave={e => {
           if (!active) {
             e.currentTarget.style.borderColor = 'transparent'
-            e.currentTarget.style.color       = 'rgba(200,212,224,0.3)'
+            e.currentTarget.style.color       = 'var(--text-tertiary)'
           }
         }}
       >
@@ -47,14 +47,14 @@ export function SidebarIcon({ item, active, onClick }) {
         px-2.5 py-1.5 whitespace-nowrap
       "
         style={{
-          background:   'rgba(8,12,18,0.97)',
-          border:       '1px solid rgba(15,214,90,0.2)',
-          borderRadius: '3px',
-          boxShadow:    '0 4px 12px rgba(0,0,0,0.5)',
+          background:   'var(--bg-overlay)',
+          border:       '1px solid rgba(14,196,82,0.2)',
+          borderRadius: 'var(--radius-sm)',
+          boxShadow:    'var(--shadow-lg)',
         }}
       >
         <span className="font-display text-[10px] tracking-[2px]"
-          style={{ color: '#0fd65a' }}>
+          style={{ color: 'var(--green-400)' }}>
           {item.label.toUpperCase()}
         </span>
       </div>

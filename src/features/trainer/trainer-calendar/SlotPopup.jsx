@@ -1,151 +1,414 @@
-import { useEffect, useRef } from 'react'
-import { SLOT_STATUS } from '../../../constants/slotStatus'
+import { useEffect, useRef, useCallback }        from 'react'
+import { StatusBadge }                           from '../../../components/ui/Badge'
+import { calcSessionXP, calcStreakPreview }      from '../../../utils/gamification'
 
 /**
- * Popup dettaglio slot — appare al click su un evento.
- * Mostra info slot e azioni rapide.
+ * SlotPopup — popup dettaglio slot.
+ *
+ * Appare al click su un evento.
+ * Si auto-posiziona per rimanere dentro il viewport.
  */
-export function SlotPopup({ slot, clients, position, onClose, onDelete, onSkip, onCloseSession, onViewRecurrence }) {
-  const ref = useRef(null)
+export function SlotPopup({
+  slot,
+  clients,
+  position,
+  onClose,
+  onCloseSession,
+  onSkip,
+  onDelete,
+  onViewRecurrence,
+}) {
+  const ref     = useRef(null)
+  const isToday = slot.date === new Date().toISOString().slice(0, 10)
+  const isPast  = slot.date <= new Date().toISOString().slice(0, 10)
+  const status  = slot.status ?? 'planned'
+
+  const slotClients = slot.clientIds
+    .map(id => clients.find(c => c.id === id))
+    .filter(Boolean)
 
   // Chiude al click fuori
   useEffect(() => {
     const handler = (e) => {
       if (ref.current && !ref.current.contains(e.target)) onClose()
     }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
+    const timer = setTimeout(() => {
+      document.addEventListener('mousedown', handler)
+    }, 100)
+    return () => {
+      clearTimeout(timer)
+      document.removeEventListener('mousedown', handler)
+    }
   }, [onClose])
 
-  const slotClients = slot.clientIds
-    .map(id => clients.find(c => c.id === id))
-    .filter(Boolean)
+  // Keyboard: Escape chiude
+  useEffect(() => {
+    const handler = (e) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [onClose])
 
-  const statusLabel = {
-    [SLOT_STATUS.PLANNED]:   { text: 'PIANIFICATA', color: '#00c8ff' },
-    [SLOT_STATUS.COMPLETED]: { text: 'COMPLETATA',  color: '#34d399' },
-    [SLOT_STATUS.SKIPPED]:   { text: 'SALTATA',     color: '#6b7280' },
-  }[slot.status ?? SLOT_STATUS.PLANNED]
+  // Auto-posizionamento dentro il viewport
+  const adjustedPosition = useCallback(() => {
+    const POPUP_W = 288
+    const POPUP_H = 400
+    const MARGIN  = 12
 
-  const isPast      = slot.date < new Date().toISOString().slice(0, 10)
-  const isCompleted = slot.status === SLOT_STATUS.COMPLETED
-  const isSkipped   = slot.status === SLOT_STATUS.SKIPPED
+    let x = position.x
+    let y = position.y
+
+    if (x + POPUP_W + MARGIN > window.innerWidth) {
+      x = window.innerWidth - POPUP_W - MARGIN
+    }
+    if (x < MARGIN) x = MARGIN
+
+    if (y + POPUP_H + MARGIN > window.innerHeight) {
+      y = position.y - POPUP_H - MARGIN
+    }
+    if (y < MARGIN) y = MARGIN
+
+    return { x, y }
+  }, [position])
+
+  const { x, y } = adjustedPosition()
+
+  const dateLabel = new Date(slot.date + 'T12:00').toLocaleDateString('it-IT', {
+    weekday: 'long',
+    day:     'numeric',
+    month:   'long',
+  })
 
   return (
     <div
       ref={ref}
-      className="fixed z-50 w-72 rounded-[4px] p-4 shadow-2xl"
+      className="animate-scale-in"
       style={{
-        background: '#0d1520',
-        border:     '1px solid rgba(15,214,90,0.15)',
-        top:        position.y,
-        left:       position.x,
-        maxWidth:   'calc(100vw - 32px)',
+        position:     'fixed',
+        top:          y,
+        left:         x,
+        width:        288,
+        zIndex:       500,
+        background:   'var(--bg-float)',
+        border:       '1px solid var(--border-strong)',
+        borderRadius: 'var(--radius-xl)',
+        boxShadow:    'var(--shadow-lg)',
+        overflow:     'hidden',
       }}
     >
-      {/* Header */}
-      <div className="flex items-start justify-between mb-3">
-        <div>
-          <div className="font-display font-black text-[14px] text-white">
-            {slot.startTime}{slot.endTime ? ` → ${slot.endTime}` : ''}
-          </div>
-          <div className="font-body text-[12px] text-white/40 mt-0.5">
-            {new Date(slot.date + 'T12:00').toLocaleDateString('it-IT', {
-              weekday: 'long', day: 'numeric', month: 'long'
-            })}
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <span
-            className="font-display text-[9px] px-2 py-0.5 rounded-[3px]"
-            style={{ background: statusLabel.color + '22', color: statusLabel.color }}
-          >
-            {statusLabel.text}
-          </span>
-          <button
-            onClick={onClose}
-            className="bg-transparent border-none text-white/30 cursor-pointer hover:text-white/60 transition-colors text-[16px] leading-none p-0"
-          >
-            ✕
-          </button>
-        </div>
-      </div>
-
-      {/* Clienti */}
-      <div className="flex flex-col gap-1.5 mb-4">
-        {slotClients.map(client => {
-          const isPresent = slot.attendees?.includes(client.id)
-          const isAbsent  = slot.absentees?.includes(client.id)
-          return (
+      {/* ── Header ─────────────────────────────────────── */}
+      <div
+        style={{
+          padding:      '14px 16px 12px',
+          borderBottom: '1px solid var(--border-subtle)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            {/* Orario */}
             <div
-              key={client.id}
-              className="flex items-center gap-2 px-3 py-2 rounded-[3px]"
               style={{
-                background: isPresent ? 'rgba(52,211,153,0.06)' :
-                            isAbsent  ? 'rgba(248,113,113,0.06)' :
-                            'rgba(13,21,32,0.6)',
+                fontFamily:    'Montserrat, sans-serif',
+                fontSize:      16,
+                fontWeight:    900,
+                color:         'var(--text-primary)',
+                letterSpacing: '-0.01em',
+                lineHeight:    1,
+                marginBottom:  4,
               }}
             >
-              <span
-                className="w-4 h-4 flex items-center justify-center text-[10px]"
-                style={{
-                  color: isPresent ? '#34d399' : isAbsent ? '#f87171' : 'rgba(255,255,255,0.3)',
-                }}
-              >
-                {isPresent ? '✓' : isAbsent ? '✗' : '·'}
-              </span>
-              <span className="font-body text-[13px] text-white/70 flex-1">{client.name}</span>
-              {isPresent && (
-                <span className="font-display text-[10px] text-emerald-400">
-                  +XP
+              {slot.startTime}
+              {slot.endTime && (
+                <span style={{ color: 'var(--text-tertiary)', fontWeight: 600 }}>
+                  {' → '}{slot.endTime}
                 </span>
               )}
             </div>
-          )
-        })}
+
+            {/* Data */}
+            <div
+              style={{
+                fontSize:      12,
+                color:         'var(--text-tertiary)',
+                lineHeight:    1.3,
+                textTransform: 'capitalize',
+              }}
+            >
+              {dateLabel}
+            </div>
+          </div>
+
+          {/* Status + close */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <StatusBadge status={status} />
+            <button
+              onClick={onClose}
+              style={{
+                width:          24,
+                height:         24,
+                display:        'flex',
+                alignItems:     'center',
+                justifyContent: 'center',
+                background:     'transparent',
+                border:         '1px solid var(--border-default)',
+                borderRadius:   'var(--radius-md)',
+                color:          'var(--text-tertiary)',
+                cursor:         'pointer',
+                fontSize:       12,
+                transition:     'all var(--duration-fast)',
+                flexShrink:     0,
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.borderColor = 'var(--border-strong)'
+                e.currentTarget.style.color       = 'var(--text-primary)'
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.borderColor = 'var(--border-default)'
+                e.currentTarget.style.color       = 'var(--text-tertiary)'
+              }}
+            >
+              ✕
+            </button>
+          </div>
+        </div>
       </div>
 
+      {/* ── Clienti ────────────────────────────────────── */}
+      <div style={{ padding: '10px 16px' }}>
+        {slotClients.length === 0 ? (
+          <p style={{ fontSize: 12, color: 'var(--text-tertiary)', margin: 0 }}>
+            Nessun cliente assegnato
+          </p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {slotClients.map(client => {
+              const isPresent = slot.attendees?.includes(client.id)
+              const isAbsent  = slot.absentees?.includes(client.id)
+              const xp        = calcSessionXP(
+                client.baseXP ?? 50,
+                calcStreakPreview(client)
+              )
+
+              return (
+                <div
+                  key={client.id}
+                  style={{
+                    display:      'flex',
+                    alignItems:   'center',
+                    gap:          8,
+                    padding:      '7px 10px',
+                    background:   isPresent
+                      ? 'rgba(14,196,82,0.06)'
+                      : isAbsent
+                      ? 'rgba(240,82,82,0.06)'
+                      : 'var(--bg-raised)',
+                    border:       `1px solid ${
+                      isPresent ? 'rgba(14,196,82,0.15)' :
+                      isAbsent  ? 'rgba(240,82,82,0.15)' :
+                      'var(--border-subtle)'
+                    }`,
+                    borderRadius: 'var(--radius-md)',
+                  }}
+                >
+                  {/* Indicatore */}
+                  <span
+                    style={{
+                      fontSize:   12,
+                      flexShrink: 0,
+                      color:      isPresent ? '#0ec452' :
+                                  isAbsent  ? '#f05252' :
+                                  'var(--text-tertiary)',
+                    }}
+                  >
+                    {isPresent ? '✓' : isAbsent ? '✗' : '·'}
+                  </span>
+
+                  {/* Nome */}
+                  <span
+                    style={{
+                      fontFamily:   'Inter, sans-serif',
+                      fontSize:     13,
+                      fontWeight:   500,
+                      color:        isAbsent
+                        ? 'var(--text-tertiary)'
+                        : 'var(--text-secondary)',
+                      flex:         1,
+                      overflow:     'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace:   'nowrap',
+                    }}
+                  >
+                    {client.name}
+                  </span>
+
+                  {/* XP */}
+                  {isPresent && (
+                    <span
+                      style={{
+                        fontFamily: 'Montserrat, sans-serif',
+                        fontSize:   9,
+                        fontWeight: 700,
+                        color:      '#0ec452',
+                        flexShrink: 0,
+                      }}
+                    >
+                      +{xp} XP
+                    </span>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Badge ricorrente */}
       {slot.recurrenceId && (
-        <button
-          onClick={() => onViewRecurrence?.(slot.recurrenceId)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-[3px] mb-4 w-full text-left cursor-pointer border transition-all hover:border-purple-400/30"
-          style={{ background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.15)' }}
-        >
-          <span className="font-display text-[10px] text-purple-400 flex-1">
-            ↺ Sessione ricorrente
-          </span>
-          <span className="font-display text-[9px] text-purple-400/50">
-            GESTISCI →
-          </span>
-        </button>
+        <div style={{ padding: '0 16px 8px' }}>
+          <button
+            onClick={() => onViewRecurrence?.(slot.recurrenceId)}
+            style={{
+              display:      'flex',
+              alignItems:   'center',
+              gap:          6,
+              padding:      '6px 10px',
+              background:   'rgba(122,143,166,0.08)',
+              border:       '1px solid rgba(122,143,166,0.15)',
+              borderRadius: 'var(--radius-md)',
+              cursor:       onViewRecurrence ? 'pointer' : 'default',
+              width:        '100%',
+              textAlign:    'left',
+              transition:   'all var(--duration-fast)',
+            }}
+          >
+            <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>↺</span>
+            <span
+              style={{
+                fontFamily:    'Montserrat, sans-serif',
+                fontSize:      9,
+                fontWeight:    700,
+                letterSpacing: '0.08em',
+                color:         'var(--text-tertiary)',
+                flex:          1,
+              }}
+            >
+              SESSIONE RICORRENTE
+            </span>
+            {onViewRecurrence && (
+              <span
+                style={{
+                  fontFamily: 'Montserrat, sans-serif',
+                  fontSize:   9,
+                  color:      'var(--text-tertiary)',
+                  opacity:    0.5,
+                }}
+              >
+                GESTISCI →
+              </span>
+            )}
+          </button>
+        </div>
       )}
 
-      {/* Azioni */}
-      <div className="flex flex-col gap-2">
-        {!isCompleted && !isSkipped && (
+      {/* ── Azioni ─────────────────────────────────────── */}
+      <div
+        style={{
+          padding:       '10px 16px 14px',
+          borderTop:     '1px solid var(--border-subtle)',
+          display:       'flex',
+          flexDirection: 'column',
+          gap:           6,
+        }}
+      >
+        {/* Chiudi sessione */}
+        {status === 'planned' && (
           <button
             onClick={onCloseSession}
-            className="w-full py-2.5 rounded-[3px] font-display text-[11px] tracking-widest cursor-pointer border-0 transition-opacity hover:opacity-85"
-            style={{ background: 'linear-gradient(135deg, #34d399, #059669)', color: '#fff' }}
+            style={{
+              width:          '100%',
+              padding:        '10px 14px',
+              background:     'var(--gradient-primary)',
+              border:         'none',
+              borderRadius:   'var(--radius-lg)',
+              color:          'var(--text-inverse)',
+              fontFamily:     'Montserrat, sans-serif',
+              fontSize:       11,
+              fontWeight:     700,
+              letterSpacing:  '0.07em',
+              cursor:         'pointer',
+              transition:     'opacity var(--duration-fast)',
+              display:        'flex',
+              alignItems:     'center',
+              justifyContent: 'center',
+              gap:            6,
+            }}
+            onMouseEnter={e => e.currentTarget.style.opacity = '0.88'}
+            onMouseLeave={e => e.currentTarget.style.opacity = '1'}
           >
+            <span>✓</span>
             CHIUDI SESSIONE
           </button>
         )}
 
-        {!isCompleted && !isSkipped && isPast && (
+        {/* Salta */}
+        {status === 'planned' && isPast && (
           <button
             onClick={onSkip}
-            className="w-full py-2.5 rounded-[3px] font-display text-[11px] cursor-pointer border border-white/10 bg-transparent text-white/40 hover:text-white/60 transition-all"
+            style={{
+              width:         '100%',
+              padding:       '8px 14px',
+              background:    'transparent',
+              border:        '1px solid var(--border-default)',
+              borderRadius:  'var(--radius-lg)',
+              color:         'var(--text-tertiary)',
+              fontFamily:    'Montserrat, sans-serif',
+              fontSize:      11,
+              fontWeight:    700,
+              letterSpacing: '0.07em',
+              cursor:        'pointer',
+              transition:    'all var(--duration-fast)',
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.borderColor = 'var(--border-strong)'
+              e.currentTarget.style.color       = 'var(--text-primary)'
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.borderColor = 'var(--border-default)'
+              e.currentTarget.style.color       = 'var(--text-tertiary)'
+            }}
           >
             SEGNA COME SALTATA
           </button>
         )}
 
+        {/* Elimina */}
         <button
           onClick={onDelete}
-          className="w-full py-2 rounded-[3px] font-display text-[11px] cursor-pointer border border-red-500/20 bg-transparent text-red-400/50 hover:text-red-400 hover:border-red-500/40 transition-all"
+          style={{
+            width:         '100%',
+            padding:       '8px 14px',
+            background:    'transparent',
+            border:        '1px solid transparent',
+            borderRadius:  'var(--radius-lg)',
+            color:         'var(--text-tertiary)',
+            fontFamily:    'Montserrat, sans-serif',
+            fontSize:      11,
+            fontWeight:    700,
+            letterSpacing: '0.07em',
+            cursor:        'pointer',
+            transition:    'all var(--duration-fast)',
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.borderColor = 'rgba(240,82,82,0.3)'
+            e.currentTarget.style.color       = '#f05252'
+            e.currentTarget.style.background  = 'rgba(240,82,82,0.06)'
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.borderColor = 'transparent'
+            e.currentTarget.style.color       = 'var(--text-tertiary)'
+            e.currentTarget.style.background  = 'transparent'
+          }}
         >
-          ELIMINA
+          ELIMINA SESSIONE
         </button>
       </div>
     </div>

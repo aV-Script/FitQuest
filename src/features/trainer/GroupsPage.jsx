@@ -6,14 +6,14 @@ import { Pagination }                     from '../../components/common/Paginati
 import { GroupCard }                      from './groups-page/GroupCard'
 import { GroupDetailView }                from './groups-page/GroupDetailView'
 import { GroupsSidebar }                  from './groups-page/GroupsSidebar'
-import { Skeleton }                       from '../../components/common/Skeleton'
+import { SkeletonCard }                    from '../../components/ui'
 import { PAGINATION_PAGE_SIZE }           from '../../config/app.config'
 
 const GROUPS_PAGE_SIZE = PAGINATION_PAGE_SIZE
 
-export function GroupsPage({ trainerId }) {
-  const { groups, isLoading, handleAddGroup, handleRenameGroup, handleToggleClient, handleDeleteGroup } = useGroups(trainerId)
-  const { clients } = useClients(trainerId)
+export function GroupsPage({ orgId }) {
+  const { groups, isLoading, handleAddGroup, handleRenameGroup, handleToggleClient, handleDeleteGroup } = useGroups(orgId)
+  const { clients } = useClients(orgId)
 
   const [view,         setView]         = useState('list') // 'list' | 'detail'
   const [selectedGroup, setSelectedGroup] = useState(null)
@@ -57,7 +57,7 @@ export function GroupsPage({ trainerId }) {
       <GroupDetailView
         group={currentGroup}
         clients={clients}
-        trainerId={trainerId}
+        orgId={orgId}
         onToggleClient={handleToggleClient}
         onRename={handleRenameGroup}
         onDelete={handleDeleteGroup}
@@ -101,7 +101,7 @@ export function GroupsPage({ trainerId }) {
             <button
               onClick={() => setShowNew(true)}
               className="px-4 py-2 text-[11px] rounded-[3px] font-display tracking-widest cursor-pointer border-0 transition-opacity hover:opacity-85"
-              style={{ background: 'linear-gradient(135deg, #1aff6e, #0fd65a, #00c8ff)', color: '#080c12' }}
+              style={{ background: 'var(--gradient-primary)', color: '#080c12' }}
             >
               NUOVO
             </button>
@@ -118,7 +118,7 @@ export function GroupsPage({ trainerId }) {
         {showNew && (
           <div
             className="rounded-[4px] p-4 mb-5 flex gap-3"
-            style={{ background: 'rgba(15,214,90,0.06)', border: '1px solid rgba(15,214,90,0.15)' }}
+            style={{ background: 'rgba(14,196,82,0.06)', border: '1px solid rgba(14,196,82,0.15)' }}
           >
             <input
               autoFocus
@@ -134,7 +134,7 @@ export function GroupsPage({ trainerId }) {
             <button
               onClick={handleCreate}
               className="font-display text-[11px] px-4 py-2 rounded-[3px] cursor-pointer border-0 transition-opacity hover:opacity-85"
-              style={{ background: 'linear-gradient(135deg, #1aff6e, #0fd65a, #00c8ff)', color: '#080c12' }}
+              style={{ background: 'var(--gradient-primary)', color: '#080c12' }}
             >
               CREA
             </button>
@@ -150,7 +150,7 @@ export function GroupsPage({ trainerId }) {
         {/* Lista gruppi */}
         {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-            <Skeleton variant="card" count={6} />
+            {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
           </div>
         ) : filteredGroups.length === 0 ? (
           <EmptyState>

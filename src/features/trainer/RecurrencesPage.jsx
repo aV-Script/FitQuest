@@ -10,14 +10,14 @@ const STATUS_TABS = [
   { id: 'cancelled', label: 'CANCELLATE' },
 ]
 
-export function RecurrencesPage({ trainerId, initialRecurrenceId }) {
+export function RecurrencesPage({ orgId, initialRecurrenceId }) {
   const {
     recurrences, loading, error,
     handleUpdateTime, handleUpdateDays, handleExtendPeriod,
     handleAddClient, handleRemoveClient, handleCancel,
-  } = useRecurrences(trainerId)
+  } = useRecurrences(orgId)
 
-  const { clients } = useClients(trainerId)
+  const { clients } = useClients(orgId)
 
   const [activeTab,  setActiveTab]  = useState('active')
   const [selectedId, setSelectedId] = useState(initialRecurrenceId ?? null)
@@ -45,7 +45,7 @@ export function RecurrencesPage({ trainerId, initialRecurrenceId }) {
     <div className="text-white">
 
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+      <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
         <h1 className="font-display font-black text-[20px] text-white m-0">Ricorrenze</h1>
         <span className="font-display text-[11px] text-white/30">
           {recurrences.filter(r => (r.status ?? 'active') === 'active').length} attive
@@ -53,15 +53,15 @@ export function RecurrencesPage({ trainerId, initialRecurrenceId }) {
       </div>
 
       {/* Tab status */}
-      <div className="flex" style={{ paddingLeft: 24, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+      <div className="flex" style={{ paddingLeft: 24, borderBottom: '1px solid var(--border-subtle)' }}>
         {STATUS_TABS.map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className="px-4 py-3 font-display text-[11px] cursor-pointer border-none bg-transparent transition-all"
             style={activeTab === tab.id
-              ? { color: '#0fd65a', borderBottom: '2px solid #0fd65a' }
-              : { color: 'rgba(255,255,255,0.3)', borderBottom: '2px solid transparent' }
+              ? { color: 'var(--green-400)', borderBottom: '2px solid var(--green-400)' }
+              : { color: 'var(--text-tertiary)', borderBottom: '2px solid transparent' }
             }
           >
             {tab.label}
@@ -83,7 +83,7 @@ export function RecurrencesPage({ trainerId, initialRecurrenceId }) {
               <div
                 key={i}
                 className="h-20 animate-pulse rounded-[4px]"
-                style={{ background: 'rgba(255,255,255,0.03)' }}
+                style={{ background: 'var(--bg-surface)' }}
               />
             ))}
           </div>

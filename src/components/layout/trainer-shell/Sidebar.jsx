@@ -1,38 +1,67 @@
 import { SidebarIcon } from './SidebarIcon'
-import { NAV_ITEMS, LogoutIcon } from './navItems.config'
+import { NAV_ITEMS, ORG_ADMIN_NAV_ITEMS, LogoutIcon } from './navItems.config'
 
-/**
- * Sidebar desktop — icone con tooltip, logo, logout.
- * Sticky a sinistra, visibile solo su lg+.
- * onLogout viene dall'esterno — la sidebar non sa come funziona il logout.
- */
-export function Sidebar({ page, onNavigate, onLogout }) {
+export function Sidebar({ page, onNavigate, onLogout, isOrgAdmin, onNavigateOrg }) {
+  const handleNav = (id) => {
+    if (isOrgAdmin && (id === 'members' || id === 'settings')) {
+      onNavigateOrg?.(id)
+    } else {
+      onNavigate(id)
+    }
+  }
+
+  const allItems = isOrgAdmin ? [...NAV_ITEMS, ...ORG_ADMIN_NAV_ITEMS] : NAV_ITEMS
+
   return (
     <aside
-      className="
-        hidden lg:flex flex-col items-center
-        py-6 gap-2 sticky top-0 h-screen
-        shrink-0 z-30 border-r border-white/[.05]
-        backdrop-blur-md
-      "
-      style={{ width: 64 }}
+      className="hidden lg:flex flex-col items-center"
+      style={{
+        width:       64,
+        flexShrink:  0,
+        padding:     '24px 8px',
+        gap:         4,
+        borderRight: '1px solid var(--border-subtle)',
+        background:  'var(--bg-subtle)',
+        height:      '100vh',
+        position:    'sticky',
+        top:         0,
+        zIndex:      30,
+      }}
       aria-label="Navigazione principale"
     >
       {/* Logo */}
-      <div className="mb-4">
-        <span className="rx-glow-text font-display font-black text-[14px] leading-none tracking-wider">
+      <div style={{ marginBottom: 16 }}>
+        <span
+          className="rx-glow-text"
+          style={{
+            fontFamily:    'Montserrat, sans-serif',
+            fontSize:      14,
+            fontWeight:    900,
+            lineHeight:    1,
+            letterSpacing: '0.05em',
+          }}
+        >
           RX
         </span>
       </div>
 
       {/* Voci nav */}
-      <nav className="flex flex-col items-center gap-1 flex-1">
-        {NAV_ITEMS.map(item => (
+      <nav
+        style={{
+          flex:          1,
+          display:       'flex',
+          flexDirection: 'column',
+          alignItems:    'center',
+          gap:           4,
+          width:         '100%',
+        }}
+      >
+        {allItems.map(item => (
           <SidebarIcon
             key={item.id}
             item={item}
             active={page === item.id}
-            onClick={() => onNavigate(item.id)}
+            onClick={() => handleNav(item.id)}
           />
         ))}
       </nav>
@@ -41,12 +70,29 @@ export function Sidebar({ page, onNavigate, onLogout }) {
       <button
         onClick={onLogout}
         aria-label="Logout"
-        className="
-          w-10 h-10 rounded-[3px] flex items-center justify-center
-          cursor-pointer transition-all border border-transparent
-          text-white/25 hover:text-white/60
-          bg-transparent
-        "
+        style={{
+          width:          40,
+          height:         40,
+          display:        'flex',
+          alignItems:     'center',
+          justifyContent: 'center',
+          background:     'transparent',
+          border:         '1px solid transparent',
+          borderRadius:   'var(--radius-sm)',
+          color:          'var(--text-tertiary)',
+          cursor:         'pointer',
+          transition:     'all var(--duration-fast)',
+        }}
+        onMouseEnter={e => {
+          e.currentTarget.style.background  = 'rgba(240,82,82,0.08)'
+          e.currentTarget.style.borderColor = 'rgba(240,82,82,0.2)'
+          e.currentTarget.style.color       = '#f05252'
+        }}
+        onMouseLeave={e => {
+          e.currentTarget.style.background  = 'transparent'
+          e.currentTarget.style.borderColor = 'transparent'
+          e.currentTarget.style.color       = 'var(--text-tertiary)'
+        }}
       >
         {LogoutIcon}
       </button>

@@ -1,5 +1,7 @@
 import { CATEGORIE, getTestsForCategoria } from '../../../../constants'
 
+const VISIBLE = CATEGORIE.filter(c => !c.hidden)
+
 export function StepCategoria({ categoria, setCategoria }) {
   return (
     <div className="flex flex-col gap-3">
@@ -7,24 +9,24 @@ export function StepCategoria({ categoria, setCategoria }) {
         La categoria determina i 5 test somministrati al cliente.
       </p>
 
-      {CATEGORIE.map(cat => (
+      {VISIBLE.map(cat => (
         <button
           key={cat.id}
           onClick={() => setCategoria(cat.id)}
-          className="flex items-start gap-4 p-4 rounded-[4px] cursor-pointer border transition-all text-left"
-          style={categoria === cat.id
+          className="flex items-start gap-4 p-4 cursor-pointer border transition-all text-left"
+          style={{ borderRadius: 'var(--radius-lg)', ...(categoria === cat.id
             ? { background: cat.color + '15', borderColor: cat.color + '55' }
-            : { background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.07)' }
-          }
+            : { background: 'var(--bg-raised)', borderColor: 'var(--border-default)' }
+          ) }}
         >
           <div
             className="w-3 h-3 rounded-full mt-1 shrink-0"
-            style={{ background: categoria === cat.id ? cat.color : 'rgba(255,255,255,0.15)' }}
+            style={{ background: categoria === cat.id ? cat.color : 'var(--border-strong)' }}
           />
           <div>
             <div
               className="font-display font-black text-[14px]"
-              style={{ color: categoria === cat.id ? cat.color : 'rgba(255,255,255,0.7)' }}
+              style={{ color: categoria === cat.id ? cat.color : 'var(--text-secondary)' }}
             >
               {cat.label}
             </div>

@@ -1,219 +1,181 @@
-import { useEffect }      from 'react'
+import { forwardRef }     from 'react'
 import { Pentagon }       from './Pentagon'
 import { getStatsConfig } from '../../constants'
 
-export { XPBar } from './XPBar'
+// ── Re-exports dai file separati ─────────────────────────────
+export { Button }                                                      from './Button'
+export { LoadingSpinner }                                              from './LoadingSpinner'
+export { Card, CardHeader, CardDivider }                               from './Card'
+export { Badge, RankBadge, StatusBadge }                               from './Badge'
+export { StatNumber, StatGrid }                                        from './StatNumber'
+export { EmptyState, EMPTY_STATES }                                    from './EmptyState'
+export { Skeleton, SkeletonText, SkeletonCard,
+         SkeletonClientCard, SkeletonList }                             from './Skeleton'
+export { Field, InputGroup }                                           from './Field'
+export { Modal }                                                       from './Modal'
+export { XPBar }                                                       from './XPBar'
+export { Pentagon }                                                    from './Pentagon'
+export { RankRing }                                                    from './RankRing'
 
-// ─── Card ─────────────────────────────────────────────────────────────────────
-export function Card({ className = '', children, glow = 'green' }) {
-  return (
-    <div
-      className={`p-5 rx-card ${className}`}
-      style={glow === 'cyan'
-        ? { borderColor: 'rgba(0,200,255,0.12)' }
-        : {}
-      }
-    >
-      {children}
-    </div>
-  )
-}
+// ── Input ─────────────────────────────────────────────────────
+export const Input = forwardRef(({ className = '', ...props }, ref) => (
+  <input ref={ref} className={`input-base ${className}`} {...props} />
+))
+Input.displayName = 'Input'
 
-// ─── SectionLabel ─────────────────────────────────────────────────────────────
-export function SectionLabel({ children, className = '' }) {
-  return (
-    <div
-      className={`font-display text-[10px] tracking-[3px] uppercase mb-3.5 ${className}`}
-      style={{ color: '#0fd65a' }}
-    >
-      {children}
-    </div>
-  )
-}
-
-// ─── Modal ────────────────────────────────────────────────────────────────────
-const MODAL_WIDTHS = {
-  default: 'w-[420px]',
-  lg:      'w-[420px] lg:w-[720px]',
-  xl:      'w-[420px] lg:w-[960px]',
-}
-
-export function Modal({ title, onClose, disableOverlayClose, size = 'default', children }) {
-  useEffect(() => {
-    const handler = e => { if (e.key === 'Escape') onClose() }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [onClose])
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-start lg:items-center justify-center overflow-y-auto py-4 px-4"
-      style={{ background: 'rgba(8,12,18,0.9)' }}
-      onClick={disableOverlayClose ? undefined : onClose}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="modal-title"
-        className={`rx-card p-6 lg:p-8 ${MODAL_WIDTHS[size]} max-w-[96vw] my-auto`}
-        style={{
-          background:  '#0d1520',
-          borderColor: 'rgba(15,214,90,0.2)',
-          boxShadow:   '0 20px 60px rgba(0,0,0,0.8), 0 0 40px rgba(15,214,90,0.1)',
-        }}
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="flex justify-between items-center mb-6">
-          <h3 id="modal-title" className="font-display text-white text-base m-0 tracking-wider">
-            {title}
-          </h3>
-          <button
-            onClick={onClose}
-            aria-label="Chiudi"
-            className="bg-transparent border-none text-white/30 text-xl cursor-pointer leading-none hover:text-white/70 transition-colors"
-          >
-            ✕
-          </button>
-        </div>
-        {children}
-      </div>
-    </div>
-  )
-}
-
-// ─── Input ────────────────────────────────────────────────────────────────────
-export function Input({ className = '', ...props }) {
-  return <input className={`input-base ${className}`} {...props} />
-}
-
-// ─── Textarea ─────────────────────────────────────────────────────────────────
+// ── Textarea ──────────────────────────────────────────────────
 export function Textarea({ className = '', ...props }) {
   return (
     <textarea
-      className={`input-base resize-y min-h-[60px] ${className}`}
+      className={`input-base resize-y ${className}`}
+      style={{ minHeight: 80 }}
       {...props}
     />
   )
 }
 
-// ─── Button ───────────────────────────────────────────────────────────────────
-const VARIANT_STYLES = {
-  primary: {
-    background: 'linear-gradient(135deg, #1aff6e 0%, #0fd65a 30%, #00c8ff 70%, #4db8ff 100%)',
-    border:     'none',
-    color:      '#080c12',
-    fontWeight: 700,
-  },
-  danger: {
-    background: 'linear-gradient(135deg, #f59e0b, #ef4444)',
-    border:     'none',
-    color:      '#ffffff',
-  },
-  ghost: {
-    background: 'transparent',
-    border:     '1px solid rgba(15,214,90,0.3)',
-    color:      '#0fd65a',
-  },
-}
-
-export function Button({ variant = 'primary', loading, disabled, className = '', children, ...props }) {
-  return (
-    <button
-      disabled={loading || disabled}
-      className={`
-        px-4 font-display text-[13px] font-bold tracking-wider
-        cursor-pointer transition-all duration-200
-        ${loading || disabled ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-85'}
-        ${className}
-      `}
-      style={{
-        ...VARIANT_STYLES[variant],
-        borderRadius: '3px',
-        padding:      '12px 16px',
-      }}
-      {...props}
-    >
-      {loading ? 'ATTENDERE...' : children}
-    </button>
-  )
-}
-
-// ─── Divider ──────────────────────────────────────────────────────────────────
-export function Divider({ color }) {
-  return (
-    <div className="px-6 my-1">
-      <div
-        className="w-full h-px"
-        style={{
-          background: color
-            ? `linear-gradient(90deg, transparent, ${color}55, transparent)`
-            : 'linear-gradient(90deg, transparent, rgba(15,214,90,0.2), transparent)',
-        }}
-      />
-    </div>
-  )
-}
-
-// ─── Field ────────────────────────────────────────────────────────────────────
-export function Field({ label, error, htmlFor, children }) {
-  return (
-    <div>
-      <label
-        htmlFor={htmlFor}
-        className="text-white/40 text-[11px] font-display tracking-wider mb-1.5 block"
-      >
-        {label.toUpperCase()}
-      </label>
-      {children}
-      {error && (
-        <p role="alert" className="m-0 mt-1 text-red-400 font-body text-[12px]">{error}</p>
-      )}
-    </div>
-  )
-}
-
-// ─── ActivityLog ──────────────────────────────────────────────────────────────
-export function ActivityLog({ log = [], color }) {
+// ── SectionLabel ──────────────────────────────────────────────
+export function SectionLabel({ children, className = '', color, action }) {
   return (
     <div
-      className="rounded-[4px] p-5 rx-card"
+      className={`flex items-center justify-between ${className}`}
+      style={{ marginBottom: 14 }}
     >
-      <SectionLabel>◈ Attività recenti</SectionLabel>
-      {log.length === 0 && (
-        <p className="m-0 font-body text-[13px] text-white/20">Nessuna attività ancora.</p>
+      <span
+        style={{
+          fontFamily:    'Montserrat, sans-serif',
+          fontSize:      10,
+          fontWeight:    600,
+          letterSpacing: '0.14em',
+          textTransform: 'uppercase',
+          color:         color ?? 'var(--text-tertiary)',
+        }}
+      >
+        {children}
+      </span>
+      {action && (
+        <button
+          onClick={action.onClick}
+          style={{
+            background:    'transparent',
+            border:        'none',
+            color:         'var(--text-tertiary)',
+            fontFamily:    'Montserrat, sans-serif',
+            fontSize:      9,
+            fontWeight:    700,
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase',
+            cursor:        'pointer',
+            padding:       '3px 8px',
+            borderRadius:  'var(--radius-sm)',
+            transition:    'all var(--duration-fast)',
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.color      = 'var(--text-primary)'
+            e.currentTarget.style.background = 'var(--border-subtle)'
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.color      = 'var(--text-tertiary)'
+            e.currentTarget.style.background = 'transparent'
+          }}
+        >
+          {action.label}
+        </button>
       )}
-      {log.slice(0, 5).map((entry, i) => (
-        <div key={i} className="flex gap-2.5 items-start mb-2.5">
-          <div className="flex flex-col items-center pt-1.5 gap-1">
-            <div className="w-[5px] h-[5px] rounded-full shrink-0" style={{ background: color + '88' }} />
-            {i < Math.min(log.length, 5) - 1 && (
-              <div className="w-px flex-1 min-h-[12px]" style={{ background: 'rgba(255,255,255,0.06)' }} />
-            )}
-          </div>
-          <div className="flex-1 pb-1">
-            <div className="font-body text-[13px] text-white/70">{entry.action}</div>
-            <div className="flex gap-2 mt-0.5">
-              <span className="font-body text-[11px] text-white/20">{entry.date}</span>
-              {entry.xp > 0 && (
-                <span className="font-display text-[10px] text-emerald-400">+{entry.xp} XP</span>
-              )}
-            </div>
-          </div>
-        </div>
-      ))}
     </div>
   )
 }
 
-// ─── StatsSection ─────────────────────────────────────────────────────────────
-export function StatsSection({ stats = {}, prevStats = null, categoria = 'health', color, pentagonSize = 130 }) {
+// ── Divider ───────────────────────────────────────────────────
+export function Divider({ color, vertical = false, className = '' }) {
+  if (vertical) {
+    return (
+      <div
+        className={className}
+        style={{
+          width:      1,
+          alignSelf:  'stretch',
+          background: color ?? 'var(--border-subtle)',
+        }}
+      />
+    )
+  }
+
+  return (
+    <div
+      className={`divider ${className}`}
+      style={color ? {
+        background: `linear-gradient(90deg, transparent, ${color}33, transparent)`,
+      } : undefined}
+    />
+  )
+}
+
+// ── ActivityLog ───────────────────────────────────────────────
+export function ActivityLog({ log = [], color }) {
+  return (
+    <div className="card p-5">
+      <SectionLabel>◈ Attività recenti</SectionLabel>
+      {log.length === 0 ? (
+        <p style={{ fontSize: 13, color: 'var(--text-tertiary)' }}>
+          Nessuna attività ancora.
+        </p>
+      ) : (
+        <div className="flex flex-col">
+          {log.slice(0, 6).map((entry, i) => (
+            <div
+              key={i}
+              className="flex gap-3 items-start py-2.5"
+              style={{
+                borderBottom: i < Math.min(log.length, 6) - 1
+                  ? '1px solid var(--border-subtle)'
+                  : 'none',
+              }}
+            >
+              <div className="flex flex-col items-center gap-1 mt-1 shrink-0">
+                <div
+                  className="w-1.5 h-1.5 rounded-full"
+                  style={{ background: color + '88' }}
+                />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                  {entry.action}
+                </div>
+                <div className="flex items-center gap-2 mt-1">
+                  <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>
+                    {entry.date}
+                  </span>
+                  {entry.xp > 0 && (
+                    <span className="badge badge-green" style={{ fontSize: 9, padding: '2px 6px' }}>
+                      +{entry.xp} XP
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── StatsSection ──────────────────────────────────────────────
+export function StatsSection({
+  stats       = {},
+  prevStats   = null,
+  categoria   = 'health',
+  color,
+  pentagonSize = 130,
+}) {
   const config     = getStatsConfig(categoria)
   const statKeys   = config.map(t => t.stat)
   const statLabels = config.map(t => t.label)
 
   return (
-    <div className="grid gap-6" style={{ gridTemplateColumns: '3fr 2fr' }}>
-      {/* Barre statistiche */}
+    <div className="grid gap-6" style={{ gridTemplateColumns: '1fr auto' }}>
+      {/* Barre */}
       <div className="flex flex-col justify-center gap-3">
         {statKeys.map((key, i) => {
           const val   = stats[key] ?? 0
@@ -222,28 +184,37 @@ export function StatsSection({ stats = {}, prevStats = null, categoria = 'health
 
           return (
             <div key={key} className="flex items-center gap-3">
-              <span className="font-body text-[12px] text-white/50 w-20 shrink-0">
+              <span style={{ fontSize: 12, color: 'var(--text-tertiary)', width: 80, flexShrink: 0 }}>
                 {statLabels[i]}
               </span>
               <div
-                className="flex-1 h-[5px] rounded-full overflow-hidden"
-                style={{ background: 'rgba(255,255,255,0.06)' }}
+                className="flex-1 rounded-full overflow-hidden"
+                style={{ height: 5, background: 'var(--border-subtle)' }}
               >
                 <div
-                  className="h-full rounded-full transition-[width] duration-700"
-                  style={{ width: `${val}%`, background: color }}
+                  className="h-full rounded-full"
+                  style={{
+                    width:      `${val}%`,
+                    background: color,
+                    boxShadow:  `0 0 8px ${color}66`,
+                    transition: 'width 700ms var(--ease-standard)',
+                  }}
                 />
               </div>
               <span
-                className="font-display text-[12px] w-7 text-right tabular-nums"
-                style={{ color }}
+                style={{ fontSize: 12, fontWeight: 700, color, width: 24, textAlign: 'right', flexShrink: 0 }}
               >
                 {val}
               </span>
               {delta !== null && (
                 <span
-                  className="font-display text-[10px] w-8 text-right tabular-nums"
-                  style={{ color: delta > 0 ? '#34d399' : delta < 0 ? '#f87171' : 'rgba(255,255,255,0.2)' }}
+                  style={{
+                    fontSize:   10,
+                    width:      28,
+                    textAlign:  'right',
+                    flexShrink: 0,
+                    color: delta > 0 ? '#0ec452' : delta < 0 ? '#f05252' : 'var(--text-tertiary)',
+                  }}
                 >
                   {delta > 0 ? `+${delta}` : delta === 0 ? '—' : delta}
                 </span>

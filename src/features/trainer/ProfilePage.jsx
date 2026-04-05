@@ -53,11 +53,11 @@ export function ProfilePage() {
       </p>
 
       {/* Card account */}
-      <div className="rounded-[4px] p-5 mb-4"
-        style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+      <div className="p-5 mb-4"
+        style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-xl)' }}>
         <div className="flex items-center gap-4">
           <div className="w-14 h-14 rounded-[4px] flex items-center justify-center shrink-0"
-            style={{ background: 'rgba(15,214,90,0.06)', border: '1px solid rgba(15,214,90,0.15)' }}>
+            style={{ background: 'rgba(14,196,82,0.06)', border: '1px solid rgba(14,196,82,0.15)' }}>
             <span className="rx-glow-text font-display font-black text-[22px]">
               {user?.email?.[0]?.toUpperCase() ?? 'T'}
             </span>
@@ -70,22 +70,22 @@ export function ProfilePage() {
       </div>
 
       {/* Lista azioni */}
-      <div className="rounded-[4px] overflow-hidden"
-        style={{ border: '1px solid rgba(255,255,255,0.07)' }}>
+      <div className="overflow-hidden"
+        style={{ border: '1px solid var(--border-default)', borderRadius: 'var(--radius-xl)' }}>
 
         {/* Email */}
-        <div className="px-5 py-4" style={{ background: 'rgba(255,255,255,0.02)' }}>
+        <div className="px-5 py-4" style={{ background: 'var(--bg-raised)' }}>
           <div className="font-display text-[10px] text-white/30 tracking-[2px] mb-1">ACCOUNT</div>
           <div className="font-body text-[13px] text-white/60">{user?.email}</div>
         </div>
 
-        <div className="h-px" style={{ background: 'rgba(255,255,255,0.05)' }} />
+        <div className="h-px" style={{ background: 'var(--border-subtle)' }} />
 
         {/* Cambio password — toggle */}
         <button
           onClick={() => { setOpen(o => !o); setErrors({}); setSuccess(false) }}
           className="w-full flex items-center justify-between px-5 py-4 cursor-pointer transition-all text-left border-none bg-transparent"
-          onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
+          onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-surface)'}
           onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
         >
           <div className="flex items-center gap-3">
@@ -97,7 +97,7 @@ export function ProfilePage() {
             <span className="font-body text-[13px] text-white/60">Cambia password</span>
           </div>
           {success
-            ? <span className="font-display text-[10px] tracking-wider" style={{ color: '#0fd65a' }}>AGGIORNATA</span>
+            ? <span className="font-display text-[10px] tracking-wider" style={{ color: 'var(--green-400)' }}>AGGIORNATA</span>
             : <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
                 stroke="rgba(255,255,255,0.2)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
                 style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 200ms' }}>
@@ -109,7 +109,7 @@ export function ProfilePage() {
         {/* Form inline */}
         {open && (
           <div className="px-5 pb-5 flex flex-col gap-3"
-            style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+            style={{ borderTop: '1px solid var(--border-subtle)' }}>
 
             <div className="pt-4 flex flex-col gap-3">
               <Field label="Password attuale" error={errors.current} htmlFor="pw-current">
@@ -149,7 +149,7 @@ export function ProfilePage() {
               </Field>
 
               {errors.general && (
-                <p className="font-body text-[12px] text-red-400 m-0">{errors.general}</p>
+                <p className="font-body text-[12px] m-0" style={{ color: '#f05252' }}>{errors.general}</p>
               )}
 
               {/* Requisiti */}
@@ -160,7 +160,7 @@ export function ProfilePage() {
                 ].map(([label, ok]) => (
                   <div key={label}
                     className="flex items-center gap-2 font-body text-[12px]"
-                    style={{ color: ok ? '#0fd65a' : 'rgba(255,255,255,0.2)' }}>
+                    style={{ color: ok ? 'var(--green-400)' : 'var(--text-tertiary)' }}>
                     <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
                       {ok
                         ? <path d="M1.5 5L4 7.5L8.5 2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -176,7 +176,7 @@ export function ProfilePage() {
                 <button
                   onClick={() => { setOpen(false); setErrors({}) }}
                   className="flex-1 py-2.5 font-display text-[12px] cursor-pointer bg-transparent text-white/40 hover:text-white/60 transition-colors border-none"
-                  style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: '3px' }}
+                  style={{ border: '1px solid var(--border-default)', borderRadius: 'var(--radius-sm)' }}
                 >
                   ANNULLA
                 </button>
@@ -184,7 +184,7 @@ export function ProfilePage() {
                   onClick={handleSubmit}
                   disabled={loading}
                   className="flex-1 py-2.5 font-display text-[12px] font-bold cursor-pointer transition-opacity hover:opacity-85 disabled:opacity-50 border-none"
-                  style={{ background: 'linear-gradient(135deg, #1aff6e, #0fd65a, #00c8ff)', borderRadius: '3px', color: '#080c12' }}
+                  style={{ background: 'var(--gradient-primary)', borderRadius: 'var(--radius-sm)', color: '#080c12' }}
                 >
                   {loading ? 'SALVATAGGIO...' : 'AGGIORNA'}
                 </button>
@@ -193,7 +193,7 @@ export function ProfilePage() {
           </div>
         )}
 
-        <div className="h-px" style={{ background: 'rgba(255,255,255,0.05)' }} />
+        <div className="h-px" style={{ background: 'var(--border-subtle)' }} />
 
         {/* Logout */}
         <button
@@ -208,7 +208,7 @@ export function ProfilePage() {
             <polyline points="16 17 21 12 16 7"/>
             <line x1="21" y1="12" x2="9" y2="12"/>
           </svg>
-          <span className="font-body text-[13px] text-red-400">Logout</span>
+          <span className="font-body text-[13px]" style={{ color: '#f05252' }}>Logout</span>
         </button>
       </div>
     </div>

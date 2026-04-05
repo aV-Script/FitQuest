@@ -23,19 +23,22 @@ function calcTestFinalValue(test, tests) {
   return tests[test.key] === '' || isNaN(val) ? null : val
 }
 
-export function useWizard({ groups, onAdd, onClose, onAddGroup, onToggleClientGroup }) {
+export function useWizard({ moduleType = 'personal_training', groups, onAdd, onClose, onAddGroup, onToggleClientGroup }) {
+  const isSoccer = moduleType === 'soccer_academy'
+
   const [step,        setStep]        = useState(0)
-  const [anagrafica,  setAnagrafica]  = useState({ name: '', eta: '', sesso: 'M', peso: '', altezza: '' })
+  const [anagrafica,  setAnagrafica]  = useState({ name: '', eta: '', sesso: 'M', peso: '', altezza: '', sessionsPerWeek: 3 })
   const [profileType, setProfileType] = useState('tests_only')
-  const [categoria,   setCategoria]   = useState('health')
+  const [categoria,   setCategoria]   = useState(isSoccer ? 'soccer' : 'health')
+  const [ruolo,       setRuolo]       = useState('midfielder')
   const [tests,       setTests]       = useState({})
   const [account,     setAccount]     = useState({ email: '', password: '' })
   const [errors,      setErrors]      = useState({})
   const [loading,     setLoading]     = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
 
-  const WIZARD_STEPS = useMemo(() => getWizardSteps(profileType), [profileType])
-  const TOTAL_STEPS  = TOTAL_STEPS_MAP[profileType]
+  const WIZARD_STEPS = useMemo(() => getWizardSteps(profileType, moduleType), [profileType, moduleType])
+  const TOTAL_STEPS  = isSoccer ? TOTAL_STEPS_MAP.soccer_academy : TOTAL_STEPS_MAP[profileType]
 
   const categoryTests = getTestsForCategoria(categoria)
   const currentStep   = WIZARD_STEPS[step]
@@ -76,7 +79,9 @@ export function useWizard({ groups, onAdd, onClose, onAddGroup, onToggleClientGr
   // ── Validazioni ───────────────────────────────────────────────────────────
   const validateAnagrafica = useCallback(() => {
     const name    = validateRequired(anagrafica.name, 'Nome')
-    const eta     = validateAge(anagrafica.eta)
+    const eta     = isSoccer
+      ? validateAge(anagrafica.eta, { min: 1, max: 100 })
+      : validateAge(anagrafica.eta)
     const peso    = validateNumber(anagrafica.peso,    { min: 20, max: 300, label: 'Peso' })
     const altezza = validateNumber(anagrafica.altezza, { min: 50, max: 250, label: 'Altezza' })
     const e = {}
@@ -124,8 +129,9 @@ export function useWizard({ groups, onAdd, onClose, onAddGroup, onToggleClientGr
         eta:        parseInt(anagrafica.eta),
         peso:       parseFloat(anagrafica.peso),
         altezza:    parseFloat(anagrafica.altezza),
-        categoria:  profileType === 'bia_only' ? null : categoria,
-        profileType,
+        categoria:  isSoccer ? 'soccer' : (profileType === 'bia_only' ? null : categoria),
+        profileType: isSoccer ? 'tests_only' : profileType,
+        ruolo:      isSoccer ? ruolo : null,
         email:      account.email.trim(),
         password:   account.password,
       })
@@ -138,13 +144,14 @@ export function useWizard({ groups, onAdd, onClose, onAddGroup, onToggleClientGr
   }, [anagrafica, profileType, categoria, account, onAdd, onClose])
 
   return {
-    step, anagrafica, profileType, categoria, account, errors, isLoading: loading,
+    step, anagrafica, profileType, categoria, ruolo, account, errors, isLoading: loading,
     showConfirm, setShowConfirm,
     categoryTests, currentStep, currentTest,
     livePercentile, media, rankObj,
     stepTitle, progressPct,
     isLastStep: step === TOTAL_STEPS - 1,
-    setAnagrafica, setCategoria, setAccount,
+    isSoccer,
+    setAnagrafica, setCategoria, setRuolo, setAccount,
     setProfileType: (type) => {
       setProfileType(type)
       if (type === 'bia_only') setTests({})

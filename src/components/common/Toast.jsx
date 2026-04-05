@@ -1,8 +1,8 @@
 const VARIANT = {
-  success: { bg: '#059669', icon: '✓' },
-  error:   { bg: '#dc2626', icon: '✕' },
-  warning: { bg: '#d97706', icon: '!' },
-  info:    { bg: '#00c8ff', icon: 'i' },
+  success: { color: 'var(--green-400)', icon: '✓' },
+  error:   { color: '#f05252',          icon: '✕' },
+  warning: { color: '#f59e0b',          icon: '!' },
+  info:    { color: 'var(--cyan-400)',  icon: 'i' },
 }
 
 export function Toast({ toasts, onRemove }) {
@@ -26,15 +26,31 @@ function ToastItem({ toast, onRemove }) {
   const v = VARIANT[toast.variant] ?? VARIANT.info
   return (
     <div
-      className="toast-in flex items-center gap-3 px-4 py-3 rounded-[3px] pointer-events-auto"
-      style={{ background: v.bg, boxShadow: '0 4px 20px rgba(0,0,0,0.5)' }}
+      className="toast-in flex items-center gap-3 px-4 py-3 pointer-events-auto"
+      style={{
+        background:   'var(--bg-overlay)',
+        border:       `1px solid ${v.color}22`,
+        borderLeft:   `3px solid ${v.color}`,
+        borderRadius: 'var(--radius-lg)',
+        boxShadow:    'var(--shadow-lg)',
+      }}
     >
-      <span className="font-display text-white text-sm font-bold shrink-0">{v.icon}</span>
-      <p className="flex-1 font-body text-white text-[13px] m-0 leading-tight">{toast.message}</p>
+      <span
+        className="shrink-0 font-display font-bold text-[12px]"
+        style={{ color: v.color }}
+      >
+        {v.icon}
+      </span>
+      <p className="flex-1 font-body text-[13px] m-0 leading-tight" style={{ color: 'var(--text-primary)' }}>
+        {toast.message}
+      </p>
       <button
         onClick={() => onRemove(toast.id)}
         aria-label="Chiudi notifica"
-        className="text-white/60 hover:text-white bg-transparent border-none cursor-pointer p-0 text-sm leading-none shrink-0"
+        className="bg-transparent border-none cursor-pointer p-0 text-sm leading-none shrink-0"
+        style={{ color: 'var(--text-tertiary)' }}
+        onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
+        onMouseLeave={e => e.currentTarget.style.color = 'var(--text-tertiary)'}
       >
         ✕
       </button>

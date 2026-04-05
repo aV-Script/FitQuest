@@ -20,12 +20,12 @@ export function validatePassword(password) {
   return { valid: true, error: null }
 }
 
-export function validateAge(age) {
+export function validateAge(age, { min = 16, max = 100 } = {}) {
   const n = Number(age)
   if (age === '' || age === null || age === undefined)
     return { valid: false, error: 'Età obbligatoria' }
-  if (isNaN(n) || n < 16 || n > 100)
-    return { valid: false, error: 'Età non valida (16–100)' }
+  if (isNaN(n) || n < min || n > max)
+    return { valid: false, error: `Età non valida (${min}–${max})` }
   return { valid: true, error: null }
 }
 

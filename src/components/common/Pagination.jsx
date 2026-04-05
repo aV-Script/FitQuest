@@ -1,3 +1,5 @@
+import { useMemo } from 'react'
+
 /**
  * Controlli di paginazione riusabili.
  * Mostra: prima, prev, pagine, next, ultima.
@@ -73,10 +75,10 @@ function PageBtn({ onClick, disabled, active, children }) {
     <button
       onClick={onClick}
       disabled={disabled}
-      className="w-8 h-8 rounded-[3px] font-display text-[12px] cursor-pointer border transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+      className="w-8 h-8 rounded-[4px] font-display text-[12px] cursor-pointer border transition-all disabled:opacity-30 disabled:cursor-not-allowed"
       style={active
-        ? { background: 'rgba(15,214,90,0.15)', borderColor: 'rgba(15,214,90,0.35)', color: '#0fd65a' }
-        : { background: 'transparent', borderColor: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.4)' }
+        ? { background: 'rgba(14,196,82,0.15)', borderColor: 'rgba(14,196,82,0.35)', color: 'var(--green-400)' }
+        : { background: 'transparent', borderColor: 'var(--border-default)', color: 'var(--text-secondary)' }
       }
     >
       {children}

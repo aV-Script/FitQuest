@@ -29,7 +29,7 @@ export function BiaGaugeBar({ param, value, prevValue, sex, age }) {
 
       <div
         className="flex-1 h-[5px] rounded-full overflow-hidden"
-        style={{ background: 'rgba(255,255,255,0.06)' }}
+        style={{ background: 'var(--bg-raised)' }}
       >
         <div
           className="h-full rounded-full transition-[width] duration-700"

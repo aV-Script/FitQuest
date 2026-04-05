@@ -19,8 +19,8 @@ export function TestInput({ test, testValues, livePercentile, prevValue, errors,
     <div
       className="rounded-[4px] p-4 transition-colors"
       style={{
-        background: 'rgba(13,21,32,0.9)',
-        border:     `1px solid ${livePercentile !== null ? color + '44' : 'rgba(15,214,90,0.08)'}`,
+        background: 'var(--bg-surface)',
+        border:     `1px solid ${livePercentile !== null ? color + '44' : 'rgba(14,196,82,0.08)'}`,
       }}
     >
       {/* Header test */}
@@ -79,7 +79,7 @@ export function TestInput({ test, testValues, livePercentile, prevValue, errors,
       {livePercentile !== null && (
         <div
           className="mt-2.5 h-[3px] rounded-full overflow-hidden mb-1.5"
-          style={{ background: 'rgba(255,255,255,0.06)' }}
+          style={{ background: 'var(--border-subtle)' }}
         >
           <div
             className="h-full rounded-full transition-[width] duration-500"

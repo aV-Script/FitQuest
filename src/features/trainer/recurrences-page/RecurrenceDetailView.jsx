@@ -57,13 +57,13 @@ export function RecurrenceDetailView({
   }, [recurrence.id, onCancel, onBack])
 
   const sectionStyle = {
-    background:   'rgba(255,255,255,0.02)',
-    border:       '1px solid rgba(255,255,255,0.06)',
+    background:   'var(--bg-raised)',
+    border:       '1px solid var(--border-default)',
     borderRadius: '4px',
   }
 
   const statusInfo = {
-    active:    { label: '● ATTIVA',     color: '#0fd65a' },
+    active:    { label: '● ATTIVA',     color: 'var(--green-400)' },
     cancelled: { label: '✕ CANCELLATA', color: '#f87171' },
     ended:     { label: '— TERMINATA',  color: '#6b7280' },
   }[recurrence.status ?? 'active']
@@ -72,7 +72,7 @@ export function RecurrenceDetailView({
     <div className="min-h-screen text-white">
 
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+      <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
         <button
           onClick={onBack}
           className="flex items-center gap-1.5 bg-transparent border-none text-white/30 font-body text-[13px] cursor-pointer hover:text-white/60 transition-colors p-0"
@@ -147,14 +147,14 @@ export function RecurrenceDetailView({
                   onClick={handleSaveTime}
                   disabled={saving}
                   className="flex-1 py-2 font-display text-[11px] cursor-pointer border-0 disabled:opacity-40"
-                  style={{ background: 'linear-gradient(135deg, #1aff6e, #0fd65a, #00c8ff)', borderRadius: '3px', color: '#080c12', fontWeight: 700 }}
+                  style={{ background: 'var(--gradient-primary)', borderRadius: '3px', color: '#080c12', fontWeight: 700 }}
                 >
                   {saving ? 'ATTENDERE...' : 'SALVA'}
                 </button>
               </div>
             </div>
           ) : (
-            <div className="font-display font-black text-[24px]" style={{ color: '#0fd65a' }}>
+            <div className="font-display font-black text-[24px]" style={{ color: 'var(--green-400)' }}>
               {recurrence.startTime} → {recurrence.endTime}
             </div>
           )}
@@ -185,8 +185,8 @@ export function RecurrenceDetailView({
                     )}
                     className="w-10 h-10 font-display text-[11px] cursor-pointer border transition-all"
                     style={days.includes(value)
-                      ? { background: 'rgba(15,214,90,0.15)', borderColor: '#0fd65a', color: '#fff', borderRadius: '4px' }
-                      : { background: 'transparent', borderColor: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.35)', borderRadius: '4px' }
+                      ? { background: 'rgba(14,196,82,0.15)', borderColor: 'var(--green-400)', color: '#fff', borderRadius: '4px' }
+                      : { background: 'transparent', borderColor: 'var(--border-default)', color: 'var(--text-secondary)', borderRadius: '4px' }
                     }
                   >
                     {label}
@@ -208,7 +208,7 @@ export function RecurrenceDetailView({
                   onClick={handleSaveDays}
                   disabled={saving || days.length === 0}
                   className="flex-1 py-2 font-display text-[11px] cursor-pointer border-0 disabled:opacity-40"
-                  style={{ background: 'linear-gradient(135deg, #1aff6e, #0fd65a, #00c8ff)', borderRadius: '3px', color: '#080c12', fontWeight: 700 }}
+                  style={{ background: 'var(--gradient-primary)', borderRadius: '3px', color: '#080c12', fontWeight: 700 }}
                 >
                   {saving ? 'ATTENDERE...' : 'SALVA'}
                 </button>
@@ -220,7 +220,7 @@ export function RecurrenceDetailView({
                 <span
                   key={label}
                   className="font-display text-[11px] px-3 py-1.5 rounded-[3px]"
-                  style={{ background: 'rgba(15,214,90,0.12)', color: '#0fd65a' }}
+                  style={{ background: 'rgba(14,196,82,0.12)', color: 'var(--green-400)' }}
                 >
                   {label}
                 </span>
@@ -271,7 +271,7 @@ export function RecurrenceDetailView({
                   onClick={handleSaveEnd}
                   disabled={saving || newEndDate <= recurrence.endDate}
                   className="flex-1 py-2 font-display text-[11px] cursor-pointer border-0 disabled:opacity-40"
-                  style={{ background: 'linear-gradient(135deg, #1aff6e, #0fd65a, #00c8ff)', borderRadius: '3px', color: '#080c12', fontWeight: 700 }}
+                  style={{ background: 'var(--gradient-primary)', borderRadius: '3px', color: '#080c12', fontWeight: 700 }}
                 >
                   {saving ? 'ATTENDERE...' : 'ESTENDI'}
                 </button>
@@ -291,14 +291,14 @@ export function RecurrenceDetailView({
               <div
                 key={c.id}
                 className="flex items-center justify-between px-3 py-2.5 rounded-[3px]"
-                style={{ background: 'rgba(15,214,90,0.06)', border: '1px solid rgba(15,214,90,0.15)' }}
+                style={{ background: 'rgba(14,196,82,0.06)', border: '1px solid rgba(14,196,82,0.15)' }}
               >
                 <div className="flex items-center gap-2.5">
                   <div
                     className="w-7 h-7 flex items-center justify-center rounded-[3px]"
-                    style={{ background: 'rgba(15,214,90,0.15)' }}
+                    style={{ background: 'rgba(14,196,82,0.15)' }}
                   >
-                    <span className="font-display text-[10px]" style={{ color: '#0fd65a' }}>
+                    <span className="font-display text-[10px]" style={{ color: 'var(--green-400)' }}>
                       {c.name[0].toUpperCase()}
                     </span>
                   </div>
@@ -319,7 +319,7 @@ export function RecurrenceDetailView({
 
           {isActive && availableClients.length > 0 && (
             <div>
-              <div className="font-display text-[10px] tracking-[2px] mb-2" style={{ color: 'rgba(255,255,255,0.2)' }}>
+              <div className="font-display text-[10px] tracking-[2px] mb-2" style={{ color: 'var(--text-tertiary)' }}>
                 AGGIUNGI CLIENTE
               </div>
               <div className="flex flex-col gap-1 max-h-40 overflow-y-auto">
@@ -328,12 +328,12 @@ export function RecurrenceDetailView({
                     key={c.id}
                     onClick={() => onAddClient(recurrence.id, c.id)}
                     className="flex items-center justify-between px-3 py-2 cursor-pointer border text-left transition-all rounded-[3px]"
-                    style={{ background: 'transparent', borderColor: 'rgba(255,255,255,0.06)' }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(15,214,90,0.25)' }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)' }}
+                    style={{ background: 'transparent', borderColor: 'var(--border-default)' }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(14,196,82,0.25)' }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-default)' }}
                   >
                     <span className="font-body text-[12px] text-white/50">{c.name}</span>
-                    <span className="font-display text-[10px]" style={{ color: '#0fd65a' }}>+ AGGIUNGI</span>
+                    <span className="font-display text-[10px]" style={{ color: 'var(--green-400)' }}>+ AGGIUNGI</span>
                   </button>
                 ))}
               </div>

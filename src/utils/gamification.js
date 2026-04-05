@@ -307,6 +307,36 @@ export function buildProfileUpgrade(client, newProfileType) {
   return update
 }
 
+// ── Sessioni mensili ──────────────────────────────────────────────────────────
+
+const MONTHLY_XP_TARGET = 500
+const WEEKS_PER_MONTH   = 4.33
+
+/**
+ * Calcola configurazione sessioni mensili dal numero settimanale.
+ * @param {number} sessionsPerWeek
+ * @returns {{ sessionsPerWeek, monthlySessions, xpPerSession }}
+ */
+export function calcSessionConfig(sessionsPerWeek) {
+  const spw          = Math.min(7, Math.max(1, Math.round(sessionsPerWeek ?? 3)))
+  const monthly      = Math.round(spw * WEEKS_PER_MONTH)
+  const xpPerSession = Math.round(MONTHLY_XP_TARGET / monthly)
+  return { sessionsPerWeek: spw, monthlySessions: monthly, xpPerSession }
+}
+
+/**
+ * Calcola completamento mensile sessioni per un cliente.
+ * @param {Array}  slots    — slot del mese filtrati per il cliente
+ * @param {string} clientId
+ * @returns {{ planned, completed, pct }}
+ */
+export function calcMonthlyCompletion(slots, clientId) {
+  const planned   = slots.length
+  const completed = slots.filter(s => s.attendees?.includes(clientId)).length
+  const pct       = planned > 0 ? Math.round((completed / planned) * 100) : 0
+  return { planned, completed, pct }
+}
+
 /**
  * Costruisce l'oggetto cliente completo da persistere su Firestore alla creazione.
  * @param {string} trainerId — uid del trainer

@@ -20,7 +20,7 @@ function CardSkeleton() {
 
 function ListSkeleton() {
   return (
-    <div className="flex items-center gap-3 py-3 border-b border-white/[.05]">
+    <div className="flex items-center gap-3 py-3 border-b [border-color:var(--border-subtle)]">
       <Bone className="w-8 h-8 rounded-full shrink-0" />
       <div className="flex-1 flex flex-col gap-2">
         <Bone className="h-3 w-1/2" />

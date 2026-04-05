@@ -15,7 +15,7 @@ export function BiaHistoryChart({ biaHistory, color }) {
     return (
       <div
         className="rounded-[4px] p-5"
-        style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}
+        style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-default)' }}
       >
         <SectionLabel>◈ Andamento BIA</SectionLabel>
         <p className="text-white/20 font-body text-[13px] text-center py-4">
@@ -34,7 +34,7 @@ export function BiaHistoryChart({ biaHistory, color }) {
   return (
     <div
       className="rounded-[4px] p-5"
-      style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}
+      style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-default)' }}
     >
       <SectionLabel>◈ Andamento BIA</SectionLabel>
 
@@ -59,7 +59,7 @@ export function BiaHistoryChart({ biaHistory, color }) {
       <div className="h-40">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData} margin={{ top: 5, right: 5, bottom: 0, left: -20 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" />
             <XAxis
               dataKey="name"
               tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 10, fontFamily: 'Inter' }}
@@ -74,8 +74,8 @@ export function BiaHistoryChart({ biaHistory, color }) {
             <Tooltip
               formatter={(v) => [`${v} ${param?.unit ?? ''}`, param?.label]}
               contentStyle={{
-                background:   '#0d1520',
-                border:       '1px solid rgba(15,214,90,0.15)',
+                background:   'var(--bg-overlay)',
+                border:       '1px solid rgba(14,196,82,0.15)',
                 borderRadius: 4,
                 fontFamily:   'Inter',
                 fontSize:     12,

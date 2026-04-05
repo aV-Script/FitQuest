@@ -5,7 +5,7 @@ export function StepAnagrafica({ anagrafica, setAnagrafica, errors }) {
     setAnagrafica(p => ({ ...p, [key]: e.target.value }))
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-4">
       <Field label="Nome e cognome" error={errors.name}>
         <Input
           value={anagrafica.name}
@@ -30,11 +30,15 @@ export function StepAnagrafica({ anagrafica, setAnagrafica, errors }) {
               <button
                 key={s}
                 onClick={() => setAnagrafica(p => ({ ...p, sesso: s }))}
-                className="flex-1 py-2.5 rounded-[3px] font-display text-[12px] cursor-pointer border transition-all"
-                style={anagrafica.sesso === s
-                  ? { background: 'rgba(15,214,90,0.15)', borderColor: '#0fd65a', color: '#fff' }
-                  : { background: 'transparent', borderColor: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)' }
-                }
+                className="flex-1 py-2.5 font-display text-[12px] cursor-pointer transition-all"
+                style={{
+                  borderRadius: 'var(--radius-sm)',
+                  border: '1px solid',
+                  ...(anagrafica.sesso === s
+                    ? { background: 'rgba(14,196,82,0.12)', borderColor: 'var(--green-400)', color: 'var(--text-primary)' }
+                    : { background: 'transparent', borderColor: 'var(--border-default)', color: 'var(--text-tertiary)' }
+                  ),
+                }}
               >
                 {s}
               </button>
@@ -51,6 +55,28 @@ export function StepAnagrafica({ anagrafica, setAnagrafica, errors }) {
           <Input type="number" value={anagrafica.altezza} onChange={update('altezza')} placeholder="175" />
         </Field>
       </div>
+
+      <Field label="Sessioni a settimana" error={errors.sessionsPerWeek}>
+        <div className="flex gap-2">
+          {[1, 2, 3, 4, 5].map(n => (
+            <button
+              key={n}
+              onClick={() => setAnagrafica(p => ({ ...p, sessionsPerWeek: n }))}
+              className="flex-1 py-2.5 font-display text-[13px] font-bold cursor-pointer transition-all"
+              style={{
+                borderRadius: 'var(--radius-sm)',
+                border: '1px solid',
+                ...(anagrafica.sessionsPerWeek === n
+                  ? { background: 'rgba(14,196,82,0.12)', borderColor: 'var(--green-400)', color: 'var(--green-400)' }
+                  : { background: 'transparent', borderColor: 'var(--border-default)', color: 'var(--text-tertiary)' }
+                ),
+              }}
+            >
+              {n}
+            </button>
+          ))}
+        </div>
+      </Field>
     </div>
   )
 }

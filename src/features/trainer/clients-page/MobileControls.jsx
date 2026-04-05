@@ -1,65 +1,111 @@
-import { Input } from '../../../components/ui'
+import { useState }       from 'react'
+import { FiltersSidebar } from './FiltersSidebar'
 
-const SORT_OPTIONS = [
-  ['name',  'Nome A→Z'],
-  ['rank',  'Rank migliore'],
-  ['level', 'Livello più alto'],
-]
-
+/**
+ * MobileControls — filtri e ordinamento su mobile.
+ * Sheet che sale dal basso.
+ */
 export function MobileControls({
-  query,  onQueryChange,
-  sortBy, onSortByChange,
-  onNewClient,
+  filters,
+  onChange,
+  clientCount,
+  filteredCount,
+  sort,
+  onSortChange,
 }) {
+  const [open, setOpen] = useState(false)
+  const hasFilters      = Object.values(filters).some(Boolean)
+
   return (
-    <div className="lg:hidden mb-5">
+    <>
+      {/* Trigger */}
+      <button
+        onClick={() => setOpen(true)}
+        className="lg:hidden"
+        style={{
+          display:       'flex',
+          alignItems:    'center',
+          gap:           6,
+          padding:       '7px 12px',
+          background:    hasFilters
+            ? 'rgba(14,196,82,0.1)'
+            : 'var(--bg-raised)',
+          border:        `1px solid ${hasFilters
+            ? 'rgba(14,196,82,0.3)'
+            : 'var(--border-default)'}`,
+          borderRadius:  'var(--radius-lg)',
+          color:         hasFilters ? 'var(--green-400)' : 'var(--text-secondary)',
+          fontFamily:    'Montserrat, sans-serif',
+          fontSize:      11,
+          fontWeight:    700,
+          letterSpacing: '0.06em',
+          cursor:        'pointer',
+          transition:    'all var(--duration-fast)',
+          marginBottom:  16,
+        }}
+      >
+        ⚙ FILTRI
+        {hasFilters && (
+          <span
+            style={{
+              background:     'var(--green-400)',
+              color:          'var(--text-inverse)',
+              borderRadius:   'var(--radius-full)',
+              width:          16,
+              height:         16,
+              display:        'flex',
+              alignItems:     'center',
+              justifyContent: 'center',
+              fontSize:       9,
+              fontWeight:     900,
+            }}
+          >
+            {Object.values(filters).filter(Boolean).length}
+          </span>
+        )}
+      </button>
 
-      {/* Search */}
-      <Input
-        placeholder="Cerca..."
-        value={query}
-        onChange={e => onQueryChange(e.target.value)}
-        className="w-full mb-3"
-      />
+      {/* Sheet mobile */}
+      {open && (
+        <>
+          <div
+            className="fixed inset-0"
+            style={{ background: 'rgba(7,9,14,0.7)', zIndex: 300 }}
+            onClick={() => setOpen(false)}
+          />
+          <div
+            className="fixed bottom-0 left-0 right-0 animate-slide-up"
+            style={{
+              background:   'var(--bg-overlay)',
+              borderTop:    '1px solid var(--border-strong)',
+              borderRadius: 'var(--radius-2xl) var(--radius-2xl) 0 0',
+              padding:      '8px 24px 32px',
+              maxHeight:    '80vh',
+              overflowY:    'auto',
+              zIndex:       301,
+              boxShadow:    'var(--shadow-xl)',
+            }}
+          >
+            {/* Handle */}
+            <div
+              style={{
+                width:        40,
+                height:       4,
+                background:   'var(--border-strong)',
+                borderRadius: 99,
+                margin:       '12px auto 20px',
+              }}
+            />
 
-      {/* Filtri + bottone */}
-      <div className="flex items-center gap-2">
-
-        {/* Chips scrollabili */}
-        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 flex-1">
-          {SORT_OPTIONS.map(([val, label]) => (
-            <button
-              key={val}
-              onClick={() => onSortByChange(val)}
-              className="shrink-0 rounded-[3px] px-3 py-1.5 font-display text-[10px] tracking-wide cursor-pointer border transition-all whitespace-nowrap"
-              style={sortBy === val
-                ? { background: 'rgba(255,255,255,0.1)', borderColor: 'rgba(255,255,255,0.2)', color: '#fff' }
-                : { background: 'transparent', borderColor: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.35)' }
-              }
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-
-        {/* Bottone nuovo */}
-        <GradientBtn onClick={onNewClient}>
-          NUOVO CLIENTE
-        </GradientBtn>
-
-      </div>
-    </div>
-  )
-}
-
-function GradientBtn({ onClick, children }) {
-  return (
-    <button
-      onClick={onClick}
-      className="px-3 py-2 text-[10px] rounded-[3px] font-display tracking-widest cursor-pointer border-0 transition-opacity hover:opacity-85 shrink-0"
-      style={{ background: 'linear-gradient(135deg, #1aff6e, #0fd65a, #00c8ff)', color: '#080c12' }}
-    >
-      {children}
-    </button>
+            <FiltersSidebar
+              filters={filters}
+              onChange={(newFilters) => { onChange(newFilters); setOpen(false) }}
+              clientCount={clientCount}
+              filteredCount={filteredCount}
+            />
+          </div>
+        </>
+      )}
+    </>
   )
 }

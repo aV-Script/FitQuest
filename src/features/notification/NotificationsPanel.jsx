@@ -13,7 +13,7 @@ export function NotificationsPanel({ notifications, color, onClose, onDelete }) 
           w-full max-w-sm h-full overflow-y-auto p-6
           animate-in slide-in-from-right duration-300
         "
-        style={{ background: '#0d1520', borderLeft: '1px solid rgba(15,214,90,0.12)' }}
+        style={{ background: 'var(--bg-overlay)', borderLeft: '1px solid rgba(14,196,82,0.12)' }}
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
@@ -41,8 +41,8 @@ export function NotificationsPanel({ notifications, color, onClose, onDelete }) 
             key={n.id}
             className="rounded-[3px] p-3.5 mb-2 transition-all"
             style={n.read
-              ? { background: 'rgba(13,21,32,0.6)', border: '1px solid rgba(15,214,90,0.06)' }
-              : { background: 'rgba(15,214,90,0.04)', border: '1px solid rgba(15,214,90,0.15)' }
+              ? { background: 'var(--bg-surface)', border: '1px solid rgba(14,196,82,0.06)' }
+              : { background: 'rgba(14,196,82,0.04)', border: '1px solid rgba(14,196,82,0.15)' }
             }
           >
             <div className="flex justify-between items-start gap-2">

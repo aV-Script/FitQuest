@@ -56,7 +56,7 @@ export function StatsChart({ campionamenti, color, categoria = 'health' }) {
       <div className="h-40">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData} margin={{ top: 5, right: 5, bottom: 0, left: -20 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" />
             <XAxis
               dataKey="name"
               tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 10, fontFamily: 'Inter' }}
@@ -72,8 +72,8 @@ export function StatsChart({ campionamenti, color, categoria = 'health' }) {
             <Tooltip
               formatter={(v) => [v, stat?.label]}
               contentStyle={{
-                background: '#0d1520',
-                border: '1px solid rgba(15,214,90,0.15)',
+                background: 'var(--bg-overlay)',
+                border: '1px solid rgba(14,196,82,0.15)',
                 borderRadius: 4,
                 fontFamily: 'Inter',
                 fontSize: 12,

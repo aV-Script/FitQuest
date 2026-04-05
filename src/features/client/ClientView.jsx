@@ -1,6 +1,7 @@
 import { useState, useCallback }          from 'react'
 import { useClient }                      from './useClient'
-import { Skeleton }                       from '../../components/common/Skeleton'
+import { Skeleton, SkeletonText,
+         SkeletonCard }                    from '../../components/ui'
 import { useClientRank }                  from '../../hooks/useClientRank'
 import { useNotifications }               from '../../hooks/useNotifications'
 import { ClientShell }                    from './client-view/ClientShell'
@@ -8,6 +9,7 @@ import { ClientDashboardPage }            from './client-view/ClientDashboardPag
 import { ClientProfilePage }              from './client-view/ClientProfilePage'
 import { ClientCalendar }                 from './ClientCalendar'
 import { NotificationsPanel }             from '../notification/NotificationsPanel'
+import { PlayerCard }                     from './PlayerCard'
 import { calcBiaScore, getBiaRankFromScore } from '../../utils/bia'
 
 // Mappa pagina → componente
@@ -21,8 +23,8 @@ const PAGES = {
  * Entry point dell'area cliente.
  * Gestisce fetch, navigazione, notifiche
  */
-export default function ClientView({ clientId }) {
-  const { client, loading } = useClient(clientId)
+export default function ClientView({ orgId, clientId }) {
+  const { client, loading } = useClient(orgId, clientId)
   const { rankObj: testRankObj, color: testColor } = useClientRank(client)
 
   const profileType = client?.profileType ?? 'tests_only'
@@ -31,9 +33,9 @@ export default function ClientView({ clientId }) {
 
   const rankObj = profileType === 'bia_only' ? biaRankObj : testRankObj
   const color   = profileType === 'bia_only' ? biaRankObj.color : testColor
-  const { notifications, unreadCount, markAllRead, remove } = useNotifications(clientId)
+  const { notifications, unreadCount, markAllRead, remove } = useNotifications(orgId, clientId)
 
-  const [view,        setView]        = useState('dashboard') // 'dashboard' | 'card'
+  const [showCard,    setShowCard]    = useState(true)
   const [activePage,  setActivePage]  = useState('dashboard')
   const [showNotifs,  setShowNotifs]  = useState(false)
 
@@ -44,13 +46,18 @@ export default function ClientView({ clientId }) {
 
   if (loading) return (
     <div className="min-h-screen p-6 flex flex-col gap-4 max-w-md mx-auto pt-12">
-      <Skeleton variant="circle" size={64} />
-      <Skeleton variant="text" count={2} />
-      <Skeleton variant="card" count={2} />
+      <Skeleton width={64} height={64} radius="50%" />
+      <SkeletonText lines={2} />
+      <SkeletonCard />
+      <SkeletonCard />
     </div>
   )
   if (!client) return <FullScreenMsg>Profilo non trovato.</FullScreenMsg>
 
+  // Mostra PlayerCard al primo accesso
+  if (showCard) {
+    return <PlayerCard client={client} onEnter={() => setShowCard(false)} />
+  }
 
   return (
     <ClientShell
@@ -72,6 +79,7 @@ export default function ClientView({ clientId }) {
       {activePage === 'calendar' && (
         <div className="px-4 py-6">
           <ClientCalendar
+            orgId={orgId}
             clientId={clientId}
             sessionsPerWeek={client.sessionsPerWeek}
           />
@@ -82,7 +90,7 @@ export default function ClientView({ clientId }) {
         <ClientProfilePage
           client={client}
           color={color}
-          onCard={() => setView('card')}
+          onCard={() => setShowCard(true)}
         />
       )}
 

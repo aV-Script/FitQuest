@@ -13,16 +13,16 @@ export function BiaLockedPanel({ profileType, color }) {
       <div
         className="flex flex-col items-center justify-center text-center gap-4 py-10 rounded-[4px]"
         style={{
-          background: 'rgba(13,21,32,0.6)',
-          border:     '1px solid rgba(255,255,255,0.06)',
+          background: 'var(--bg-surface)',
+          border:     '1px solid var(--border-default)',
         }}
       >
         {/* Icona lucchetto */}
         <div
           className="w-12 h-12 rounded-[4px] flex items-center justify-center"
           style={{
-            background: 'rgba(255,255,255,0.04)',
-            border:     '1px solid rgba(255,255,255,0.08)',
+            background: 'var(--bg-raised)',
+            border:     '1px solid var(--border-default)',
           }}
         >
           <svg
@@ -46,7 +46,7 @@ export function BiaLockedPanel({ profileType, color }) {
 
         <div
           className="font-display text-[10px] tracking-[2px] text-white/25 px-4 py-1.5 rounded-[2px]"
-          style={{ border: '1px solid rgba(255,255,255,0.07)' }}
+          style={{ border: '1px solid var(--border-default)' }}
         >
           CONTATTA IL TUO TRAINER
         </div>

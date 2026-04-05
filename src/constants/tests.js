@@ -24,7 +24,7 @@ export const TESTS = [
   {
     key:        'dinamometro_hand_grip',
     stat:       'forza',
-    label:      'FORZA',
+    label:      'Forza',
     unit:       'kg',
     direction:  'direct',
     ageGroup:   (age) => age <= 35 ? '18-35' : age <= 45 ? '36-45' : age <= 55 ? '46-55' : age <= 65 ? '56-65' : '66+',
@@ -59,7 +59,7 @@ export const TESTS = [
   {
     key:        'ymca_step_test',
     stat:       'resistenza',
-    label:      'RESISTENZA',
+    label:      'Resistenza',
     unit:       'bpm',
     direction:  'inverse',
     ageGroup:   (age) => age <= 35 ? '18-35' : age <= 45 ? '36-45' : '46+',
@@ -97,7 +97,7 @@ export const TESTS = [
   {
     key:        'sit_and_reach',
     stat:       'mobilita',
-    label:      'MOBILITÀ',
+    label:      'Mobilità',
     unit:       'cm',
     direction:  'direct',
     test:       'Sit and Reach',
@@ -132,7 +132,7 @@ export const TESTS = [
   {
     key:        'flamingo_test',
     stat:       'equilibrio',
-    label:      'EQUILIBRIO',
+    label:      'Equilibrio',
     unit:       'cadute',
     direction:  'inverse',
     ageGroup:   (age) => age <= 35 ? '18-35' : age <= 45 ? '36-45' : age <= 55 ? '46-55' : age <= 65 ? '56-65' : '66+',
@@ -170,7 +170,7 @@ export const TESTS = [
   {
     key:        'sit_to_stand',
     stat:       'esplosivita',
-    label:      'ESPLOSIVITÀ',
+    label:      'Esplosività',
     unit:       'secondi',
     direction:  'inverse',
     ageGroup:   (age) => age <= 35 ? '18-35' : age <= 45 ? '36-45' : age <= 55 ? '46-55' : age <= 65 ? '56-65' : '66+',
@@ -208,12 +208,12 @@ export const TESTS = [
   {
     key:         'y_balance',
     stat:        'stabilita',
-    label:       'STABILITÀ',
+    label:       'Stabilità',
     unit:        '%',
     direction:   'direct',
     ageGroup:   (age) => age <= 40 ? '18-40' : '41-60',
     test:        'Y Balance Test',
-    categories:  ['active'],
+    categories:  ['active', 'soccer'],
     desc:        'Score composito normalizzato sulla lunghezza arto.',
     variables: [
       { key: 'ANT',           label: 'Anterior',         unit: 'cm' },
@@ -254,12 +254,12 @@ export const TESTS = [
   {
     key:        'standing_long_jump',
     stat:       'esplosivita',
-    label:      'ESPLOSIVITÀ',
+    label:      'Esplosività',
     unit:       'cm',
     direction:  'direct',
     ageGroup:   (age) => age <= 35 ? '18-35' : '36-50',
     test:       'Standing Long Jump',
-    categories: ['active'],
+    categories: ['active', 'soccer'],
     desc:       'Distanza salto in lungo da fermo.',
     guide: {
       duration:  '10 minuti',
@@ -291,7 +291,7 @@ export const TESTS = [
   {
     key:        'sprint_10m',
     stat:       'velocita',
-    label:      'VELOCITÀ',
+    label:      'Velocità',
     unit:       'secondi',
     direction:  'inverse',
     ageGroup:   (age) => age <= 35 ? '18-35' : '36-50',
@@ -330,7 +330,7 @@ export const TESTS = [
   {
     key:        'drop_jump_rsi',
     stat:       'reattivita',
-    label:      'REAATTIVITÀ',
+    label:      'Reattività',
     unit:       'RSI',
     direction:  'direct',
     ageGroup:   (age) => age <= 35 ? '18-35' : '36-50',
@@ -368,7 +368,7 @@ export const TESTS = [
   {
     key:        't_test_agility',
     stat:       'agilita',
-    label:      'AGILITÀ',
+    label:      'Agilità',
     unit:       'secondi',
     direction:  'inverse',
     ageGroup:   (_) => '18-40',
@@ -405,7 +405,7 @@ export const TESTS = [
   {
     key:        'yo_yo_ir1',
     stat:       'resistenza',
-    label:      'RESISTENZA',
+    label:      'Resistenza',
     unit:       'metri',
     direction:  'direct',
     ageGroup:   (age) => age <= 35 ? '18-35' : '36-50',
@@ -443,12 +443,12 @@ export const TESTS = [
   {
     key:        'sprint_20m',
     stat:       'velocita',
-    label:      'VELOCITÀ',
+    label:      'Velocità',
     unit:       'secondi',
     direction:  'inverse',
     test:       'Sprint 20m',
     ageGroup:   (age) => age <= 35 ? '18-35' : '36-50',
-    categories: ['athlete'],
+    categories: ['athlete', 'soccer'],
     desc:       'Tempo sui 20 metri lanciati.',
     guide: {
       duration:  '20 minuti',
@@ -480,7 +480,7 @@ export const TESTS = [
   {
     key:        'cmj',
     stat:       'esplosivita',
-    label:      'ESPLOSIVITÀ',
+    label:      'Esplosività',
     unit:       'cm',
     direction:  'direct',
     ageGroup:   (age) => age <= 35 ? '18-35' : '36-50',
@@ -510,6 +510,57 @@ export const TESTS = [
         'Non è consentito un secondo countermovement: il movimento è continuo.',
         'Valori medi M 18-35: ~35-42cm. Elite M: >55cm. Medie F: ~25-32cm.',
       ],
+    },
+  },
+
+  // ── SOCCER ──────────────────────────────────────────────────────────────────
+
+  {
+    key:        '505_cod_agility',
+    stat:       'agilita',
+    label:      'Agilità',
+    unit:       's',
+    direction:  'inverse',
+    test:       '505 COD Agility Test',
+    categories: ['soccer'],
+    ageGroup:   (age) => age <= 14 ? 'u14' : age <= 18 ? 'u18' : '18+',
+    guide: {
+      obiettivo:   'Misurare la capacità di cambiare direzione rapidamente.',
+      equipment:   ['Cinesini x2', 'Cronometro', 'Metro'],
+      setup:       'Posiziona due cinesini a 5m di distanza. Traccia una linea di partenza/arrivo a 10m dal primo cinesino.',
+      procedure: [
+        'L\'atleta si posiziona sulla linea di partenza in posizione di corsa.',
+        'Al segnale, sprint di 10m verso il cinesino.',
+        'Cambio di direzione di 180° intorno al cinesino.',
+        'Sprint di ritorno verso la linea di partenza.',
+        'Il cronometro si ferma al passaggio della linea.',
+      ],
+      note: 'Esegui 2 prove per lato (destra e sinistra). Registra il tempo migliore. Recupero 3 minuti tra le prove.',
+    },
+  },
+
+  {
+    key:        'beep_test',
+    stat:       'resistenza',
+    label:      'Resistenza',
+    unit:       'lv',
+    direction:  'direct',
+    test:       'Beep Test 20m',
+    categories: ['soccer'],
+    ageGroup:   (age) => age <= 14 ? 'u14' : age <= 18 ? 'u18' : '18+',
+    guide: {
+      obiettivo:   'Valutare la resistenza aerobica massimale (VO2max stimato).',
+      equipment:   ['Audio beep test (app o file)', 'Nastro adesivo o cinesini', 'Metro'],
+      setup:       'Traccia due linee parallele a 20m di distanza.',
+      procedure: [
+        'L\'atleta si posiziona sulla linea di partenza.',
+        'Al segnale audio (beep), corre verso la linea opposta.',
+        'Deve raggiungere la linea prima del beep successivo.',
+        'La velocità aumenta progressivamente ogni livello (circa 1 min).',
+        'Il test termina quando l\'atleta non riesce a raggiungere la linea in tempo per 2 volte consecutive.',
+        'Registra l\'ultimo livello e shuttle completati (es. 8.4).',
+      ],
+      note: 'Formato risultato: livello.shuttle come numero decimale (es. 8.4). Livello minimo indicativo per categoria: U14=4.0, U18=7.0, Senior=9.0.',
     },
   },
 ]

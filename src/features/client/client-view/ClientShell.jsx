@@ -8,12 +8,30 @@ import { NAV_ITEMS, LogoutIcon, BellIcon } from './client.config'
  */
 export function ClientShell({ activePage, onNavigate, color, unreadCount, onOpenNotifs, children }) {
   return (
-    <div className="min-h-screen text-white flex flex-col lg:flex-row">
-
+    <div
+      style={{
+        display:    'flex',
+        height:     '100vh',
+        overflow:   'hidden',
+        background: 'var(--bg-base)',
+        color:      'var(--text-primary)',
+      }}
+    >
       {/* Sidebar desktop */}
       <aside
-        className="hidden lg:flex flex-col items-center py-6 gap-2 sticky top-0 h-screen shrink-0 z-30 border-r border-white/[.05] backdrop-blur-md"
-        style={{ width: 64 }}
+        className="hidden lg:flex flex-col items-center"
+        style={{
+          width:       64,
+          flexShrink:  0,
+          padding:     '24px 8px',
+          gap:         4,
+          borderRight: '1px solid var(--border-subtle)',
+          background:  'var(--bg-subtle)',
+          height:      '100vh',
+          position:    'sticky',
+          top:         0,
+          zIndex:      30,
+        }}
         aria-label="Navigazione principale"
       >
         {/* Logo */}
@@ -50,12 +68,12 @@ export function ClientShell({ activePage, onNavigate, color, unreadCount, onOpen
                 transition-opacity duration-150 z-50
                 rounded-[3px] px-2.5 py-1.5 whitespace-nowrap
               "
-              style={{ background: 'rgba(8,12,18,0.97)', border: '1px solid rgba(15,214,90,0.2)' }}
+              style={{ background: 'var(--bg-overlay)', border: '1px solid rgba(14,196,82,0.2)' }}
               >
-                <span className="font-display text-[11px] tracking-[1px]" style={{ color: '#0fd65a' }}>
+                <span className="font-display text-[11px] tracking-[1px]" style={{ color: 'var(--green-400)' }}>
                   {item.label.toUpperCase()}
                 </span>
-                <div className="absolute left-[-5px] top-1/2 -translate-y-1/2 w-2 h-2 rotate-45" style={{ background: 'rgba(8,12,18,0.97)', borderLeft: '1px solid rgba(15,214,90,0.2)', borderBottom: '1px solid rgba(15,214,90,0.2)' }} />
+                <div className="absolute left-[-5px] top-1/2 -translate-y-1/2 w-2 h-2 rotate-45" style={{ background: 'var(--bg-overlay)', borderLeft: '1px solid rgba(14,196,82,0.2)', borderBottom: '1px solid rgba(14,196,82,0.2)' }} />
               </div>
             </div>
           ))}
@@ -89,10 +107,31 @@ export function ClientShell({ activePage, onNavigate, color, unreadCount, onOpen
         </button>
       </aside>
 
+      {/* Contenuto principale + mobile */}
+      <div
+        style={{
+          flex:          1,
+          display:       'flex',
+          flexDirection: 'column',
+          overflow:      'hidden',
+          minWidth:      0,
+        }}
+      >
       {/* Mobile header */}
-      <div className="lg:hidden flex-none">
+      <div className="lg:hidden" style={{ flexShrink: 0 }}>
         <header
-          className="flex items-center justify-between px-5 py-3 border-b border-white/[.05] sticky top-0 z-30 backdrop-blur-md"
+          style={{
+            display:        'flex',
+            alignItems:     'center',
+            justifyContent: 'space-between',
+            padding:        '0 20px',
+            height:         52,
+            borderBottom:   '1px solid var(--border-subtle)',
+            background:     'var(--bg-subtle)',
+            position:       'sticky',
+            top:            0,
+            zIndex:         30,
+          }}
           aria-label="Header mobile"
         >
           <span className="rx-glow-text font-display font-black text-[17px]">
@@ -126,7 +165,14 @@ export function ClientShell({ activePage, onNavigate, color, unreadCount, onOpen
 
         {/* Tab bar */}
         <nav
-          className="flex border-b border-white/[.05] sticky top-[49px] z-20 backdrop-blur-md"
+          style={{
+            display:      'flex',
+            borderBottom: '1px solid var(--border-subtle)',
+            position:     'sticky',
+            top:          52,
+            zIndex:       20,
+            background:   'var(--bg-subtle)',
+          }}
           aria-label="Navigazione mobile"
         >
           {NAV_ITEMS.map(item => (
@@ -141,7 +187,7 @@ export function ClientShell({ activePage, onNavigate, color, unreadCount, onOpen
               {activePage === item.id && (
                 <div
                   className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] w-8 rounded-full"
-                  style={{ background: 'linear-gradient(90deg, #0fd65a, #00c8ff)', boxShadow: '0 0 8px rgba(15,214,90,0.5)' }}
+                  style={{ background: 'var(--gradient-primary)', boxShadow: '0 0 8px rgba(14,196,82,0.5)' }}
                 />
               )}
               <span
@@ -162,9 +208,10 @@ export function ClientShell({ activePage, onNavigate, color, unreadCount, onOpen
       </div>
 
       {/* Contenuto */}
-      <main className="flex-1 min-w-0" aria-label="Contenuto principale">
+      <main style={{ flex: 1, overflowY: 'auto', overscrollBehavior: 'contain' }} aria-label="Contenuto principale">
         {children}
       </main>
+      </div>
     </div>
   )
 }

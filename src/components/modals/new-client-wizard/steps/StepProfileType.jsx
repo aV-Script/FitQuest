@@ -12,21 +12,21 @@ export function StepProfileType({ profileType, setProfileType }) {
         <button
           key={cat.id}
           onClick={() => setProfileType(cat.id)}
-          className="flex items-start gap-4 p-4 rounded-[4px] cursor-pointer border transition-all text-left"
-          style={profileType === cat.id
+          className="flex items-start gap-4 p-4 cursor-pointer border transition-all text-left"
+          style={{ borderRadius: 'var(--radius-lg)', ...(profileType === cat.id
             ? { background: cat.color + '12', borderColor: cat.color + '44' }
-            : { background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.07)' }
-          }
+            : { background: 'var(--bg-raised)', borderColor: 'var(--border-default)' }
+          ) }}
         >
           {/* Indicatore selezione */}
           <div
             className="w-3 h-3 rounded-full mt-1.5 shrink-0"
-            style={{ background: profileType === cat.id ? cat.color : 'rgba(255,255,255,0.15)' }}
+            style={{ background: profileType === cat.id ? cat.color : 'var(--border-strong)' }}
           />
           <div className="flex-1">
             <div
               className="font-display font-black text-[14px] mb-1"
-              style={{ color: profileType === cat.id ? cat.color : 'rgba(255,255,255,0.7)' }}
+              style={{ color: profileType === cat.id ? cat.color : 'var(--text-secondary)' }}
             >
               {cat.label}
             </div>

@@ -1,72 +1,34 @@
-import { useMemo, memo } from 'react'
-import { SLOT_STATUS } from '../../../constants/slotStatus'
+import { useMemo } from 'react'
 
 const DAY_NAMES = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom']
 
-const STATUS_COLOR = {
-  [SLOT_STATUS.PLANNED]:   '#00c8ff',
-  [SLOT_STATUS.COMPLETED]: '#34d399',
-  [SLOT_STATUS.SKIPPED]:   '#6b7280',
+const STATUS_COLORS = {
+  planned:   '#2ecfff',
+  completed: '#0ec452',
+  skipped:   '#7a8fa6',
 }
 
-const MonthCell = memo(function MonthCell({ cell, clients, today, onSlotClick, onEmptyClick }) {
-  const isToday = cell.dateStr === today
-  return (
-    <div
-      className="rounded-[4px] min-h-[90px] flex flex-col cursor-pointer border transition-all"
-      style={{
-        background:  isToday ? 'rgba(0,200,255,0.05)' : 'rgba(13,21,32,0.7)',
-        borderColor: isToday ? 'rgba(0,200,255,0.3)'  : 'rgba(15,214,90,0.06)',
-      }}
-      onClick={() => onEmptyClick(cell.dateStr, '09:00')}
-    >
-      <div className="px-2 pt-2 pb-1">
-        <span
-          className={`font-display text-[13px] w-7 h-7 flex items-center justify-center rounded-full ${isToday ? 'text-white' : 'text-white/60'}`}
-          style={isToday ? { background: '#00c8ff' } : {}}
-        >
-          {cell.day}
-        </span>
-      </div>
-      <div className="flex flex-col gap-0.5 px-1 pb-1">
-        {cell.slots.slice(0, 3).map(slot => {
-          const statusColor = STATUS_COLOR[slot.status ?? SLOT_STATUS.PLANNED]
-          const clientNames = slot.clientIds
-            .map(id => clients.find(c => c.id === id)?.name)
-            .filter(Boolean)
-          const label = clientNames.length === 1 ? clientNames[0] : `${clientNames.length} clienti`
-          return (
-            <button
-              key={slot.id}
-              onClick={(e) => { e.stopPropagation(); onSlotClick(slot, e) }}
-              className="w-full text-left rounded-[3px] px-1.5 py-0.5 font-body text-[10px] truncate cursor-pointer transition-all hover:opacity-80 border-none"
-              style={{ background: statusColor + '22', color: statusColor }}
-            >
-              {slot.startTime} {label}
-            </button>
-          )
-        })}
-        {cell.slots.length > 3 && (
-          <div className="font-display text-[9px] text-white/25 px-1.5">
-            +{cell.slots.length - 3} altri
-          </div>
-        )}
-      </div>
-    </div>
-  )
-})
-
 /**
- * Vista mese — griglia con eventi visibili nelle celle.
+ * MonthView — griglia mese con eventi pill.
  */
-export function MonthView({ currentDate, slots, clients, today, onSlotClick, onEmptyClick }) {
+export function MonthView({
+  currentDate,
+  slots,
+  clients,
+  today,
+  onSlotClick,
+  onEmptyClick,
+}) {
   const d     = new Date(currentDate + 'T12:00')
   const year  = d.getFullYear()
   const month = d.getMonth()
 
   const slotsByDate = useMemo(() => {
     const map = {}
-    slots.forEach(s => { if (!map[s.date]) map[s.date] = []; map[s.date].push(s) })
+    slots.forEach(s => {
+      if (!map[s.date]) map[s.date] = []
+      map[s.date].push(s)
+    })
     return map
   }, [slots])
 
@@ -75,41 +37,233 @@ export function MonthView({ currentDate, slots, clients, today, onSlotClick, onE
     const lastDay     = new Date(year, month + 1, 0)
     const startOffset = (firstDay.getDay() + 6) % 7
     const days        = []
+
     for (let i = 0; i < startOffset; i++) days.push(null)
+
     for (let dd = 1; dd <= lastDay.getDate(); dd++) {
       const dateStr = `${year}-${String(month + 1).padStart(2,'0')}-${String(dd).padStart(2,'0')}`
-      days.push({ day: dd, dateStr, slots: slotsByDate[dateStr] ?? [] })
+      days.push({
+        day:     dd,
+        dateStr,
+        slots:   slotsByDate[dateStr] ?? [],
+        isToday: dateStr === today,
+        isPast:  dateStr < today,
+      })
     }
+
     return days
-  }, [year, month, slotsByDate])
+  }, [year, month, slotsByDate, today])
 
   return (
-    <div className="flex-1 px-4 py-4 overflow-y-auto">
-
-      {/* Header giorni */}
-      <div className="grid grid-cols-7 gap-1 mb-2">
-        {DAY_NAMES.map(d => (
-          <div key={d} className="text-center font-display text-[10px] text-white/30 tracking-[2px] py-1">
-            {d}
+    <div
+      style={{
+        flex:          1,
+        display:       'flex',
+        flexDirection: 'column',
+        overflow:      'hidden',
+        padding:       '0 16px 16px',
+      }}
+    >
+      {/* Header giorni settimana */}
+      <div
+        style={{
+          display:             'grid',
+          gridTemplateColumns: 'repeat(7, 1fr)',
+          gap:                 4,
+          padding:             '8px 0',
+          flexShrink:          0,
+        }}
+      >
+        {DAY_NAMES.map(name => (
+          <div
+            key={name}
+            style={{
+              textAlign:     'center',
+              fontFamily:    'Montserrat, sans-serif',
+              fontSize:      10,
+              fontWeight:    700,
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              color:         'var(--text-tertiary)',
+              padding:       '4px 0',
+            }}
+          >
+            {name}
           </div>
         ))}
       </div>
 
-      {/* Griglia */}
-      <div className="grid grid-cols-7 gap-1">
+      {/* Griglia giorni */}
+      <div
+        style={{
+          display:             'grid',
+          gridTemplateColumns: 'repeat(7, 1fr)',
+          gridAutoRows:        '1fr',
+          gap:                 4,
+          flex:                1,
+          overflowY:           'auto',
+        }}
+      >
         {calendarDays.map((cell, i) => {
-          if (!cell) return <div key={`e-${i}`} />
+          if (!cell) return (
+            <div
+              key={`empty-${i}`}
+              style={{
+                borderRadius: 'var(--radius-lg)',
+                background:   'rgba(255,255,255,0.01)',
+                border:       '1px solid transparent',
+              }}
+            />
+          )
+
           return (
-            <MonthCell
+            <DayCell
               key={cell.dateStr}
               cell={cell}
               clients={clients}
-              today={today}
               onSlotClick={onSlotClick}
               onEmptyClick={onEmptyClick}
             />
           )
         })}
+      </div>
+    </div>
+  )
+}
+
+/**
+ * DayCell — cella singola nella MonthView.
+ */
+function DayCell({ cell, clients, onSlotClick, onEmptyClick }) {
+  const { day, dateStr, slots, isToday, isPast } = cell
+  const visibleSlots = slots.slice(0, 3)
+  const hiddenCount  = slots.length - visibleSlots.length
+
+  return (
+    <div
+      onClick={() => onEmptyClick(dateStr, '09:00')}
+      style={{
+        display:       'flex',
+        flexDirection: 'column',
+        padding:       '6px',
+        background:    isToday
+          ? 'rgba(14,196,82,0.04)'
+          : isPast
+          ? 'rgba(0,0,0,0.02)'
+          : 'var(--bg-raised)',
+        border:        `1px solid ${isToday
+          ? 'rgba(14,196,82,0.2)'
+          : 'var(--border-subtle)'}`,
+        borderRadius:  'var(--radius-lg)',
+        cursor:        'pointer',
+        minHeight:     80,
+        transition:    'border-color var(--duration-fast)',
+        overflow:      'hidden',
+      }}
+      onMouseEnter={e => {
+        if (!isToday)
+          e.currentTarget.style.borderColor = 'var(--border-default)'
+      }}
+      onMouseLeave={e => {
+        if (!isToday)
+          e.currentTarget.style.borderColor = 'var(--border-subtle)'
+      }}
+    >
+      {/* Numero giorno */}
+      <div
+        style={{
+          display:        'flex',
+          alignItems:     'center',
+          justifyContent: 'center',
+          width:          26,
+          height:         26,
+          borderRadius:   'var(--radius-full)',
+          background:     isToday ? 'var(--green-400)' : 'transparent',
+          fontFamily:     'Montserrat, sans-serif',
+          fontSize:       13,
+          fontWeight:     isToday ? 900 : 600,
+          color:          isToday
+            ? 'var(--text-inverse)'
+            : isPast
+            ? 'var(--text-tertiary)'
+            : 'var(--text-primary)',
+          marginBottom:   4,
+          flexShrink:     0,
+        }}
+      >
+        {day}
+      </div>
+
+      {/* Pill eventi */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1 }}>
+        {visibleSlots.map(slot => {
+          const statusColor = STATUS_COLORS[slot.status ?? 'planned']
+          const clientNames = slot.clientIds
+            .map(id => clients.find(c => c.id === id)?.name)
+            .filter(Boolean)
+          const label = clientNames.length === 1
+            ? clientNames[0].split(' ')[0]
+            : clientNames.length > 1
+            ? `${clientNames.length} pers.`
+            : 'Sessione'
+
+          return (
+            <button
+              key={slot.id}
+              onClick={e => { e.stopPropagation(); onSlotClick(slot, e) }}
+              style={{
+                display:      'flex',
+                alignItems:   'center',
+                gap:          4,
+                padding:      '2px 6px',
+                background:   statusColor + '18',
+                border:       'none',
+                borderRadius: 'var(--radius-sm)',
+                cursor:       'pointer',
+                textAlign:    'left',
+                overflow:     'hidden',
+                transition:   'background var(--duration-fast)',
+              }}
+              onMouseEnter={e =>
+                e.currentTarget.style.background = statusColor + '28'
+              }
+              onMouseLeave={e =>
+                e.currentTarget.style.background = statusColor + '18'
+              }
+            >
+              <span
+                style={{
+                  fontFamily:    'Montserrat, sans-serif',
+                  fontSize:      9,
+                  fontWeight:    700,
+                  color:         statusColor,
+                  letterSpacing: '0.03em',
+                  overflow:      'hidden',
+                  textOverflow:  'ellipsis',
+                  whiteSpace:    'nowrap',
+                  lineHeight:    1.4,
+                }}
+              >
+                {slot.startTime} {label}
+              </span>
+            </button>
+          )
+        })}
+
+        {hiddenCount > 0 && (
+          <span
+            style={{
+              fontFamily:    'Montserrat, sans-serif',
+              fontSize:      9,
+              fontWeight:    600,
+              color:         'var(--text-tertiary)',
+              padding:       '0 4px',
+              letterSpacing: '0.05em',
+            }}
+          >
+            +{hiddenCount} altri
+          </span>
+        )}
       </div>
     </div>
   )

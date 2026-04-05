@@ -28,7 +28,7 @@ export function CampionamentoView({ client, color, onSave, onBack }) {
     <div className="min-h-screen text-white">
 
       {/* Header - SOLO DESKTOP */}
-      <div className="hidden lg:flex items-center justify-between px-6 py-4 border-b border-white/[.05]">
+      <div className="hidden lg:flex items-center justify-between px-6 py-4 border-b [border-color:var(--border-subtle)]">
         <button
           onClick={onBack}
           className="flex items-center gap-1.5 text-white/30 text-[13px] hover:text-white/60 transition-colors"

@@ -2,7 +2,7 @@ import { buildSessionUpdate } from '../../../utils/gamification'
 import { SLOT_STATUS } from '../../../constants/slotStatus'
 
 const STATUS_COLORS = {
-  [SLOT_STATUS.PLANNED]:   '#00c8ff',
+  [SLOT_STATUS.PLANNED]:   'var(--cyan-400)',
   [SLOT_STATUS.COMPLETED]: '#34d399',
   [SLOT_STATUS.SKIPPED]:   '#6b7280',
 }
@@ -26,7 +26,7 @@ export function SlotCard({ slot, clients, onClick }) {
       onClick={onClick}
       className="w-full text-left rounded-[4px] p-4 mb-3 cursor-pointer transition-all hover:opacity-90"
       style={{
-        background: 'rgba(255,255,255,0.03)',
+        background: 'var(--bg-surface)',
         border:     `1px solid ${statusColor}33`,
       }}
     >
@@ -41,7 +41,7 @@ export function SlotCard({ slot, clients, onClick }) {
           {slot.recurrenceId && (
             <span
               className="font-display text-[9px] px-2 py-0.5 rounded-[3px]"
-              style={{ background: 'rgba(0,200,255,0.08)', color: '#00c8ff' }}
+              style={{ background: 'rgba(46,207,255,0.08)', color: 'var(--cyan-400)' }}
             >
               ↺ RICORRENTE
             </span>
@@ -75,11 +75,11 @@ export function SlotCard({ slot, clients, onClick }) {
               style={{
                 background: isPresent ? 'rgba(52,211,153,0.06)' :
                             isAbsent  ? 'rgba(248,113,113,0.06)' :
-                            'rgba(255,255,255,0.02)',
+                            'var(--bg-raised)',
                 border: `1px solid ${
                   isPresent ? '#34d39933' :
                   isAbsent  ? '#f8717133' :
-                  'rgba(255,255,255,0.06)'
+                  'var(--border-subtle)'
                 }`,
               }}
             >

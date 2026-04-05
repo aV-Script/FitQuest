@@ -4,11 +4,17 @@ import { createContext, useContext, useReducer } from 'react'
 export const ACTIONS = Object.freeze({
   SELECT_CLIENT:   'SELECT_CLIENT',
   DESELECT_CLIENT: 'DESELECT_CLIENT',
+  UPDATE_CLIENT:   'UPDATE_CLIENT',
+  SET_ORG_CONTEXT: 'SET_ORG_CONTEXT',
 })
 
 // ── Stato iniziale ────────────────────────────────────────────────────────────
 const initialState = {
   selectedClient: null,
+  orgId:          null,
+  moduleType:     null,
+  terminology:    null,
+  userRole:       null,
 }
 
 // ── Reducer ───────────────────────────────────────────────────────────────────
@@ -19,6 +25,23 @@ function reducer(state, { type, payload }) {
 
     case ACTIONS.DESELECT_CLIENT:
       return { ...state, selectedClient: null }
+
+    case ACTIONS.UPDATE_CLIENT:
+      return {
+        ...state,
+        selectedClient: state.selectedClient?.id === payload.id
+          ? { ...state.selectedClient, ...payload }
+          : state.selectedClient,
+      }
+
+    case ACTIONS.SET_ORG_CONTEXT:
+      return {
+        ...state,
+        orgId:       payload.orgId,
+        moduleType:  payload.moduleType,
+        terminology: payload.terminology,
+        userRole:    payload.userRole,
+      }
 
     default:
       return state

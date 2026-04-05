@@ -1,38 +1,53 @@
 // Pentagon.jsx
 import { memo, useMemo } from 'react'
 
+/**
+ * Pentagon — grafico radar a 5-6 assi.
+ * Aggiornato con glow e area fill migliorata.
+ */
 export const Pentagon = memo(function Pentagon({
   stats = {},
   statKeys = [],
   statLabels = [],
-  color = '#0fd65a',
+  color = '#0ec452',
   size = 180,
   fluid = false,
 }) {
-  const cx = size / 2
-  const cy = size / 2
-  const R  = size * 0.42
+  if (statKeys.length === 0) return null
 
-  const angles = statKeys.map((_, i) => (Math.PI * 2 * i) / statKeys.length - Math.PI / 2)
+  const center = size / 2
+  const radius = size * 0.38
+  const n      = Math.min(statKeys.length, 6)
+  const gradId = `pentagon-fill-${color.replace('#', '')}-${size}`
+
+  const angles = useMemo(
+    () => Array.from({ length: n }, (_, i) => (i * 2 * Math.PI / n) - Math.PI / 2),
+    [n]
+  )
 
   const outerPoints = useMemo(
-    () => angles.map(a => ({ x: cx + R * Math.cos(a), y: cy + R * Math.sin(a) })),
-    [cx, cy, R, statKeys.join()]
+    () => angles.map(a => ({ x: center + radius * Math.cos(a), y: center + radius * Math.sin(a) })),
+    [angles, center, radius]
   )
 
-  const statPoints = useMemo(
-    () => statKeys.map((key, i) => {
-      const val = Math.min(100, Math.max(0, stats[key] ?? 0))
-      const r   = (val / 100) * R
-      return { x: cx + r * Math.cos(angles[i]), y: cy + r * Math.sin(angles[i]) }
+  const dataPoints = useMemo(
+    () => Array.from({ length: n }, (_, i) => {
+      const val   = Math.min(100, Math.max(0, stats[statKeys[i]] ?? 0))
+      const scale = val / 100
+      return {
+        x: center + radius * scale * Math.cos(angles[i]),
+        y: center + radius * scale * Math.sin(angles[i]),
+      }
     }),
-    [stats, statKeys, cx, cy, R]
+    [stats, statKeys, center, radius, angles, n]
   )
 
-  const toPath = pts =>
-    pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ') + ' Z'
+  const toPolyline = (pts) =>
+    pts.map(p => `${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(' ')
 
-  const vbPad = 30
+  const fontSize = Math.max(7, size * 0.07)
+
+  const vbPad  = 30
   const vbSize = size + vbPad * 2
 
   return (
@@ -40,47 +55,102 @@ export const Pentagon = memo(function Pentagon({
       width={fluid ? '100%' : size}
       height={fluid ? '100%' : size}
       viewBox={`${-vbPad} ${-vbPad} ${vbSize} ${vbSize}`}
-      style={fluid ? { display: 'block' } : undefined}
+      style={fluid ? { display: 'block', overflow: 'visible' } : { overflow: 'visible' }}
     >
-      {/* Grid rings */}
-      {[0.25, 0.5, 0.75, 1].map(f => (
-        <polygon key={f}
-          points={outerPoints.map(p =>
-            `${(cx + (p.x - cx) * f).toFixed(1)},${(cy + (p.y - cy) * f).toFixed(1)}`
-          ).join(' ')}
+      <defs>
+        <radialGradient id={gradId} cx="50%" cy="50%">
+          <stop offset="0%"   stopColor={color} stopOpacity="0.3" />
+          <stop offset="100%" stopColor={color} stopOpacity="0.05" />
+        </radialGradient>
+      </defs>
+
+      {/* Griglie concentriche */}
+      {[0.25, 0.5, 0.75, 1].map(scale => (
+        <polygon
+          key={scale}
+          points={toPolyline(
+            outerPoints.map(p => ({
+              x: center + (p.x - center) * scale,
+              y: center + (p.y - center) * scale,
+            }))
+          )}
           fill="none"
-          stroke="rgba(255,255,255,0.06)"
-          strokeWidth="1"
+          stroke={scale === 1 ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.04)'}
+          strokeWidth={scale === 1 ? 1 : 0.5}
         />
       ))}
 
-      {/* Spokes */}
-      {outerPoints.map((p, i) => (
-        <line key={i} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
+      {/* Assi */}
+      {outerPoints.map((pt, i) => (
+        <line
+          key={i}
+          x1={center} y1={center}
+          x2={pt.x}   y2={pt.y}
+          stroke="rgba(255,255,255,0.04)"
+          strokeWidth={0.5}
+        />
       ))}
 
-      {/* Stat area */}
-      <path d={toPath(statPoints)} fill={color + '33'} stroke={color} strokeWidth="2" strokeLinejoin="round" />
+      {/* Area dati — fill con gradiente radiale */}
+      <polygon
+        points={toPolyline(dataPoints)}
+        fill={`url(#${gradId})`}
+        stroke="none"
+      />
 
-      {/* Dots */}
-      {statPoints.map((p, i) => <circle key={i} cx={p.x} cy={p.y} r="3.5" fill={color} />)}
+      {/* Area dati — bordo con glow */}
+      <polygon
+        points={toPolyline(dataPoints)}
+        fill="none"
+        stroke={color}
+        strokeWidth={1.5}
+        strokeLinejoin="round"
+        style={{ filter: `drop-shadow(0 0 4px ${color}88)` }}
+      />
+
+      {/* Punti sui vertici dati */}
+      {dataPoints.map((pt, i) => {
+        const val = stats[statKeys[i]] ?? 0
+        if (val === 0) return null
+        return (
+          <circle
+            key={i}
+            cx={pt.x}
+            cy={pt.y}
+            r={2.5}
+            fill={color}
+            style={{ filter: `drop-shadow(0 0 3px ${color})` }}
+          />
+        )
+      })}
 
       {/* Labels */}
-      {statLabels.map((label, i) => {
-        const offset = size < 140 ? 18 : 24
-        const lx = cx + (R + offset) * Math.cos(angles[i])
-        const ly = cy + (R + offset) * Math.sin(angles[i])
+      {outerPoints.map((pt, i) => {
+        const angle  = angles[i]
+        const labelR = radius + fontSize * 1.4
+        const lx     = center + labelR * Math.cos(angle)
+        const ly     = center + labelR * Math.sin(angle)
+        const anchor = Math.abs(Math.cos(angle)) < 0.1
+          ? 'middle'
+          : Math.cos(angle) > 0
+          ? 'start'
+          : 'end'
+
         return (
-          <text key={i} x={lx} y={ly}
-            textAnchor="middle"
-            dominantBaseline="middle"
-            fontSize={size > 160 ? 10 : 9}
-            fill="rgba(255,255,255,0.5)"
-            fontFamily="Montserrat"
-            fontWeight="600"
-            letterSpacing="1"
+          <text
+            key={i}
+            x={lx}
+            y={ly + fontSize * 0.35}
+            textAnchor={anchor}
+            style={{
+              fontFamily:    'Montserrat, sans-serif',
+              fontSize:      fontSize,
+              fontWeight:    600,
+              fill:          'rgba(255,255,255,0.5)',
+              letterSpacing: '0.05em',
+            }}
           >
-            {label}
+            {(statLabels[i] ?? '').slice(0, 5).toUpperCase()}
           </text>
         )
       })}

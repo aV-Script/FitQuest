@@ -1,51 +1,86 @@
-import { useState, useCallback }           from 'react'
-import { useClientRank }                   from '../../hooks/useClientRank'
-import { SectionLabel, Divider, ActivityLog, StatsSection } from '../../components/ui'
-import { StatsChart }                      from './StatsChart'
-import { DashboardHeader }                 from './client-dashboard/DashboardHeader'
-import { DeleteDialog }                    from './client-dashboard/DeleteDialog'
-import { ClientSessionsSummary }           from './client-dashboard/ClientSessionsSummary'
-import { CampionamentoView }               from './CampionamentoView'
-import { useBia }                          from '../bia/useBia'
-import { BiaView }                         from '../bia/BiaView'
-import { BiaSummary }                      from '../bia/bia-view/BiaSummary'
-import { BiaHistoryChart }                 from '../bia/bia-view/BiaHistoryChart'
-import { UpgradeCategoryBanner }           from '../bia/UpgradeCategoryBanner'
-import { getProfileCategory }              from '../../constants/bia'
-import { calcBiaScore, getBiaRankFromScore } from '../../utils/bia'
+import { useState, useCallback, useMemo } from 'react'
+import { useClients }                     from '../../hooks/useClients'
+import { useBia }                         from '../bia/useBia'
+import { DashboardHeader }               from './client-dashboard/DashboardHeader'
+import { DashboardTabNav }               from './client-dashboard/DashboardTabNav'
+import { PanoramicaTab }                 from './client-dashboard/tabs/PanoramicaTab'
+import { StatisticheTab }                from './client-dashboard/tabs/StatisticheTab'
+import { BiaTab }                        from './client-dashboard/tabs/BiaTab'
+import { BiaLockedPanel }                from '../bia/BiaLockedPanel'
+import { UpgradeCategoryBanner }         from '../bia/UpgradeCategoryBanner'
+import { CampionamentoView }             from './CampionamentoView'
+import { BiaView }                       from '../bia/BiaView'
+import { ConfirmDialog }                 from '../../components/common/ConfirmDialog'
+import { useClientRank }                 from '../../hooks/useClientRank'
+import { getProfileCategory }            from '../../constants/bia'
 
-export function ClientDashboard({ client, trainerId, onBack, onCampionamento, onDelete }) {
-  const { rankObj: testRankObj, color: testColor } = useClientRank(client)
+/**
+ * ClientDashboard — vista completa di un cliente.
+ * Entry point dal TrainerView quando un cliente è selezionato.
+ */
+export function ClientDashboard({
+  client,
+  orgId,
+  slots     = [],
+  moduleType,
+  readonly,
+  onBack,
+  // Legacy props da TrainerView (non più usate internamente, mantenute per compatibilità)
+  onCampionamento: _onCampionamento,
+  onDelete:        _onDelete,
+}) {
+  const { handleCampionamento, handleDeleteClient } = useClients(orgId)
+  const { handleSaveBia, handleUpgradeProfile }     = useBia(orgId)
+  const { color }                                   = useClientRank(client)
+
+  const profile = getProfileCategory(client.profileType ?? 'tests_only')
+
+  // ── Stato navigazione ──────────────────────────────────────
   const [view,       setView]       = useState('dashboard') // 'dashboard' | 'campionamento' | 'bia'
+  const [activeTab,  setActiveTab]  = useState('panoramica')
   const [showDelete, setShowDelete] = useState(false)
+  const [deleting,   setDeleting]   = useState(false)
 
-  const { handleSaveBia, handleUpgradeProfile } = useBia(trainerId)
+  // ── Tab config (dinamico per profilo) ──────────────────────
+  const tabs = useMemo(() => {
+    const base = [
+      { id: 'panoramica',  label: 'Panoramica', icon: '◈' },
+      { id: 'statistiche', label: 'Statistiche', icon: '📊',
+        count: client.campionamenti?.length ?? 0,
+      },
+    ]
+    if (profile.hasBia) {
+      base.push({
+        id:    'bia',
+        label: 'BIA',
+        icon:  '⚡',
+        count: client.biaHistory?.length ?? 0,
+      })
+    }
+    return base
+  }, [profile.hasBia, client.campionamenti?.length, client.biaHistory?.length])
 
-  const profileType = client.profileType ?? 'tests_only'
-  const profile     = getProfileCategory(profileType)
-
-  const biaScore   = calcBiaScore(client.lastBia, client.sesso, client.eta)
-  const biaRank    = getBiaRankFromScore(biaScore)
-  const biaRankObj = biaScore > 0 ? biaRank : { label: 'F', color: '#4a5568' }
-  const biaColor   = biaRankObj.color
-
-  // Colore e rank primari della scheda — BIA per bia_only, test per gli altri
-  const color   = profileType === 'bia_only' ? biaColor : testColor
-  const rankObj = profileType === 'bia_only' ? biaRankObj : testRankObj
-
-  const prevStats = client.campionamenti?.[1]?.stats ?? null
-
-  const handleDelete = useCallback(async () => {
-    await onDelete(client.id)
-    setShowDelete(false)
-    onBack()
-  }, [onDelete, client.id, onBack])
+  // ── Handlers ───────────────────────────────────────────────
+  const handleConfirmDelete = useCallback(async () => {
+    setDeleting(true)
+    try {
+      await handleDeleteClient(client.id)
+      onBack?.()
+    } finally {
+      setDeleting(false)
+      setShowDelete(false)
+    }
+  }, [client.id, handleDeleteClient, onBack])
 
   const handleSaveCampionamento = useCallback(async (newStats, testValues) => {
-    await onCampionamento(client, newStats, testValues)
-  }, [onCampionamento, client])
+    await handleCampionamento(client, newStats, testValues)
+  }, [client, handleCampionamento])
 
-  // Vista campionamento — sostituisce il dashboard
+  const handleSaveBiaData = useCallback(async (biaData) => {
+    await handleSaveBia(client, biaData)
+  }, [client, handleSaveBia])
+
+  // ── View inline: campionamento ─────────────────────────────
   if (view === 'campionamento') {
     return (
       <CampionamentoView
@@ -53,130 +88,100 @@ export function ClientDashboard({ client, trainerId, onBack, onCampionamento, on
         color={color}
         onSave={handleSaveCampionamento}
         onBack={() => setView('dashboard')}
+        moduleType={moduleType}
       />
     )
   }
 
-  // Vista BIA
+  // ── View inline: BIA ───────────────────────────────────────
   if (view === 'bia') {
     return (
       <BiaView
         client={client}
         color={color}
-        onSave={(biaData) => handleSaveBia(client, biaData)}
+        onSave={handleSaveBiaData}
         onBack={() => setView('dashboard')}
       />
     )
   }
 
+  // ── Dashboard principale ───────────────────────────────��───
   return (
-    <div className="min-h-screen text-white">
-
+    <div
+      style={{
+        display:       'flex',
+        flexDirection: 'column',
+        height:        '100%',
+        overflow:      'hidden',
+      }}
+    >
+      {/* Header hero */}
       <DashboardHeader
         client={client}
-        rankObj={rankObj}
-        color={color}
-        biaRankObj={profileType === 'complete' ? biaRankObj : null}
         onBack={onBack}
+        onCampionamento={() => setView('campionamento')}
+        onBia={() => setView('bia')}
         onDelete={() => setShowDelete(true)}
+        moduleType={moduleType}
+        readonly={readonly}
       />
 
-      <Divider color={color} />
-
-      <ClientSessionsSummary
-        clientId={client.id}
-        sessionsPerWeek={client.sessionsPerWeek}
-      />
-
-      <Divider color={color} />
-
-      {/* Banner upgrade se profilo incompleto */}
+      {/* Banner upgrade (se profilo incompleto) */}
       <UpgradeCategoryBanner
         client={client}
         color={color}
         onUpgrade={handleUpgradeProfile}
       />
 
-      {/* Sezione test — solo se il profilo include test */}
-      {profile.hasTests && (
-        <section className="px-6 pt-6 pb-4">
-          <div className="rounded-[4px] p-5 rx-card">
-            <div className="flex items-center justify-between mb-4">
-              <SectionLabel className="mb-0">◈ Status</SectionLabel>
-              <button
-                onClick={() => setView('campionamento')}
-                className="text-[11px] font-display px-3 py-1.5 rounded-[3px] cursor-pointer border transition-all hover:opacity-80"
-                style={{ color, borderColor: color + '55', background: color + '11' }}
-              >
-                CAMPIONAMENTO
-              </button>
-            </div>
-            <div
-              className="rounded-[4px] p-5"
-              style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}
-            >
-              <StatsSection
-                stats={client.stats}
-                prevStats={prevStats}
-                color={color}
-                categoria={client.categoria}
-              />
-            </div>
-            <div className="mt-6">
-              <StatsChart
-                campionamenti={client.campionamenti}
-                color={color}
-                categoria={client.categoria}
-              />
-            </div>
-          </div>
-        </section>
-      )}
+      {/* Tab navigation */}
+      <DashboardTabNav
+        tabs={tabs}
+        activeTab={activeTab}
+        onChange={setActiveTab}
+      />
 
-      {/* Sezione BIA — solo se il profilo include BIA */}
-      {profile.hasBia && (
-        <>
-          <Divider color={biaColor} />
-          <section className="px-6 pt-6 pb-4">
-            <div className="rounded-[4px] p-5 rx-card">
-              <div className="flex items-center justify-between mb-4">
-                <SectionLabel className="mb-0">◈ BIA</SectionLabel>
-                <button
-                  onClick={() => setView('bia')}
-                  className="text-[11px] font-display px-3 py-1.5 rounded-[3px] cursor-pointer border transition-all hover:opacity-80"
-                  style={{ color: biaColor, borderColor: biaColor + '55', background: biaColor + '11' }}
-                >
-                  NUOVA MISURAZIONE
-                </button>
-              </div>
-              <BiaSummary
-                bia={client.lastBia}
-                prevBia={client.biaHistory?.[1] ?? null}
-                sex={client.sesso}
-                age={client.eta}
-                color={biaColor}
-                rank={biaRank.label}
-              />
-              <div className="mt-6">
-                <BiaHistoryChart biaHistory={client.biaHistory} color={biaColor} />
-              </div>
-            </div>
-          </section>
-        </>
-      )}
+      {/* Contenuto tab — scrollabile */}
+      <div
+        style={{
+          flex:               1,
+          overflowY:          'auto',
+          overscrollBehavior: 'contain',
+        }}
+      >
+        {activeTab === 'panoramica' && (
+          <PanoramicaTab client={client} color={color} slots={slots} />
+        )}
 
-      <Divider color={color} />
+        {activeTab === 'statistiche' && (
+          profile.hasTests ? (
+            <StatisticheTab
+              client={client}
+              color={color}
+              onCampionamento={() => setView('campionamento')}
+            />
+          ) : (
+            <BiaLockedPanel profileType={client.profileType} color={color} />
+          )
+        )}
 
-      <section className="px-6 py-6">
-        <ActivityLog log={client.log} color={color} />
-      </section>
+        {activeTab === 'bia' && profile.hasBia && (
+          <BiaTab
+            client={client}
+            color={color}
+            onBia={() => setView('bia')}
+          />
+        )}
+      </div>
 
-      <div className="h-10" />
-
+      {/* Dialog elimina */}
       {showDelete && (
-        <DeleteDialog
-          clientName={client.name}
-          onConfirm={handleDelete}
+        <ConfirmDialog
+          title={`Eliminare ${client.name}?`}
+          description="Tutti i dati del cliente verranno eliminati definitivamente. Questa azione non può essere annullata."
+          confirmLabel="ELIMINA"
+          destructive
+          loading={deleting}
+          onConfirm={handleConfirmDelete}
           onCancel={() => setShowDelete(false)}
         />
       )}

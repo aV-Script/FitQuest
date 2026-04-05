@@ -7,18 +7,17 @@ const MONTH_NAMES = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno',
   'Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre']
 const DAY_NAMES = ['Lun','Mar','Mer','Gio','Ven','Sab','Dom']
 
-export function ClientCalendar({ clientId, clients }) {
+export function ClientCalendar({ orgId, clientId, clients }) {
   const [slots,        setSlots]        = useState([])
   const [currentYear,  setCurrentYear]  = useState(new Date().getFullYear())
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1)
 
   const { from, to } = getMonthRange(currentYear, currentMonth)
 
-  // Ottieni i dati delle sessioni del client
   useEffect(() => {
-    if (!clientId) return
-    getClientSlots(clientId, from, to).then(setSlots)
-  }, [clientId, from, to])
+    if (!orgId || !clientId) return
+    getClientSlots(orgId, clientId, from, to).then(setSlots)
+  }, [orgId, clientId, from, to])
 
   const client = clients?.find(c => c.id === clientId)
 
@@ -64,7 +63,7 @@ export function ClientCalendar({ clientId, clients }) {
       {/* Barra completamento */}
       {planned > 0 && (
         <div className="rounded-[3px] p-3.5"
-          style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+          style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-default)' }}>
           <div className="flex justify-between items-center mb-2">
             <span className="font-display text-[10px] text-white/30 tracking-[2px]">COMPLETAMENTO MESE</span>
             <span className="font-display text-[12px]"
@@ -72,7 +71,7 @@ export function ClientCalendar({ clientId, clients }) {
               {completed}/{planned}
             </span>
           </div>
-          <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+          <div className="h-2 rounded-full overflow-hidden" style={{ background: 'var(--bg-raised)' }}>
             <div className="h-full rounded-full transition-[width] duration-700"
               style={{ width: `${pct}%`, background: pct === 100 ? '#34d399' : pct >= 50 ? '#f59e0b' : '#f87171' }} />
           </div>
@@ -101,11 +100,11 @@ export function ClientCalendar({ clientId, clients }) {
               <div key={cell.dateStr}
                 className="rounded-[3px] flex flex-col items-center justify-center gap-0.5 py-2 min-h-[44px]"
                 style={{
-                  background:  isCompleted ? '#34d39911' : isToday ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.02)',
-                  border: `1px solid ${isCompleted ? '#34d39933' : isToday ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.05)'}`,
+                  background:  isCompleted ? '#34d39911' : isToday ? 'var(--bg-overlay)' : 'var(--bg-raised)',
+                  border: `1px solid ${isCompleted ? '#34d39933' : isToday ? 'rgba(255,255,255,0.15)' : 'var(--border-default)'}`,
                 }}>
                 <span className="font-display text-[11px]"
-                  style={{ color: isCompleted ? '#34d399' : isToday ? '#00c8ff' : 'rgba(255,255,255,0.5)' }}>
+                  style={{ color: isCompleted ? '#34d399' : isToday ? 'var(--cyan-400)' : 'rgba(255,255,255,0.5)' }}>
                   {cell.day}
                 </span>
                 {hasSlots && cell.slots[0].startTime && (

@@ -14,7 +14,7 @@ export function BiaSummary({ bia, prevBia, sex, age, color, rank }) {
   return (
     <div
       className="rounded-[4px] p-5"
-      style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}
+      style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-default)' }}
     >
       <div className="flex items-center justify-between mb-4">
         <SectionLabel className="mb-0">◈ Composizione corporea</SectionLabel>

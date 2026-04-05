@@ -7,7 +7,7 @@ import { ErrorBoundary }         from '../components/common/ErrorBoundary'
 const LOADING_TIMEOUT_MS = 10_000
 
 export default function App() {
-  const { user, profile, refreshProfile } = useAuth()
+  const { user, profile, org, terminology, refreshProfile } = useAuth()
   const [timedOut, setTimedOut]           = useState(false)
 
   // true finché l'SDK auth non risponde, o finché l'utente loggato aspetta il profilo
@@ -25,7 +25,7 @@ export default function App() {
       <button
         onClick={() => window.location.reload()}
         className="px-4 py-2 text-sm text-white/70 border rounded-[3px] hover:opacity-80 transition-opacity"
-        style={{ borderColor: 'rgba(15,214,90,0.2)' }}
+        style={{ borderColor: 'rgba(14,196,82,0.2)' }}
       >
         Ricarica
       </button>
@@ -34,7 +34,7 @@ export default function App() {
   if (isLoading) return <LoadingScreen />
   return (
     <ErrorBoundary>
-      <AppRouter user={user} profile={profile} refreshProfile={refreshProfile} />
+      <AppRouter user={user} profile={profile} org={org} terminology={terminology} refreshProfile={refreshProfile} />
     </ErrorBoundary>
   )
 }

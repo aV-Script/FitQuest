@@ -11,7 +11,7 @@ export function DeleteDialog({ clientName, onConfirm, onCancel }) {
     >
       <div
         className="p-6 w-full max-w-sm"
-        style={{ background: '#0d1520', border: '1px solid rgba(15,214,90,0.15)', borderRadius: '4px', boxShadow: '0 20px 60px rgba(0,0,0,0.8)' }}
+        style={{ background: 'var(--bg-overlay)', border: '1px solid rgba(14,196,82,0.15)', borderRadius: '4px', boxShadow: '0 20px 60px rgba(0,0,0,0.8)' }}
         onClick={e => e.stopPropagation()}
       >
         <h3 className="font-display font-black text-[16px] text-white mb-2">

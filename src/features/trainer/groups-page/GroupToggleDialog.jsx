@@ -10,7 +10,7 @@ const DAY_LABELS = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab']
 export function GroupToggleDialog({
   client,
   group,
-  trainerId,
+  orgId,
   isRemoving,
   onConfirm,
   onCancel,
@@ -20,10 +20,10 @@ export function GroupToggleDialog({
   const [saving,  setSaving]  = useState(false)
 
   useEffect(() => {
-    getGroupTogglePreview(trainerId, group.id)
+    getGroupTogglePreview(orgId, group.id)
       .then(setPreview)
       .finally(() => setLoading(false))
-  }, [trainerId, group.id])
+  }, [orgId, group.id])
 
   const handleConfirm = async () => {
     setSaving(true)
@@ -31,7 +31,7 @@ export function GroupToggleDialog({
     finally { setSaving(false) }
   }
 
-  const actionColor = isRemoving ? '#f87171' : '#0fd65a'
+  const actionColor = isRemoving ? '#f87171' : 'var(--green-400)'
   const actionLabel = isRemoving ? 'RIMUOVI' : 'AGGIUNGI'
 
   return (
@@ -43,8 +43,8 @@ export function GroupToggleDialog({
       <div
         className="w-full max-w-sm p-6"
         style={{
-          background:   '#0d1520',
-          border:       '1px solid rgba(15,214,90,0.15)',
+          background:   'var(--bg-overlay)',
+          border:       '1px solid rgba(14,196,82,0.15)',
           borderRadius: '4px',
           boxShadow:    '0 20px 60px rgba(0,0,0,0.8)',
         }}
@@ -61,7 +61,7 @@ export function GroupToggleDialog({
         {/* Recap operazione */}
         <div
           className="p-4 mb-4 flex flex-col gap-2"
-          style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '3px' }}
+          style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-default)', borderRadius: '3px' }}
         >
           <div className="flex items-center justify-between">
             <span className="font-body text-[12px] text-white/40">Allievo</span>
@@ -82,7 +82,7 @@ export function GroupToggleDialog({
         {/* Impatto calendario */}
         <div
           className="p-4 mb-5"
-          style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '3px' }}
+          style={{ background: 'var(--bg-raised)', border: '1px solid var(--border-default)', borderRadius: '3px' }}
         >
           <div className="font-display text-[10px] tracking-[2px] mb-3" style={{ color: 'rgba(255,255,255,0.3)' }}>
             IMPATTO SUL CALENDARIO
@@ -91,7 +91,7 @@ export function GroupToggleDialog({
           {loading ? (
             <div className="flex flex-col gap-2">
               {[1, 2].map(i => (
-                <div key={i} className="h-4 rounded-[3px] animate-pulse" style={{ background: 'rgba(255,255,255,0.06)' }} />
+                <div key={i} className="h-4 rounded-[3px] animate-pulse" style={{ background: 'var(--border-subtle)' }} />
               ))}
             </div>
           ) : preview ? (
@@ -123,12 +123,12 @@ export function GroupToggleDialog({
               </div>
 
               {preview.recurrences.length > 0 && (
-                <div className="mt-1 pt-2" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                <div className="mt-1 pt-2" style={{ borderTop: '1px solid var(--border-subtle)' }}>
                   {preview.recurrences.map(r => (
                     <div key={r.id} className="flex items-center gap-2 py-1">
                       <span
                         className="font-display text-[9px] px-2 py-0.5 rounded-[3px]"
-                        style={{ background: 'rgba(15,214,90,0.12)', color: 'rgba(15,214,90,0.8)' }}
+                        style={{ background: 'rgba(14,196,82,0.12)', color: 'rgba(14,196,82,0.8)' }}
                       >
                         {DAY_LABELS.filter((_, i) => r.days.includes(i)).join(' · ')}
                       </span>
@@ -165,7 +165,7 @@ export function GroupToggleDialog({
             className="flex-1 py-2.5 font-display text-[12px] font-bold cursor-pointer border-0 transition-opacity hover:opacity-85 disabled:opacity-40"
             style={isRemoving
               ? { background: '#f87171', borderRadius: '3px', color: '#080c12' }
-              : { background: 'linear-gradient(135deg, #1aff6e, #0fd65a, #00c8ff)', borderRadius: '3px', color: '#080c12' }
+              : { background: 'var(--gradient-primary)', borderRadius: '3px', color: '#080c12' }
             }
           >
             {saving ? 'ATTENDERE...' : actionLabel}

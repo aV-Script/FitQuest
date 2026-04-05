@@ -1,6 +1,10 @@
 import { TESTS }          from './tests.js'
 import { applyFormula }   from './formulas.js'
 export { PROFILE_CATEGORIES, getProfileCategory, BIA_PARAMS, BIA_EMPTY } from './bia'
+export {
+  MODULES, TERMINOLOGIES, PLAYER_ROLES,
+  getModule, getTerminology, getPlayerRole, getModuleTests,
+} from '../config/modules.config'
 
 // ── Test ──────────────────────────────────────────────────────────────────────
 export const ALL_TESTS = TESTS
@@ -47,22 +51,33 @@ export function getRankFromMedia(media) {
 // ── Categorie ─────────────────────────────────────────────────────────────────
 export const CATEGORIE = [
   {
-    id:    'health',
-    label: 'Health',
-    color: '#34d399',
-    desc:  'Soggetti sedentari o con bassa attività fisica. Focus su mobilità, equilibrio e resistenza di base.',
+    id:      'health',
+    label:   'Health',
+    color:   '#34d399',
+    desc:    'Soggetti sedentari o con bassa attività fisica. Focus su mobilità, equilibrio e resistenza di base.',
+    modules: ['personal_training'],
   },
   {
-    id:    'active',
-    label: 'Active',
-    color: '#00c8ff',
-    desc:  'Soggetti fisicamente attivi. Test orientati a performance funzionale e forza esplosiva.',
+    id:      'active',
+    label:   'Active',
+    color:   '#00c8ff',
+    desc:    'Soggetti fisicamente attivi. Test orientati a performance funzionale e forza esplosiva.',
+    modules: ['personal_training'],
   },
   {
-    id:    'athlete',
-    label: 'Athlete',
-    color: '#0066cc',
-    desc:  'Atleti agonisti o con alto livello prestativo. Test di performance avanzati.',
+    id:      'athlete',
+    label:   'Athlete',
+    color:   '#0066cc',
+    desc:    'Atleti agonisti o con alto livello prestativo. Test di performance avanzati.',
+    modules: ['personal_training'],
+  },
+  {
+    id:      'soccer',
+    label:   'Soccer',
+    color:   '#0ec452',
+    desc:    'Categoria tecnica per test soccer academy.',
+    modules: ['soccer_academy'],
+    hidden:  true,
   },
 ]
 
@@ -85,10 +100,11 @@ export const NEW_CLIENT_DEFAULTS = {
   baseXP:             50,
   maxMonthlySessions: 20,
   sessionsPerWeek:    3,
-  categoria:          'tests_only',
+  categoria:          'health',
   profileType:        'tests_only',  // 'tests_only' | 'bia_only' | 'complete'
   biaHistory:         [],
   lastBia:            null,
+  ruolo:              null,          // solo soccer
 }
 
 // ── Costanti gamification ─────────────────────────────────────────────────────

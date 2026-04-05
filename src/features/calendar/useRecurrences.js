@@ -13,25 +13,20 @@ import {
   updateSlot,
 } from '../../firebase/services/calendar'
 
-/**
- * Hook per la gestione completa delle ricorrenze.
- * Separato da useCalendar per evitare responsabilità eccessive.
- */
-export function useRecurrences(trainerId) {
+export function useRecurrences(orgId) {
   const [recurrences, setRecurrences] = useState([])
   const [loading,     setLoading]     = useState(false)
   const [error,       setError]       = useState(null)
 
-  // ── Fetch ──────────────────────────────────────────────────
   const refresh = useCallback(() => {
-    if (!trainerId) return
+    if (!orgId) return
     setLoading(true)
     setError(null)
-    getTrainerRecurrences(trainerId)
+    getTrainerRecurrences(orgId)
       .then(setRecurrences)
       .catch(err => setError(err.message))
       .finally(() => setLoading(false))
-  }, [trainerId])
+  }, [orgId])
 
   useEffect(() => { refresh() }, [refresh])
 
@@ -40,49 +35,45 @@ export function useRecurrences(trainerId) {
     clientIds, groupIds, days,
     startDate, endDate, startTime, endTime,
   }) => {
-    const recRef       = await addRecurrence({
-      trainerId, clientIds, groupIds, days,
-      startDate, endDate, startTime, endTime,
+    const recRef       = await addRecurrence(orgId, {
+      clientIds, groupIds, days, startDate, endDate, startTime, endTime,
     })
     const recurrenceId = recRef.id
     const dates        = generateRecurrenceDates(startDate, endDate, days)
 
     for (const date of dates) {
-      const ref = await addSlot({
-        trainerId, date, startTime, endTime,
-        clientIds, groupIds,
+      const ref = await addSlot(orgId, {
+        date, startTime, endTime, clientIds, groupIds,
       })
-      await updateSlot(ref.id, { recurrenceId })
+      await updateSlot(orgId, ref.id, { recurrenceId })
     }
 
     const newRec = {
-      id: recurrenceId, trainerId, clientIds, groupIds,
+      id: recurrenceId, clientIds, groupIds,
       days, startDate, endDate, startTime, endTime,
       status: 'active',
     }
     setRecurrences(prev => [newRec, ...prev])
     return newRec
-  }, [trainerId])
+  }, [orgId])
 
   // ── Modifica orario ────────────────────────────────────────
   const handleUpdateTime = useCallback(async (recurrenceId, startTime, endTime) => {
     const snapshot = recurrences.find(r => r.id === recurrenceId)
-
     setRecurrences(prev => prev.map(r =>
       r.id === recurrenceId ? { ...r, startTime, endTime } : r
     ))
-
     try {
       await Promise.all([
-        updateRecurrence(recurrenceId, { startTime, endTime }),
-        updateFutureSlots(recurrenceId, { startTime, endTime }),
+        updateRecurrence(orgId, recurrenceId, { startTime, endTime }),
+        updateFutureSlots(orgId, recurrenceId, { startTime, endTime }),
       ])
     } catch {
       setRecurrences(prev => prev.map(r =>
         r.id === recurrenceId ? snapshot : r
       ))
     }
-  }, [recurrences])
+  }, [orgId, recurrences])
 
   // ── Modifica giorni ────────────────────────────────────────
   const handleUpdateDays = useCallback(async (recurrenceId, days) => {
@@ -91,13 +82,13 @@ export function useRecurrences(trainerId) {
       r.id === recurrenceId ? { ...r, days } : r
     ))
     try {
-      await updateRecurrence(recurrenceId, { days })
+      await updateRecurrence(orgId, recurrenceId, { days })
     } catch {
       setRecurrences(prev => prev.map(r =>
         r.id === recurrenceId ? snapshot : r
       ))
     }
-  }, [recurrences])
+  }, [orgId, recurrences])
 
   // ── Estendi periodo ────────────────────────────────────────
   const handleExtendPeriod = useCallback(async (recurrenceId, newEndDate) => {
@@ -120,83 +111,76 @@ export function useRecurrences(trainerId) {
         rec.days,
       )
 
-      await updateRecurrence(recurrenceId, { endDate: newEndDate })
+      await updateRecurrence(orgId, recurrenceId, { endDate: newEndDate })
 
       for (const date of newDates) {
-        const ref = await addSlot({
-          trainerId,
+        const ref = await addSlot(orgId, {
           date,
-          startTime:  rec.startTime,
-          endTime:    rec.endTime,
-          clientIds:  rec.clientIds,
-          groupIds:   rec.groupIds,
+          startTime: rec.startTime,
+          endTime:   rec.endTime,
+          clientIds: rec.clientIds,
+          groupIds:  rec.groupIds,
         })
-        await updateSlot(ref.id, { recurrenceId })
+        await updateSlot(orgId, ref.id, { recurrenceId })
       }
     } catch {
       setRecurrences(prev => prev.map(r =>
         r.id === recurrenceId ? snapshot : r
       ))
     }
-  }, [recurrences, trainerId])
+  }, [orgId, recurrences])
 
   // ── Aggiungi cliente ───────────────────────────────────────
   const handleAddClient = useCallback(async (recurrenceId, clientId) => {
     const snapshot = recurrences.find(r => r.id === recurrenceId)
-
     setRecurrences(prev => prev.map(r =>
       r.id === recurrenceId
         ? { ...r, clientIds: [...r.clientIds, clientId] }
         : r
     ))
-
     try {
-      await addClientToRecurrence(recurrenceId, clientId)
+      await addClientToRecurrence(orgId, recurrenceId, clientId)
     } catch {
       setRecurrences(prev => prev.map(r =>
         r.id === recurrenceId ? snapshot : r
       ))
     }
-  }, [recurrences])
+  }, [orgId, recurrences])
 
   // ── Rimuovi cliente ────────────────────────────────────────
   const handleRemoveClient = useCallback(async (recurrenceId, clientId) => {
     const snapshot = recurrences.find(r => r.id === recurrenceId)
-
     setRecurrences(prev => prev.map(r =>
       r.id === recurrenceId
         ? { ...r, clientIds: r.clientIds.filter(id => id !== clientId) }
         : r
     ))
-
     try {
-      await removeClientFromRecurrence(recurrenceId, clientId)
+      await removeClientFromRecurrence(orgId, recurrenceId, clientId)
     } catch {
       setRecurrences(prev => prev.map(r =>
         r.id === recurrenceId ? snapshot : r
       ))
     }
-  }, [recurrences])
+  }, [orgId, recurrences])
 
   // ── Cancella ricorrenza ────────────────────────────────────
   const handleCancel = useCallback(async (recurrenceId) => {
     const snapshot = recurrences.find(r => r.id === recurrenceId)
-
     setRecurrences(prev => prev.map(r =>
       r.id === recurrenceId ? { ...r, status: 'cancelled' } : r
     ))
-
     try {
       await Promise.all([
-        cancelRecurrence(recurrenceId),
-        deleteFutureSlots(recurrenceId),
+        cancelRecurrence(orgId, recurrenceId),
+        deleteFutureSlots(orgId, recurrenceId),
       ])
     } catch {
       setRecurrences(prev => prev.map(r =>
         r.id === recurrenceId ? snapshot : r
       ))
     }
-  }, [recurrences])
+  }, [orgId, recurrences])
 
   return {
     recurrences,

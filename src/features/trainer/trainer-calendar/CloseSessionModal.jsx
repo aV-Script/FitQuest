@@ -1,166 +1,350 @@
-import { useState, useEffect } from 'react'
-import { calcSessionXP, calcStreakPreview } from '../../../utils/gamification'
+import { useState, useCallback, useEffect }  from 'react'
+import { calcSessionXP, calcStreakPreview }  from '../../../utils/gamification'
 
+/**
+ * CloseSessionModal — chiusura sessione con selezione presenze.
+ *
+ * Design:
+ * - Lista clienti con toggle presenza/assenza
+ * - XP preview per ogni presente
+ * - Riepilogo prima di confermare
+ * - Default: tutti presenti
+ */
 export function CloseSessionModal({ slot, clients, onClose, onConfirm }) {
   const slotClients = slot.clientIds
     .map(id => clients.find(c => c.id === id))
     .filter(Boolean)
 
-  const [attendees, setAttendees] = useState(slot.clientIds) // default tutti presenti
+  const [attendees, setAttendees] = useState(new Set(slot.clientIds))
+  const [loading,   setLoading]   = useState(false)
 
+  // Keyboard: Escape chiude
   useEffect(() => {
-    const handler = e => { if (e.key === 'Escape') onClose() }
+    const handler = (e) => { if (e.key === 'Escape') onClose() }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
   }, [onClose])
 
-  const toggleAttendee = (id) =>
-    setAttendees(prev =>
-      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
-    )
+  const toggle = useCallback((clientId) => {
+    setAttendees(prev => {
+      const next = new Set(prev)
+      if (next.has(clientId)) next.delete(clientId)
+      else next.add(clientId)
+      return next
+    })
+  }, [])
 
-  const absentCount  = slot.clientIds.length - attendees.length
-  const presentCount = attendees.length
+  const handleConfirm = useCallback(async () => {
+    setLoading(true)
+    try {
+      await onConfirm([...attendees])
+    } finally {
+      setLoading(false)
+    }
+  }, [attendees, onConfirm])
 
-  // Preview XP e streak per UI
-  const calcClientPreview = (client) => {
-    const streak = calcStreakPreview(client)
-    const xp = calcSessionXP(client.baseXP ?? 50, streak)
-    return { xp, streak }
-  }
-
-  const handleConfirm = () => {
-    onConfirm(attendees)
-  }
+  const presentCount = attendees.size
+  const absentCount  = slotClients.length - presentCount
+  const totalXP      = [...attendees].reduce((sum, id) => {
+    const client = clients.find(c => c.id === id)
+    const xp     = client
+      ? calcSessionXP(client.baseXP ?? 50, calcStreakPreview(client))
+      : 0
+    return sum + xp
+  }, 0)
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center px-4"
-      style={{ background: 'rgba(8,12,18,0.9)' }}
+      style={{
+        position:             'fixed',
+        inset:                0,
+        display:              'flex',
+        alignItems:           'center',
+        justifyContent:       'center',
+        padding:              16,
+        background:           'rgba(7,9,14,0.85)',
+        backdropFilter:       'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)',
+        zIndex:               400,
+      }}
       onClick={onClose}
     >
       <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="close-session-title"
-        className="rounded-[4px] p-6 w-full max-w-sm"
+        className="animate-scale-in"
         style={{
-          background: '#0d1520',
-          border: '1px solid rgba(15,214,90,0.15)',
-          boxShadow: '0 20px 60px rgba(0,0,0,0.8)'
+          width:        '100%',
+          maxWidth:     400,
+          background:   'var(--bg-overlay)',
+          border:       '1px solid var(--border-strong)',
+          borderRadius: 'var(--radius-2xl)',
+          overflow:     'hidden',
+          boxShadow:    'var(--shadow-lg)',
         }}
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="mb-5">
-          <h3 id="close-session-title" className="font-display font-black text-[16px] text-white mb-1">
+        <div
+          style={{
+            padding:      '20px 20px 16px',
+            borderBottom: '1px solid var(--border-subtle)',
+          }}
+        >
+          <div
+            style={{
+              fontFamily:    'Montserrat, sans-serif',
+              fontSize:      16,
+              fontWeight:    900,
+              color:         'var(--text-primary)',
+              marginBottom:  4,
+              letterSpacing: '-0.01em',
+            }}
+          >
             Chiudi sessione
-          </h3>
-          <p className="font-body text-[13px] text-white/40 m-0">
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>
             {slot.date} · {slot.startTime}
-            {slot.endTime ? ` → ${slot.endTime}` : ''}
+            {slot.endTime && ` → ${slot.endTime}`}
+          </div>
+        </div>
+
+        {/* Istruzione */}
+        <div style={{ padding: '14px 20px 10px' }}>
+          <p
+            style={{
+              fontFamily:    'Montserrat, sans-serif',
+              fontSize:      10,
+              fontWeight:    600,
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              color:         'var(--text-tertiary)',
+              margin:        0,
+            }}
+          >
+            Seleziona i presenti
           </p>
         </div>
 
-        {/* Lista presenze */}
-        <div className="font-display text-[10px] text-white/30 tracking-[2px] mb-3">
-          PRESENZE
-        </div>
-
-        <div className="flex flex-col gap-2 mb-5">
+        {/* Lista clienti */}
+        <div
+          style={{
+            padding:       '0 20px',
+            maxHeight:     280,
+            overflowY:     'auto',
+            display:       'flex',
+            flexDirection: 'column',
+            gap:           6,
+          }}
+        >
           {slotClients.map(client => {
-            const isPresent = attendees.includes(client.id)
-            const { xp, streak } = calcClientPreview(client)
+            const isPresent = attendees.has(client.id)
+            const xp        = calcSessionXP(
+              client.baseXP ?? 50,
+              calcStreakPreview(client)
+            )
 
             return (
               <button
                 key={client.id}
-                onClick={() => toggleAttendee(client.id)}
-                className="flex items-center gap-3 px-4 py-3 rounded-[3px] cursor-pointer border transition-all text-left"
-                style={isPresent
-                  ? { background: 'rgba(52,211,153,0.08)', borderColor: '#34d39944' }
-                  : { background: 'rgba(248,113,113,0.06)', borderColor: '#f8717133' }
-                }
+                onClick={() => toggle(client.id)}
+                style={{
+                  display:      'flex',
+                  alignItems:   'center',
+                  gap:          12,
+                  padding:      '11px 14px',
+                  background:   isPresent
+                    ? 'rgba(14,196,82,0.08)'
+                    : 'rgba(240,82,82,0.05)',
+                  border:       `1px solid ${isPresent
+                    ? 'rgba(14,196,82,0.2)'
+                    : 'rgba(240,82,82,0.15)'}`,
+                  borderRadius: 'var(--radius-lg)',
+                  cursor:       'pointer',
+                  textAlign:    'left',
+                  transition:   'all var(--duration-fast)',
+                  width:        '100%',
+                }}
               >
+                {/* Checkbox visuale */}
                 <div
-                  className="w-6 h-6 rounded-[3px] flex items-center justify-center shrink-0"
-                  style={{ background: isPresent ? '#34d39922' : '#f8717122' }}
+                  style={{
+                    width:          20,
+                    height:         20,
+                    borderRadius:   'var(--radius-md)',
+                    background:     isPresent ? 'var(--green-400)' : 'transparent',
+                    border:         `1.5px solid ${isPresent
+                      ? 'var(--green-400)'
+                      : 'rgba(240,82,82,0.4)'}`,
+                    display:        'flex',
+                    alignItems:     'center',
+                    justifyContent: 'center',
+                    flexShrink:     0,
+                    transition:     'all var(--duration-fast)',
+                  }}
                 >
-                  <span style={{ color: isPresent ? '#34d399' : '#f87171', fontSize: 12 }}>
-                    {isPresent ? '✓' : '✗'}
-                  </span>
+                  {isPresent && (
+                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                      <path
+                        d="M2 5l2.5 2.5L8 3"
+                        stroke="var(--text-inverse)"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  )}
                 </div>
 
-                <div className="flex-1">
-                  <div className="font-body text-[13px] text-white/80">
-                    {client.name}
-                  </div>
-                  <div
-                    className="font-display text-[10px] mt-0.5"
-                    style={{ color: isPresent ? '#34d399' : '#f87171' }}
-                  >
-                    {isPresent ? `+${xp} XP · streak ${streak}` : 'Assente'}
-                  </div>
-                </div>
-
-                <div
-                  className="font-display text-[10px] shrink-0"
-                  style={{ color: isPresent ? '#34d39988' : '#f8717188' }}
+                {/* Nome */}
+                <span
+                  style={{
+                    fontFamily: 'Inter, sans-serif',
+                    fontSize:   13,
+                    fontWeight: 500,
+                    color:      isPresent
+                      ? 'var(--text-primary)'
+                      : 'var(--text-tertiary)',
+                    flex:       1,
+                    transition: 'color var(--duration-fast)',
+                  }}
                 >
-                  {isPresent ? 'PRESENTE' : 'ASSENTE'}
-                </div>
+                  {client.name}
+                </span>
+
+                {/* XP o Assente */}
+                <span
+                  style={{
+                    fontFamily: 'Montserrat, sans-serif',
+                    fontSize:   10,
+                    fontWeight: 700,
+                    color:      isPresent ? '#0ec452' : '#f05252',
+                    flexShrink: 0,
+                    transition: 'color var(--duration-fast)',
+                  }}
+                >
+                  {isPresent ? `+${xp} XP` : 'ASSENTE'}
+                </span>
               </button>
             )
           })}
         </div>
 
         {/* Riepilogo */}
-        <div
-          className="rounded-[3px] px-4 py-3 mb-5 flex items-center justify-between"
-          style={{
-            background: 'rgba(13,21,32,0.9)',
-            border: '1px solid rgba(15,214,90,0.1)'
-          }}
-        >
-          <div className="flex items-center gap-3">
-            <span className="font-display text-[12px] text-emerald-400">
-              {presentCount} presenti
-            </span>
-            {absentCount > 0 && (
-              <>
-                <span className="text-white/20">·</span>
-                <span className="font-display text-[12px] text-red-400">
+        <div style={{ padding: '16px 20px 12px' }}>
+          <div
+            style={{
+              display:        'flex',
+              alignItems:     'center',
+              justifyContent: 'space-between',
+              padding:        '12px 14px',
+              background:     'var(--bg-raised)',
+              border:         '1px solid var(--border-default)',
+              borderRadius:   'var(--radius-lg)',
+            }}
+          >
+            <div style={{ display: 'flex', gap: 16 }}>
+              <span
+                style={{
+                  fontFamily: 'Montserrat, sans-serif',
+                  fontSize:   12,
+                  fontWeight: 700,
+                  color:      '#0ec452',
+                }}
+              >
+                {presentCount} presenti
+              </span>
+              {absentCount > 0 && (
+                <span
+                  style={{
+                    fontFamily: 'Montserrat, sans-serif',
+                    fontSize:   12,
+                    fontWeight: 700,
+                    color:      '#f05252',
+                  }}
+                >
                   {absentCount} assenti
                 </span>
-              </>
+              )}
+            </div>
+
+            {totalXP > 0 && (
+              <span
+                style={{
+                  fontFamily:    'Montserrat, sans-serif',
+                  fontSize:      12,
+                  fontWeight:    900,
+                  color:         'var(--green-400)',
+                  letterSpacing: '-0.01em',
+                }}
+              >
+                +{totalXP} XP totali
+              </span>
             )}
           </div>
         </div>
 
         {/* Azioni */}
-        <div className="flex gap-3">
+        <div
+          style={{
+            padding: '0 20px 20px',
+            display: 'flex',
+            gap:     10,
+          }}
+        >
           <button
             onClick={onClose}
-            className="flex-1 py-2.5 rounded-[3px] font-display text-[12px] cursor-pointer border bg-transparent text-white/40 hover:text-white/70 transition-all"
-            style={{ borderColor: 'rgba(15,214,90,0.2)' }}
+            disabled={loading}
+            style={{
+              flex:          1,
+              padding:       '11px',
+              background:    'transparent',
+              border:        '1px solid var(--border-default)',
+              borderRadius:  'var(--radius-lg)',
+              color:         'var(--text-secondary)',
+              fontFamily:    'Montserrat, sans-serif',
+              fontSize:      11,
+              fontWeight:    700,
+              letterSpacing: '0.06em',
+              cursor:        'pointer',
+              transition:    'all var(--duration-fast)',
+            }}
           >
             ANNULLA
           </button>
 
           <button
             onClick={handleConfirm}
-            disabled={presentCount === 0 && slotClients.length > 0}
-            className="flex-1 py-2.5 rounded-[3px] font-display text-[12px] cursor-pointer border-0 transition-opacity hover:opacity-85 disabled:opacity-40"
+            disabled={loading || presentCount === 0}
             style={{
-              background: 'linear-gradient(135deg, #34d399, #059669)',
-              color: '#fff'
+              flex:          2,
+              padding:       '11px',
+              background:    presentCount > 0
+                ? 'var(--gradient-primary)'
+                : 'var(--bg-raised)',
+              border:        'none',
+              borderRadius:  'var(--radius-lg)',
+              color:         presentCount > 0
+                ? 'var(--text-inverse)'
+                : 'var(--text-tertiary)',
+              fontFamily:    'Montserrat, sans-serif',
+              fontSize:      11,
+              fontWeight:    700,
+              letterSpacing: '0.06em',
+              cursor:        loading || presentCount === 0
+                ? 'not-allowed'
+                : 'pointer',
+              opacity:       loading ? 0.7 : 1,
+              transition:    'all var(--duration-fast)',
             }}
           >
-            CHIUDI SESSIONE
+            {loading
+              ? 'SALVATAGGIO...'
+              : presentCount === 0
+              ? 'SELEZIONA PRESENTI'
+              : `CHIUDI · +${totalXP} XP`
+            }
           </button>
         </div>
       </div>
     </div>
   )
 }
-

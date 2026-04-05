@@ -3,37 +3,110 @@
  * Mostra nome, numero clienti e avatar dei primi 3 clienti.
  */
 export function GroupCard({ group, clients, onClick }) {
-  const groupClients = clients.filter(c => group.clientIds.includes(c.id)).slice(0, 3)
-  const remaining    = Math.max(0, group.clientIds.length - 3)
+  const memberCount = group.clientIds?.length ?? 0
+  const preview     = group.clientIds
+    ?.slice(0, 3)
+    .map(id => clients.find(c => c.id === id)?.name?.[0]?.toUpperCase())
+    .filter(Boolean) ?? []
 
   return (
     <button
       onClick={onClick}
-      className="text-left w-full rounded-[4px] p-4 cursor-pointer transition-all duration-200 group border"
-      style={{ background: 'rgba(13,21,32,0.9)', borderColor: 'rgba(15,214,90,0.12)' }}
+      className="w-full text-left"
+      style={{
+        display:      'flex',
+        alignItems:   'center',
+        gap:          14,
+        padding:      '16px',
+        background:   'var(--bg-surface)',
+        border:       '1px solid var(--border-default)',
+        borderRadius: 'var(--radius-xl)',
+        cursor:       'pointer',
+        transition:   'all var(--duration-fast)',
+      }}
       onMouseEnter={e => {
-        e.currentTarget.style.background    = 'rgba(15,214,90,0.05)'
-        e.currentTarget.style.borderColor   = 'rgba(15,214,90,0.25)'
+        e.currentTarget.style.borderColor = 'var(--border-default)'
+        e.currentTarget.style.background  = 'var(--bg-raised)'
+        e.currentTarget.style.transform   = 'translateY(-1px)'
       }}
       onMouseLeave={e => {
-        e.currentTarget.style.background    = 'rgba(13,21,32,0.9)'
-        e.currentTarget.style.borderColor   = 'rgba(15,214,90,0.12)'
+        e.currentTarget.style.borderColor = 'var(--border-default)'
+        e.currentTarget.style.background  = 'var(--bg-surface)'
+        e.currentTarget.style.transform   = 'translateY(0)'
       }}
     >
-      <div className="flex items-center justify-between">
-        <div className="flex-1 min-w-0">
-          <div className="font-display font-black text-[15px] text-white truncate">
-            {group.name}
-          </div>
-          <div className="font-body text-[12px] text-white/30 mt-0.5">
-            {group.clientIds.length} {group.clientIds.length === 1 ? 'cliente' : 'clienti'}
-          </div>
-        </div>
-
-        <span className="text-white/20 text-[16px] group-hover:text-white/50 transition-colors ml-3">
-          ›
-        </span>
+      {/* Avatar gruppo */}
+      <div
+        style={{
+          width:          48,
+          height:         48,
+          borderRadius:   'var(--radius-lg)',
+          display:        'flex',
+          alignItems:     'center',
+          justifyContent: 'center',
+          background:     'rgba(14,196,82,0.08)',
+          border:         '1px solid rgba(14,196,82,0.15)',
+          flexShrink:     0,
+          fontFamily:     'Montserrat, sans-serif',
+          fontSize:       20,
+          fontWeight:     900,
+          color:          'var(--green-400)',
+        }}
+      >
+        {group.name?.[0]?.toUpperCase() ?? '?'}
       </div>
+
+      {/* Info */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div
+          style={{
+            fontFamily:   'Inter, sans-serif',
+            fontSize:     14,
+            fontWeight:   600,
+            color:        'var(--text-primary)',
+            marginBottom: 4,
+            overflow:     'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace:   'nowrap',
+          }}
+        >
+          {group.name}
+        </div>
+        <div style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>
+          {memberCount} {memberCount === 1 ? 'membro' : 'membri'}
+        </div>
+      </div>
+
+      {/* Avatar stack */}
+      {preview.length > 0 && (
+        <div style={{ display: 'flex' }}>
+          {preview.map((initial, i) => (
+            <div
+              key={i}
+              style={{
+                width:          24,
+                height:         24,
+                borderRadius:   '50%',
+                background:     'var(--bg-overlay)',
+                border:         '1.5px solid var(--bg-surface)',
+                display:        'flex',
+                alignItems:     'center',
+                justifyContent: 'center',
+                fontFamily:     'Montserrat, sans-serif',
+                fontSize:       9,
+                fontWeight:     700,
+                color:          'var(--text-secondary)',
+                marginLeft:     i > 0 ? -6 : 0,
+              }}
+            >
+              {initial}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Chevron */}
+      <span style={{ color: 'var(--text-tertiary)', fontSize: 16 }}>›</span>
     </button>
   )
 }

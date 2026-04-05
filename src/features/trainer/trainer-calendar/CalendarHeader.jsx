@@ -1,12 +1,32 @@
+import { memo }   from 'react'
+import { Button } from '../../../components/ui/Button'
+
 const MONTH_NAMES = [
   'Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno',
-  'Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'
+  'Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre',
+]
+
+const VIEW_CONFIG = [
+  { id: 'month', label: 'Mese' },
+  { id: 'week',  label: 'Sett.' },
+  { id: 'day',   label: 'Giorno' },
 ]
 
 /**
- * Header del calendario con navigazione, switcher vista e bottoni azioni.
+ * CalendarHeader — navigazione e controlli del calendario.
+ *
+ * Layout:
+ * [← Oggi →]  Marzo 2026     [Mese|Sett.|Giorno]  [+ Sessione] [↺]
  */
-export function CalendarHeader({ currentDate, view, onNavigate, onToday, onSetView, onNewSlot, onNewRecurrence }) {
+export const CalendarHeader = memo(function CalendarHeader({
+  currentDate,
+  view,
+  onNavigate,
+  onToday,
+  onSetView,
+  onNewSlot,
+  onNewRecurrence,
+}) {
   const d     = new Date(currentDate + 'T12:00')
   const year  = d.getFullYear()
   const month = d.getMonth()
@@ -15,75 +35,225 @@ export function CalendarHeader({ currentDate, view, onNavigate, onToday, onSetVi
     ? `${MONTH_NAMES[month]} ${year}`
     : view === 'week'
     ? getWeekTitle(currentDate)
-    : d.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })
+    : d.toLocaleDateString('it-IT', {
+        weekday: 'long',
+        day:     'numeric',
+        month:   'long',
+      })
+
+  const isToday = currentDate === new Date().toISOString().slice(0, 10)
 
   return (
-    <div className="flex items-center justify-between px-6 py-4 border-b border-white/[.05] flex-wrap gap-3">
-
-      {/* Sinistra — navigazione */}
-      <div className="flex items-center gap-2">
-        <button
-          onClick={() => onNavigate(-1)}
-          aria-label="Periodo precedente"
-          className="w-8 h-8 rounded-[3px] flex items-center justify-center bg-transparent border border-[rgba(15,214,90,0.15)] text-white/40 hover:text-white/70 hover:border-[rgba(15,214,90,0.35)] transition-all cursor-pointer font-display text-[16px]"
-        >
+    <div
+      style={{
+        display:      'flex',
+        alignItems:   'center',
+        gap:          12,
+        padding:      '14px 24px',
+        borderBottom: '1px solid var(--border-subtle)',
+        flexShrink:   0,
+        flexWrap:     'wrap',
+      }}
+    >
+      {/* Navigazione */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        <NavButton onClick={() => onNavigate(-1)} aria-label="Precedente">
           ‹
-        </button>
+        </NavButton>
+
         <button
           onClick={onToday}
-          aria-label="Vai a oggi"
-          className="px-3 py-1.5 rounded-[3px] font-display text-[11px] cursor-pointer border border-[rgba(15,214,90,0.15)] bg-transparent text-white/40 hover:text-white/70 transition-all"
+          style={{
+            padding:       '6px 12px',
+            background:    isToday
+              ? 'rgba(14,196,82,0.1)'
+              : 'transparent',
+            border:        `1px solid ${isToday
+              ? 'rgba(14,196,82,0.3)'
+              : 'var(--border-default)'}`,
+            borderRadius:  'var(--radius-lg)',
+            color:         isToday
+              ? 'var(--green-400)'
+              : 'var(--text-secondary)',
+            fontFamily:    'Montserrat, sans-serif',
+            fontSize:      11,
+            fontWeight:    700,
+            letterSpacing: '0.06em',
+            cursor:        'pointer',
+            transition:    'all var(--duration-fast)',
+            whiteSpace:    'nowrap',
+          }}
+          onMouseEnter={e => {
+            if (!isToday) {
+              e.currentTarget.style.borderColor = 'var(--border-strong)'
+              e.currentTarget.style.color       = 'var(--text-primary)'
+            }
+          }}
+          onMouseLeave={e => {
+            if (!isToday) {
+              e.currentTarget.style.borderColor = 'var(--border-default)'
+              e.currentTarget.style.color       = 'var(--text-secondary)'
+            }
+          }}
         >
           OGGI
         </button>
-        <button
-          onClick={() => onNavigate(1)}
-          aria-label="Periodo successivo"
-          className="w-8 h-8 rounded-[3px] flex items-center justify-center bg-transparent border border-[rgba(15,214,90,0.15)] text-white/40 hover:text-white/70 hover:border-[rgba(15,214,90,0.35)] transition-all cursor-pointer font-display text-[16px]"
-        >
+
+        <NavButton onClick={() => onNavigate(1)} aria-label="Successivo">
           ›
-        </button>
-        <h2 className="font-display font-black text-[18px] text-white ml-2">{title}</h2>
+        </NavButton>
       </div>
 
-      {/* Centro — switcher vista */}
-      <div
-        className="flex rounded-[3px] overflow-hidden border"
-        style={{ background: 'rgba(13,21,32,0.9)', borderColor: 'rgba(15,214,90,0.12)' }}
+      {/* Titolo */}
+      <h2
+        style={{
+          fontFamily:    'Montserrat, sans-serif',
+          fontSize:      18,
+          fontWeight:    900,
+          color:         'var(--text-primary)',
+          margin:        0,
+          letterSpacing: '-0.01em',
+          flex:          1,
+          minWidth:      0,
+          overflow:      'hidden',
+          textOverflow:  'ellipsis',
+          whiteSpace:    'nowrap',
+        }}
       >
-        {['month', 'week', 'day'].map(v => (
-          <button
-            key={v}
-            onClick={() => onSetView(v)}
-            aria-pressed={view === v}
-            className="px-4 py-1.5 font-display text-[11px] cursor-pointer transition-all border-none"
-            style={view === v
-              ? { background: 'rgba(15,214,90,0.15)', color: '#0fd65a' }
-              : { background: 'transparent', color: 'rgba(255,255,255,0.35)' }
-            }
-          >
-            {v === 'month' ? 'MESE' : v === 'week' ? 'SETTIMANA' : 'GIORNO'}
-          </button>
-        ))}
+        {title}
+      </h2>
+
+      {/* Switcher vista */}
+      <div
+        style={{
+          display:      'flex',
+          background:   'var(--bg-raised)',
+          border:       '1px solid var(--border-default)',
+          borderRadius: 'var(--radius-lg)',
+          overflow:     'hidden',
+          flexShrink:   0,
+        }}
+      >
+        {VIEW_CONFIG.map((v, i) => {
+          const isActive = view === v.id
+          return (
+            <button
+              key={v.id}
+              onClick={() => onSetView(v.id)}
+              style={{
+                padding:       '7px 14px',
+                background:    isActive
+                  ? 'rgba(14,196,82,0.12)'
+                  : 'transparent',
+                border:        'none',
+                borderLeft:    i > 0
+                  ? '1px solid var(--border-default)'
+                  : 'none',
+                color:         isActive
+                  ? 'var(--green-400)'
+                  : 'var(--text-tertiary)',
+                fontFamily:    'Montserrat, sans-serif',
+                fontSize:      11,
+                fontWeight:    700,
+                letterSpacing: '0.05em',
+                cursor:        'pointer',
+                transition:    'all var(--duration-fast)',
+                whiteSpace:    'nowrap',
+              }}
+              onMouseEnter={e => {
+                if (!isActive) e.currentTarget.style.color = 'var(--text-secondary)'
+              }}
+              onMouseLeave={e => {
+                if (!isActive) e.currentTarget.style.color = 'var(--text-tertiary)'
+              }}
+            >
+              {v.label}
+            </button>
+          )
+        })}
       </div>
 
-      {/* Destra — azioni */}
-      <div className="flex gap-2">
+      {/* Azioni */}
+      <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
         <button
           onClick={onNewRecurrence}
-          className="bg-transparent border border-[rgba(15,214,90,0.15)] rounded-[3px] px-3 py-1.5 text-white/40 font-display text-[11px] tracking-widest cursor-pointer hover:text-white/60 transition-all"
+          style={{
+            padding:       '7px 12px',
+            background:    'transparent',
+            border:        '1px solid var(--border-default)',
+            borderRadius:  'var(--radius-lg)',
+            color:         'var(--text-tertiary)',
+            fontFamily:    'Montserrat, sans-serif',
+            fontSize:      11,
+            fontWeight:    700,
+            letterSpacing: '0.06em',
+            cursor:        'pointer',
+            transition:    'all var(--duration-fast)',
+            display:       'flex',
+            alignItems:    'center',
+            gap:           5,
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.borderColor = 'var(--border-strong)'
+            e.currentTarget.style.color       = 'var(--text-primary)'
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.borderColor = 'var(--border-default)'
+            e.currentTarget.style.color       = 'var(--text-tertiary)'
+          }}
         >
-          RICORRENZA
+          <span>↺</span>
+          <span>RICORRENZA</span>
         </button>
-        <button
+
+        <Button
+          variant="primary"
+          size="sm"
           onClick={onNewSlot}
-          className="rounded-[3px] px-4 py-2 font-display text-[11px] tracking-widest cursor-pointer border-0 transition-opacity hover:opacity-85"
-          style={{ background: 'linear-gradient(135deg, #1aff6e, #0fd65a, #00c8ff)', color: '#080c12' }}
+          icon="+"
         >
-          NUOVA SESSIONE
-        </button>
+          SESSIONE
+        </Button>
       </div>
     </div>
+  )
+})
+
+// ── Helpers ───────────────────────────────────────────────────
+
+function NavButton({ children, onClick, 'aria-label': ariaLabel }) {
+  return (
+    <button
+      onClick={onClick}
+      aria-label={ariaLabel}
+      style={{
+        width:          32,
+        height:         32,
+        display:        'flex',
+        alignItems:     'center',
+        justifyContent: 'center',
+        background:     'transparent',
+        border:         '1px solid var(--border-default)',
+        borderRadius:   'var(--radius-lg)',
+        color:          'var(--text-tertiary)',
+        cursor:         'pointer',
+        fontSize:       18,
+        lineHeight:     1,
+        transition:     'all var(--duration-fast)',
+      }}
+      onMouseEnter={e => {
+        e.currentTarget.style.borderColor = 'var(--border-strong)'
+        e.currentTarget.style.color       = 'var(--text-primary)'
+        e.currentTarget.style.background  = 'var(--bg-raised)'
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.borderColor = 'var(--border-default)'
+        e.currentTarget.style.color       = 'var(--text-tertiary)'
+        e.currentTarget.style.background  = 'transparent'
+      }}
+    >
+      {children}
+    </button>
   )
 }
 
@@ -96,6 +266,15 @@ function getWeekTitle(dateStr) {
   const sunday = new Date(monday)
   sunday.setDate(monday.getDate() + 6)
 
-  const fmt = (d) => d.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })
-  return `${fmt(monday)} — ${fmt(sunday)}`
+  const fmt = (date) => date.toLocaleDateString('it-IT', {
+    day: 'numeric', month: 'short',
+  })
+
+  if (monday.getMonth() === sunday.getMonth()) {
+    return `${monday.getDate()}–${sunday.getDate()} ${
+      sunday.toLocaleDateString('it-IT', { month: 'long' })
+    } ${sunday.getFullYear()}`
+  }
+
+  return `${fmt(monday)} – ${fmt(sunday)} ${sunday.getFullYear()}`
 }

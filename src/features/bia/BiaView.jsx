@@ -63,7 +63,7 @@ export function BiaView({ client, color, onSave, onBack }) {
     <div className="min-h-screen text-white">
 
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-white/[.05]">
+      <div className="flex items-center justify-between px-6 py-4 border-b [border-color:var(--border-subtle)]">
         <button
           onClick={onBack}
           className="flex items-center gap-1.5 bg-transparent border-none text-white/30 font-body text-[13px] cursor-pointer hover:text-white/60 transition-colors p-0"
@@ -102,11 +102,11 @@ export function BiaView({ client, color, onSave, onBack }) {
                 key={param.key}
                 className="rounded-[4px] p-4"
                 style={{
-                  background: 'rgba(255,255,255,0.02)',
+                  background: 'var(--bg-surface)',
                   border:     `1px solid ${
                     values[param.key] !== ''
                       ? color + '33'
-                      : 'rgba(255,255,255,0.06)'
+                      : 'var(--border-default)'
                   }`,
                 }}
               >
@@ -129,7 +129,7 @@ export function BiaView({ client, color, onSave, onBack }) {
                   />
                   {prevBia?.[param.key] != null && (
                     <span className="font-body text-[12px] text-white/25">
-                      Prec: <strong style={{ color: 'rgba(255,255,255,0.5)' }}>
+                      Prec: <strong style={{ color: 'var(--text-secondary)' }}>
                         {prevBia[param.key]} {param.unit}
                       </strong>
                     </span>
@@ -161,7 +161,7 @@ export function BiaView({ client, color, onSave, onBack }) {
             {bmiComputed && (
               <div
                 className="rounded-[3px] px-4 py-3 flex items-center justify-between"
-                style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}
+                style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-default)' }}
               >
                 <span className="font-display text-[11px] text-white/40 tracking-wider">BMI</span>
                 <span className="font-display font-black text-[18px]" style={{ color }}>
@@ -175,7 +175,7 @@ export function BiaView({ client, color, onSave, onBack }) {
           <div className="hidden lg:flex flex-col gap-4 w-72 shrink-0 sticky top-6">
             <div
               className="rounded-[4px] p-5"
-              style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}
+              style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-default)' }}
             >
               <SectionLabel>Anteprima</SectionLabel>
               <div className="flex flex-col gap-3">
@@ -199,7 +199,7 @@ export function BiaView({ client, color, onSave, onBack }) {
 
             <div
               className="rounded-[3px] px-4 py-3 flex items-center justify-between"
-              style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}
+              style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-default)' }}
             >
               <span className="font-body text-[12px] text-white/40">Parametri inseriti</span>
               <span
