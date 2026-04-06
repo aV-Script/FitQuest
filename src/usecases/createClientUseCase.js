@@ -1,8 +1,9 @@
-import { createClientAccount } from '../firebase/services/auth'
-import { addClient }           from '../firebase/services/clients'
-import { createUserProfile }   from '../firebase/services/users'
-import { buildNewClient }      from '../utils/gamification'
-import { NEW_CLIENT_DEFAULTS } from '../constants'
+import { createClientAccount }      from '../firebase/services/auth'
+import { addClient }                from '../firebase/services/clients'
+import { createUserProfile }        from '../firebase/services/users'
+import { buildNewClient }           from '../utils/gamification'
+import { NEW_CLIENT_DEFAULTS }      from '../constants'
+import { auditLog, AUDIT_ACTIONS }  from '../utils/auditLog'
 
 /**
  * Crea un nuovo cliente: account Auth, documento clients, profilo users.
@@ -24,5 +25,6 @@ export async function createClientUseCase(orgId, trainerId, formData) {
     trainerId,
     mustChangePassword: true,
   })
+  auditLog(AUDIT_ACTIONS.CLIENT_CREATED, { clientId: ref.id, clientName: data.name, orgId })
   return { id: ref.id, ...data, email, clientAuthUid: clientUid }
 }

@@ -7,6 +7,7 @@ import { createClientUseCase }      from '../usecases/createClientUseCase'
 import { saveCampionamentoUseCase } from '../usecases/saveCampionamentoUseCase'
 import { useToast }                 from './useToast'
 import { getFirebaseErrorMessage }  from '../utils/firebaseErrors'
+import { auditLog, AUDIT_ACTIONS }  from '../utils/auditLog'
 
 /**
  * @param {string} orgId    — ID organizzazione (subcollection path)
@@ -105,6 +106,7 @@ export function useClients(orgId, userId) {
 
     try {
       await deleteClient(orgId, clientId)
+      auditLog(AUDIT_ACTIONS.CLIENT_DELETED, { clientId, clientName: snapshot?.name, orgId })
       toast.success('Cliente eliminato')
     } catch {
       if (snapshot) setClients(prev => [...prev, snapshot])
