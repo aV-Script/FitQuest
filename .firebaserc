@@ -1,0 +1,13 @@
+{
+  "projects": {
+    "default": "fitquest-60a09"
+  },
+  "targets": {
+    "fitquest-60a09": {
+      "hosting": {
+        "app":   ["rankex-app"],
+        "admin": ["rankex-admin"]
+      }
+    }
+  }
+}

@@ -158,5 +158,16 @@ service cloud.firestore {
         allow write: if canWrite(orgId);
       }
     }
+
+    // ── Audit log ─────────────────────────────────────────────
+    // Append-only: ogni utente autenticato può scrivere,
+    // solo super_admin legge. Mai modificabile né eliminabile.
+
+    match /audit_logs/{logId} {
+      allow read:   if isSuperAdmin();
+      allow create: if isAuth();
+      allow update: if false;
+      allow delete: if false;
+    }
   }
 }
