@@ -2,7 +2,7 @@
 
 ## Stack
 - React 18 + Vite
-- Firebase (Auth + Firestore)
+- Firebase (Auth + Firestore + Hosting multisito)
 - Tailwind CSS v4
 - React Router v6
 - Recharts (grafici)
@@ -92,6 +92,11 @@ organizations/{orgId}
   groups/{groupId}
   recurrences/{recId}
   notifications/{notId}
+
+audit_logs/{logId}
+  action, uid, email, timestamp,
+  userAgent, details, env
+  // append-only — solo super_admin legge, mai modificabile
 ```
 
 ### Path helpers
@@ -253,6 +258,7 @@ src/
 ├── components/
 │   ├── common/
 │   │   ├── ConfirmDialog.jsx
+│   │   ├── DomainGuard.jsx      ← blocco bidirezionale per dominio+ruolo
 │   │   ├── ErrorBoundary.jsx
 │   │   ├── LoadingScreen.jsx
 │   │   ├── Pagination.jsx
@@ -420,16 +426,19 @@ src/
 ├── hooks/
 │   ├── useAsync.js
 │   ├── useClientRank.js
-│   ├── useClients.js        ← useClients(orgId, userId?)
-│   ├── useGroups.js         ← useGroups(orgId)
-│   ├── useNotifications.js  ← useNotifications(orgId, clientId)
+│   ├── useClients.js           ← useClients(orgId, userId?)
+│   ├── useGroups.js            ← useGroups(orgId)
+│   ├── useNotifications.js     ← useNotifications(orgId, clientId)
 │   ├── usePagination.js
+│   ├── useSessionTimeout.js    ← logout automatico per inattività
 │   └── useToast.js
 │
 └── utils/
+    ├── auditLog.js          ← auditLog(action, details?) + AUDIT_ACTIONS
     ├── bia.js               ← getBiaParamStatus, calcBmi,
     │                           calcBiaXP, calcBiaScore
     ├── calendarUtils.js     ← utility date/slot helpers
+    ├── env.js               ← ENV, isDev, isProduction, isAdminDomain()
     ├── firebaseErrors.js
     ├── gamification.js      ← calcSessionConfig, buildXPUpdate,
     │                           buildCampionamentoUpdate, buildNewClient,
@@ -786,6 +795,10 @@ getTerminology         → config/modules.config
 isSoccer               → getModule(moduleType).isSoccer
 getPlanLimits          → config/plans.config
 orgPlan                → useTrainerState().orgPlan
+auditLog               → utils/auditLog
+AUDIT_ACTIONS          → utils/auditLog
+isDev / isProduction   → utils/env
+isAdminDomain          → utils/env
 ```
 
 ### Ordine sezioni in ogni file
@@ -854,17 +867,101 @@ constants/tests.js           → fonte di verità test
 features/calendar/useCalendar.js → logica calendario
 hooks/useClients.js          → ottimistic updates, firma: (orgId, userId?)
 firebase/paths.js            → fonte di verità path Firestore
+firebase/services/auth.js    → auth instance + setPersistence + logout con audit
 firebase/services/clients.js → addClient/deleteClient usano batch + counter
 firebase/services/org.js     → addMember/removeMember usano batch + counter
 utils/percentile.js          → passare sempre testKey come 5° arg
+utils/auditLog.js            → getAuth lazy — non spostare a livello modulo
+utils/env.js                 → fonte di verità ambienti e domini
+components/common/DomainGuard.jsx → logica separazione domini
 config/plans.config.js       → fonte di verità limiti piano
 ```
 
 ---
 
+## Ambienti e infrastruttura
+
+### Progetti Firebase
+```
+rankex-dev      → sviluppo locale (npm run dev)
+fitquest-60a09  → produzione     (npm run build / deploy)
+```
+
+### File .env
+```
+.env.development  → VITE_ENV=development, credenziali rankex-dev
+.env.production   → VITE_ENV=production,  credenziali fitquest-60a09
+```
+Entrambi gitignored. Template: `.env.example`.
+
+### Hosting Firebase — multisito
+```
+rankex-app.web.app    → trainer, org_admin, client, staff_readonly
+rankex-admin.web.app  → solo super_admin
+```
+Configurato in `firebase.json` (targets) + `.firebaserc` (site IDs).
+
+### DomainGuard — separazione domini
+`src/components/common/DomainGuard.jsx` — attivo solo in production (`!isDev`):
+```
+app domain   + super_admin     → schermata bloccata + link admin
+admin domain + non super_admin → schermata bloccata + link app
+```
+In development (localhost) il guard è completamente disattivato.
+
+### Session timeout — `useSessionTimeout(role)`
+```
+super_admin:    30 min
+org_admin:       2 ore
+trainer:         8 ore
+staff_readonly:  8 ore
+client:          7 giorni
+```
+Timer si azzera su mousemove / keypress / touchstart / scroll.
+Chiamato in `App.jsx` con `profile?.role`.
+
+### Audit log — `auditLog(action, details?)`
+Scrive in `/audit_logs/{logId}` — append-only, mai modificabile.
+Solo super_admin può leggere (Firestore rules).
+```js
+import { auditLog, AUDIT_ACTIONS } from 'utils/auditLog'
+
+// Azioni già integrate:
+AUDIT_ACTIONS.LOGIN / LOGIN_FAILED  → useLoginForm.js
+AUDIT_ACTIONS.LOGOUT                → firebase/services/auth.js
+AUDIT_ACTIONS.CLIENT_CREATED        → usecases/createClientUseCase.js
+AUDIT_ACTIONS.CLIENT_DELETED        → hooks/useClients.js
+```
+**IMPORTANTE:** `getAuth(app)` in `auditLog.js` è chiamato dentro la
+funzione (lazy), non a livello di modulo. Non spostarlo — causerebbe
+conflitto con `setPersistence` in `auth.js`.
+
+### Branching e CI/CD
+```
+dev   → sviluppo quotidiano, push liberi → CI (lint + test + build)
+main  → produzione, solo merge da dev   → CI + Deploy automatico Firebase
+```
+Workflow GitHub Actions:
+- `ci.yml`     → runs on push dev/main + PR to main
+- `deploy.yml` → runs after CI passes on main → hosting + rules
+
+### npm scripts deploy
+```
+npm run deploy:rules       → rules su fitquest-60a09 (prod)
+npm run deploy:rules:dev   → rules su rankex-dev (dev)
+npm run deploy:app         → hosting rankex-app
+npm run deploy:admin       → hosting rankex-admin
+npm run deploy:all         → hosting entrambi
+```
+Tutti usano `cross-env NODE_OPTIONS=--dns-result-order=ipv4first`
+(fix DNS IPv6 su Windows — necessario su questa macchina).
+
+---
+
 ## Deploy Firestore rules
 
-Dopo ogni modifica a `firestore.rules`:
+Dopo ogni modifica a `firestore.rules`, deploya su entrambi i progetti:
 ```
-firebase deploy --only firestore:rules --project fitquest-60a09
+npm run deploy:rules       # → prod (fitquest-60a09)
+npm run deploy:rules:dev   # → dev  (rankex-dev)
 ```
