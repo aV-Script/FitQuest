@@ -1,13 +1,21 @@
 import {
-  getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword,
+  getAuth,
+  browserLocalPersistence, browserSessionPersistence, setPersistence,
+  signInWithEmailAndPassword, createUserWithEmailAndPassword,
   signOut, onAuthStateChanged, sendPasswordResetEmail,
   updatePassword, verifyBeforeUpdateEmail,
   reauthenticateWithCredential, EmailAuthProvider,
 } from 'firebase/auth'
-import { initializeApp } from 'firebase/app'
-import app from '../config'
+import { initializeApp }           from 'firebase/app'
+import app                         from '../config'
+import { auditLog, AUDIT_ACTIONS } from '../../utils/auditLog'
+import { isAdminDomain }           from '../../utils/env'
 
-export const auth = getAuth(app)  // ← ora è esportabile
+export const auth = getAuth(app)
+
+// Admin domain → session persistence (logout alla chiusura del browser)
+// Tutti gli altri → local persistence (rimane loggato)
+setPersistence(auth, isAdminDomain() ? browserSessionPersistence : browserLocalPersistence)
 
 // App secondaria per creare account cliente senza fare logout del trainer
 // Usa le stesse env vars del config principale
@@ -24,7 +32,7 @@ const secondaryAuth = getAuth(secondaryApp)
 
 export const login         = (email, pw) => signInWithEmailAndPassword(auth, email, pw)
 export const register      = (email, pw) => createUserWithEmailAndPassword(auth, email, pw)
-export const logout        = ()          => signOut(auth)
+export const logout        = async ()    => { await auditLog(AUDIT_ACTIONS.LOGOUT); return signOut(auth) }
 export const resetPassword = (email)     => sendPasswordResetEmail(auth, email)
 export const onAuthChange  = (cb)        => onAuthStateChanged(auth, cb)
 export const getCurrentUser = ()         => auth.currentUser

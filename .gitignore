@@ -11,10 +11,16 @@ dist-ssr/
 .env
 .env.local
 .env.*.local
+.env.development
+.env.production
+.env.uat
 env
 
 # Claude Code — impostazioni locali
 .claude/
+
+# Firebase cache locale
+.firebase/
 
 # File gitignore con nome errato (duplicato)
 gitignore

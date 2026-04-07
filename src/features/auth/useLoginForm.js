@@ -2,6 +2,7 @@ import { useState }                      from 'react'
 import { login, resetPassword }          from '../../firebase/services/auth'
 import { getFirebaseErrorMessage }       from '../../utils/firebaseErrors'
 import { validateEmail }                 from '../../utils/validation'
+import { auditLog, AUDIT_ACTIONS }       from '../../utils/auditLog'
 
 export function useLoginForm() {
   const [view,     setView]     = useState('login') // 'login' | 'reset' | 'reset_sent'
@@ -21,8 +22,10 @@ export function useLoginForm() {
     clearError()
     try {
       await login(email.trim(), password)
+      await auditLog(AUDIT_ACTIONS.LOGIN)
       // il redirect avviene nel router tramite onAuthChange
     } catch (err) {
+      auditLog(AUDIT_ACTIONS.LOGIN_FAILED, { email: email.trim() })
       setError(getFirebaseErrorMessage(err, 'Errore di accesso'))
     } finally {
       setLoading(false)
