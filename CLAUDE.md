@@ -947,11 +947,14 @@ Workflow GitHub Actions:
 
 ### npm scripts deploy
 ```
-npm run deploy:rules       → rules su fitquest-60a09 (prod)
-npm run deploy:rules:dev   → rules su rankex-dev (dev)
-npm run deploy:app         → hosting rankex-app
-npm run deploy:admin       → hosting rankex-admin
-npm run deploy:all         → hosting entrambi
+npm run deploy:rules         → rules su fitquest-60a09 (prod)
+npm run deploy:rules:dev     → rules su rankex-dev (dev)
+npm run deploy:app           → hosting rankex-app        (prod)
+npm run deploy:admin         → hosting rankex-admin      (prod)
+npm run deploy:all           → hosting entrambi          (prod)
+npm run deploy:app:dev       → hosting rankex-app-dev    (dev, build --mode development)
+npm run deploy:admin:dev     → hosting rankex-admin-dev  (dev, build --mode development)
+npm run deploy:all:dev       → hosting entrambi          (dev, build --mode development)
 ```
 Tutti usano `cross-env NODE_OPTIONS=--dns-result-order=ipv4first`
 (fix DNS IPv6 su Windows — necessario su questa macchina).
@@ -997,3 +1000,31 @@ Impostare subito un budget alert su Google Cloud Console:
 
 Il piano Blaze mantiene lo stesso free tier — si paga solo oltre la soglia.
 MFA via SMS e backup automatico Firestore richiedono Blaze.
+
+---
+
+## Roadmap futura
+
+Evoluzioni pianificate, non ancora implementate.
+Queste feature non esistono nel codebase attuale — allinearsi con il team prima di iniziare.
+
+### Gamification avanzata
+```
+Avatar cliente         → avatar visivo sbloccabile al salire di rank/livello XP
+                         mostrato nella card cliente e nell'area client
+Badge / Achievement    → traguardi automatici: prima sessione, 10 presenze
+                         consecutive, primo rank-up, nuovo personal best su test
+Streak presenze        → moltiplicatore XP per settimane consecutive senza assenze
+Leaderboard gruppo     → classifica dentro una squadra/gruppo (priorità: soccer)
+Obiettivi trainer      → coach fissa target su test specifico per un cliente
+                         (es. "70° percentile sprint entro fine mese")
+                         sistema monitora e notifica al raggiungimento
+```
+
+### Gestione allenamento
+```
+Piano di allenamento   → trainer compone piano strutturato (esercizi, serie,
+                         recuperi) e lo assegna al cliente
+                         cliente lo vede nella propria area
+                         integrazione con calendario + bonus XP al completamento
+```
