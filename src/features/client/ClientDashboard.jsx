@@ -8,6 +8,7 @@ import { DashboardHeader }                 from './client-dashboard/DashboardHea
 import { DeleteDialog }                    from './client-dashboard/DeleteDialog'
 import { ClientSessionsSummary }           from './client-dashboard/ClientSessionsSummary'
 import { NotesSection }                    from './client-dashboard/NotesSection'
+import { WorkoutPlanSection }              from './client-dashboard/WorkoutPlanSection'
 import { ClientReportPrint }               from './client-dashboard/ClientReportPrint'
 import { CampionamentoView }               from './CampionamentoView'
 import { useBia }                          from '../bia/useBia'
@@ -185,6 +186,15 @@ export function ClientDashboard({ client, orgId, onBack, onCampionamento, onDele
       <section className="px-6 py-6">
         <ActivityLog log={client.log} color={color} />
       </section>
+
+      <Divider color={color} />
+
+      <WorkoutPlanSection
+        orgId={orgId}
+        clientId={client.id}
+        color={color}
+        readonly={readonly}
+      />
 
       <Divider color={color} />
 

@@ -16,15 +16,23 @@ export const getWorkoutPlans = async (orgId) => {
 }
 
 // Fetch schede di un singolo cliente (usato dal lato client — single-field index automatico)
-export const getWorkoutPlanForClient = async (orgId, clientId) => {
+// Tutte le schede di un cliente (attive + archiviate), ordinate per data
+export const getClientPlans = async (orgId, clientId) => {
   try {
     const q    = query(collection(db, workoutPlansPath(orgId)), where('clientId', '==', clientId))
     const snap = await getDocs(q)
-    const plans = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-    return plans.find(p => p.status === 'active') ?? null
+    return snap.docs
+      .map(d => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
   } catch {
-    return null
+    return []
   }
+}
+
+// Scheda attiva di un cliente (usato dal lato client)
+export const getWorkoutPlanForClient = async (orgId, clientId) => {
+  const plans = await getClientPlans(orgId, clientId)
+  return plans.find(p => p.status === 'active') ?? null
 }
 
 export const addWorkoutPlan = (orgId, data) =>

@@ -223,14 +223,19 @@ Il trainer gestisce la cancellazione a cascata (nota root + suoi commenti) lato 
 {
   title, description,
   clientId,    // cliente assegnato
-  exercises: [
-    { name, sets, reps, restSeconds, notes }
+  days: [
+    {
+      label: 'Giorno 1',
+      exercises: [{ name, sets, reps, restSeconds, notes }],
+    }
   ],
   status:    'active'|'archived',
   createdAt, updatedAt,
 }
 ```
-`exercises` è un array nel documento (max ~30 esercizi, ampiamente sotto il limite 1MB).
+`days` è un array di giorni (max 7), ogni giorno ha un array di esercizi.
+Backward compat: vecchi documenti con `exercises[]` flat vengono normalizzati
+a `[{ label: 'Giorno 1', exercises }]` lato client.
 Il client vede la scheda `active` assegnata a sé in read-only nella propria dashboard.
 
 ### Slot (`slots/{slotId}`)
@@ -396,9 +401,10 @@ src/
 │   │       ├── DashboardHeader.jsx
 │   │       ├── DeleteDialog.jsx
 │   │       ├── ClientSessionsSummary.jsx
-│   │       ├── NotesSection.jsx         ← thread note + commenti (trainer+client)
-│   │       ├── ClientWorkoutSection.jsx ← scheda allenamento read-only (client)
-│   │       └── ClientReportPrint.jsx    ← export PDF via window.print() (trainer)
+│   │       ├── NotesSection.jsx          ← thread note + commenti (trainer+client)
+│   │       ├── WorkoutPlanSection.jsx    ← schede allenamento (trainer): CRUD + storico
+│   │       ├── ClientWorkoutSection.jsx  ← scheda allenamento read-only (client)
+│   │       └── ClientReportPrint.jsx     ← export PDF via window.print() (trainer)
 │   │
 │   ├── notification/
 │   │   └── NotificationsPanel.jsx
@@ -421,15 +427,12 @@ src/
 │       ├── NewClientView.jsx      ← blocco se al limite clienti del piano
 │       ├── TestGuidePage.jsx
 │       ├── ProfilePage.jsx        ← modifica email e password
-│       ├── WorkoutPlansPage.jsx   ← lista schede con filtro cliente + archivio
 │       ├── clients-page/
 │       │   ├── ClientCard.jsx        ← badge categoria (PT) / ruolo+fascia (Soccer)
 │       │   ├── FiltersSidebar.jsx    ← filtro categoria/ruolo/fascia per moduleType
 │       │   └── MobileControls.jsx
 │       ├── workout-plans/
-│       │   ├── WorkoutPlanCard.jsx
-│       │   ├── WorkoutPlanDetail.jsx ← dettaglio con archivio/elimina
-│       │   └── WorkoutPlanForm.jsx   ← form creazione esercizi
+│       │   └── WorkoutPlanForm.jsx   ← form multi-giorno creazione/modifica scheda
 │       ├── groups-page/
 │       │   ├── GroupCard.jsx
 │       │   ├── GroupDetailView.jsx
@@ -481,7 +484,7 @@ src/
 │   ├── usePagination.js
 │   ├── useSessionTimeout.js    ← logout automatico per inattività
 │   ├── useToast.js
-│   └── useWorkoutPlans.js      ← useWorkoutPlans(orgId) → plans + CRUD
+│   └── useWorkoutPlans.js      ← (rimosso — logica CRUD ora in WorkoutPlanSection)
 │
 └── utils/
     ├── auditLog.js          ← auditLog(action, details?) + AUDIT_ACTIONS
@@ -888,8 +891,8 @@ AUDIT_ACTIONS          → utils/auditLog
 isDev / isProduction   → utils/env
 isAdminDomain          → utils/env
 useNotes               → hooks/useNotes
-useWorkoutPlans        → hooks/useWorkoutPlans
-getWorkoutPlanForClient → firebase/services/workoutPlans (lato client, query filtrata)
+getClientPlans         → firebase/services/workoutPlans (trainer: tutte le schede del cliente)
+getWorkoutPlanForClient → firebase/services/workoutPlans (client: scheda attiva, query filtrata)
 ```
 
 ### Ordine sezioni in ogni file
@@ -929,11 +932,16 @@ Struttura: `clients/{clientId}/notes/{noteId}` (subcollection del cliente).
 ### Scheda allenamento
 Struttura: `organizations/{orgId}/workoutPlans/{planId}`.
 - Service: `firebase/services/workoutPlans.js`
-  - `getWorkoutPlans(orgId)` — usato dal trainer (legge tutta la collection)
-  - `getWorkoutPlanForClient(orgId, clientId)` — usato dal client (filtra per clientId, single-field index automatico)
-- Hook: `useWorkoutPlans(orgId)` in `hooks/useWorkoutPlans.js`
-- UI trainer: `WorkoutPlansPage` + subcomponenti in `workout-plans/`
-- UI client: `ClientWorkoutSection` in `client-dashboard/` (read-only, scheda attiva)
+  - `getClientPlans(orgId, clientId)` — tutte le schede di un cliente (attive + archiviate)
+  - `getWorkoutPlanForClient(orgId, clientId)` — scheda attiva per il client (filtra per clientId)
+  - `addWorkoutPlan / updateWorkoutPlan / deleteWorkoutPlan` — CRUD
+- UI trainer: `WorkoutPlanSection` in `client-dashboard/` — embed in `ClientDashboard`
+  - Crea/modifica/archivia/elimina schede direttamente dalla dashboard cliente
+  - Usa `WorkoutPlanForm` con `clientId` pre-impostato
+  - Storico collassabile delle schede archiviate
+  - Crea nuova → archivia automaticamente la scheda attiva corrente
+- UI client: `ClientWorkoutSection` in `client-dashboard/` (read-only, scheda attiva con tab giorni)
+- Schema dati: `days: [{ label, exercises[] }]` — max 7 giorni, backward compat con `exercises[]` flat
 - Rules: `allow read: if canRead(orgId) || isClientOfOrg(orgId)` — semplificato
   perché `resource.data.clientId == userProfile().clientId` non è valutabile
   da Firestore a query-plan time su collection query.
@@ -1197,11 +1205,13 @@ Obiettivi trainer      → coach fissa target su test specifico per un cliente
 
 ### Gestione allenamento
 ```
-Scheda Allenamento     → IMPLEMENTATO (base) — apr 2026
-                         Trainer compone scheda strutturata (esercizi, serie,
-                         recuperi, note) e la assegna a un cliente.
-                         Il cliente la vede in read-only nella propria dashboard.
+Scheda Allenamento     → IMPLEMENTATO — apr 2026
+                         Trainer crea schede multi-giorno (max 7) direttamente
+                         dalla dashboard cliente. Supporto CRUD + archivio storico.
+                         Crea nuova scheda → archivia automaticamente la precedente.
+                         Il cliente vede la scheda attiva in read-only con tab giorni.
                          Struttura: organizations/{orgId}/workoutPlans/{planId}
+                         Schema: days: [{ label, exercises[] }]
                          Status: 'active' | 'archived'
                          Roadmap: integrazione calendario + bonus XP al completamento
 ```
