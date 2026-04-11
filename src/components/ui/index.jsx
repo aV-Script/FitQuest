@@ -173,7 +173,7 @@ export function Field({ label, error, htmlFor, children }) {
 }
 
 // ─── ActivityLog ──────────────────────────────────────────────────────────────
-export function ActivityLog({ log = [], color }) {
+export function ActivityLog({ log = [], color, limit = 5 }) {
   return (
     <div
       className="rounded-[4px] p-5 rx-card"
@@ -182,11 +182,11 @@ export function ActivityLog({ log = [], color }) {
       {log.length === 0 && (
         <p className="m-0 font-body text-[13px] text-white/20">Nessuna attività ancora.</p>
       )}
-      {log.slice(0, 5).map((entry, i) => (
+      {log.slice(0, limit).map((entry, i) => (
         <div key={i} className="flex gap-2.5 items-start mb-2.5">
           <div className="flex flex-col items-center pt-1.5 gap-1">
             <div className="w-[5px] h-[5px] rounded-full shrink-0" style={{ background: color + '88' }} />
-            {i < Math.min(log.length, 5) - 1 && (
+            {i < Math.min(log.length, limit) - 1 && (
               <div className="w-px flex-1 min-h-[12px]" style={{ background: 'rgba(255,255,255,0.06)' }} />
             )}
           </div>

@@ -1,7 +1,6 @@
 import { useState, useCallback }  from 'react'
 import { RankRing }               from '../../../components/ui/RankRing'
 import { getCategoriaById }        from '../../../constants'
-import { XPBar }                   from '../../../components/ui/XPBar'
 import { resetPassword }           from '../../../firebase/services/auth'
 
 /**
@@ -136,7 +135,6 @@ export function DashboardHeader({ client, rankObj, color, biaRankObj, onBack, on
           </div>
         </div>
 
-        <XPBar xp={client.xp} xpNext={client.xpNext} color={color} />
       </div>
     </div>
   )
