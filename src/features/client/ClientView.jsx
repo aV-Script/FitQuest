@@ -63,6 +63,7 @@ export default function ClientView({ clientId, orgId }) {
       {activePage === 'dashboard' && (
         <ClientDashboardPage
           client={client}
+          orgId={orgId}
           color={color}
           rankObj={rankObj}
           biaRankObj={profileType === 'complete' ? biaRankObj : null}

@@ -1,10 +1,14 @@
 import { useState, useCallback }           from 'react'
 import { useClientRank }                   from '../../hooks/useClientRank'
+import { useReadonly }                     from '../../context/ReadonlyContext'
+import { useTrainerState }                 from '../../context/TrainerContext'
 import { SectionLabel, Divider, ActivityLog, StatsSection } from '../../components/ui'
 import { StatsChart }                      from './StatsChart'
 import { DashboardHeader }                 from './client-dashboard/DashboardHeader'
 import { DeleteDialog }                    from './client-dashboard/DeleteDialog'
 import { ClientSessionsSummary }           from './client-dashboard/ClientSessionsSummary'
+import { NotesSection }                    from './client-dashboard/NotesSection'
+import { ClientReportPrint }               from './client-dashboard/ClientReportPrint'
 import { CampionamentoView }               from './CampionamentoView'
 import { useBia }                          from '../bia/useBia'
 import { BiaView }                         from '../bia/BiaView'
@@ -13,13 +17,23 @@ import { BiaHistoryChart }                 from '../bia/bia-view/BiaHistoryChart
 import { UpgradeCategoryBanner }           from '../bia/UpgradeCategoryBanner'
 import { getProfileCategory }              from '../../constants/bia'
 import { calcBiaScore, getBiaRankFromScore } from '../../utils/bia'
+import { getAuth }                         from 'firebase/auth'
+import app                                 from '../../firebase/config'
 
 export function ClientDashboard({ client, orgId, onBack, onCampionamento, onDelete }) {
   const { rankObj: testRankObj, color: testColor } = useClientRank(client)
+  const { userRole }  = useTrainerState()
+  const readonly      = useReadonly()
   const [view,       setView]       = useState('dashboard') // 'dashboard' | 'campionamento' | 'bia'
   const [showDelete, setShowDelete] = useState(false)
+  const [showReport, setShowReport] = useState(false)
 
   const { handleSaveBia, handleUpgradeProfile } = useBia()
+
+  const trainerAuthor = {
+    role: userRole,
+    name: getAuth(app).currentUser?.email ?? 'Trainer',
+  }
 
   const profileType = client.profileType ?? 'tests_only'
   const profile     = getProfileCategory(profileType)
@@ -79,6 +93,7 @@ export function ClientDashboard({ client, orgId, onBack, onCampionamento, onDele
         biaRankObj={profileType === 'complete' ? biaRankObj : null}
         onBack={onBack}
         onDelete={() => setShowDelete(true)}
+        onExport={() => setShowReport(true)}
       />
 
       <Divider color={color} />
@@ -171,6 +186,16 @@ export function ClientDashboard({ client, orgId, onBack, onCampionamento, onDele
         <ActivityLog log={client.log} color={color} />
       </section>
 
+      <Divider color={color} />
+
+      <NotesSection
+        orgId={orgId}
+        clientId={client.id}
+        color={color}
+        author={trainerAuthor}
+        readonly={readonly}
+      />
+
       <div className="h-10" />
 
       {showDelete && (
@@ -178,6 +203,15 @@ export function ClientDashboard({ client, orgId, onBack, onCampionamento, onDele
           clientName={client.name}
           onConfirm={handleDelete}
           onCancel={() => setShowDelete(false)}
+        />
+      )}
+
+      {showReport && (
+        <ClientReportPrint
+          client={client}
+          color={color}
+          rankObj={rankObj}
+          onClose={() => setShowReport(false)}
         />
       )}
     </div>

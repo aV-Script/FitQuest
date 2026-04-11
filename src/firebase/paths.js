@@ -8,3 +8,5 @@ export const slotsPath         = (orgId) => `organizations/${orgId}/slots`
 export const groupsPath        = (orgId) => `organizations/${orgId}/groups`
 export const recurrencesPath   = (orgId) => `organizations/${orgId}/recurrences`
 export const notificationsPath = (orgId) => `organizations/${orgId}/notifications`
+export const notesPath         = (orgId, clientId) => `organizations/${orgId}/clients/${clientId}/notes`
+export const workoutPlansPath  = (orgId) => `organizations/${orgId}/workoutPlans`

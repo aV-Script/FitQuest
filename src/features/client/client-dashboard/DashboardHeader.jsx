@@ -8,7 +8,7 @@ import { resetPassword }           from '../../../firebase/services/auth'
  * Hero section del dashboard cliente.
  * Mostra rank ring, nome, categoria, XP bar e azioni (back + elimina + reset pw).
  */
-export function DashboardHeader({ client, rankObj, color, biaRankObj, onBack, onDelete }) {
+export function DashboardHeader({ client, rankObj, color, biaRankObj, onBack, onDelete, onExport }) {
   const categoria = getCategoriaById(client.categoria)
   const [resetState, setResetState] = useState('idle') // 'idle' | 'loading' | 'sent' | 'error'
 
@@ -38,6 +38,26 @@ export function DashboardHeader({ client, rankObj, color, biaRankObj, onBack, on
         </button>
 
         <div className="flex items-center gap-2">
+          {/* Esporta PDF */}
+          {onExport && (
+            <button
+              onClick={onExport}
+              title="Esporta scheda atleta come PDF"
+              className="bg-transparent border rounded-[3px] px-3 py-1.5 font-display text-[11px] cursor-pointer transition-all"
+              style={{ borderColor: 'rgba(255,255,255,0.12)', color: 'rgba(200,212,224,0.4)' }}
+              onMouseEnter={e => {
+                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'
+                e.currentTarget.style.color = 'rgba(200,212,224,0.7)'
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'
+                e.currentTarget.style.color = 'rgba(200,212,224,0.4)'
+              }}
+            >
+              ESPORTA PDF
+            </button>
+          )}
+
           {/* Reset password */}
           <button
             onClick={handleResetPassword}

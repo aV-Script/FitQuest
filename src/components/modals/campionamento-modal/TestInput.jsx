@@ -44,6 +44,9 @@ export function TestInput({ test, testValues, livePercentile, prevValue, errors,
         {test.variables ? (
           test.variables.map(v => (
             <div key={`${test.stat}_${v.key}`} className="flex items-center gap-2">
+              <span className="font-body text-[11px] text-white/40 w-44 shrink-0 leading-tight">
+                {v.label}
+              </span>
               <Input
                 type="number"
                 placeholder="0"
@@ -51,7 +54,7 @@ export function TestInput({ test, testValues, livePercentile, prevValue, errors,
                 onChange={e => onUpdate(v.key, e.target.value)}
                 className="flex-1"
               />
-              <span className="text-white/30 font-body text-[11px] w-12 text-right">
+              <span className="text-white/30 font-body text-[11px] w-8 text-right shrink-0">
                 {v.unit}
               </span>
               {errors[v.key] && (

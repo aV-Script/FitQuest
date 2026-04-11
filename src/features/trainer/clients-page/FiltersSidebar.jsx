@@ -1,5 +1,5 @@
-import { Input }        from '../../../components/ui'
-import { PLAYER_ROLES } from '../../../config/modules.config'
+import { Input }                                from '../../../components/ui'
+import { PLAYER_ROLES, SOCCER_AGE_GROUPS }      from '../../../config/modules.config'
 
 const SORT_OPTIONS = [
   ['name',  'Nome A→Z'],
@@ -14,9 +14,11 @@ const SORT_OPTIONS = [
 export function FiltersSidebar({
   query,          onQueryChange,
   filterCategoria, onCategoriaChange,
+  filterFascia,    onFasciaChange,
   filterGroup,    onGroupChange,
   sortBy,         onSortByChange,
   categorie,
+  fasce,
   groups,
   onNewClient,
   isSoccer = false,
@@ -49,6 +51,25 @@ export function FiltersSidebar({
                 key={val}
                 active={filterCategoria === val}
                 onClick={() => onCategoriaChange(val)}
+              >
+                {label}
+              </FilterBtn>
+            )
+          })}
+        </FilterSection>
+      )}
+
+      {isSoccer && fasce.length > 1 && (
+        <FilterSection label="FASCIA">
+          {fasce.map(val => {
+            const label = val === 'tutti'
+              ? 'Tutti'
+              : (SOCCER_AGE_GROUPS.find(g => g.value === val)?.label ?? val)
+            return (
+              <FilterBtn
+                key={val}
+                active={filterFascia === val}
+                onClick={() => onFasciaChange(val)}
               >
                 {label}
               </FilterBtn>

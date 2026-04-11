@@ -1,9 +1,9 @@
-import { memo }                              from 'react'
-import { useClientRank }                     from '../../../hooks/useClientRank'
-import { useTrainerState }                   from '../../../context/TrainerContext'
-import { getModule, PLAYER_ROLES }           from '../../../config/modules.config'
-import { getCategoriaById }                  from '../../../constants'
-import { calcBiaScore, getBiaRankFromScore } from '../../../utils/bia'
+import { memo }                                        from 'react'
+import { useClientRank }                               from '../../../hooks/useClientRank'
+import { useTrainerState }                             from '../../../context/TrainerContext'
+import { getModule, PLAYER_ROLES, SOCCER_AGE_GROUPS }  from '../../../config/modules.config'
+import { getCategoriaById }                            from '../../../constants'
+import { calcBiaScore, getBiaRankFromScore }           from '../../../utils/bia'
 
 export const ClientCard = memo(function ClientCard({ client, onSelect }) {
   const { moduleType }       = useTrainerState()
@@ -18,6 +18,9 @@ export const ClientCard = memo(function ClientCard({ client, onSelect }) {
 
   const categoria   = !isSoccer && client.categoria ? getCategoriaById(client.categoria) : null
   const roleObj     = isSoccer && client.ruolo ? PLAYER_ROLES.find(r => r.value === client.ruolo) : null
+  const fasciaObj   = isSoccer && client.categoria === 'soccer_youth'
+    ? SOCCER_AGE_GROUPS.find(g => g.value === 'soccer_youth')
+    : null
 
   return (
     <button
@@ -80,6 +83,18 @@ export const ClientCard = memo(function ClientCard({ client, onSelect }) {
               }}
             >
               {roleObj.label}
+            </span>
+          )}
+          {fasciaObj && (
+            <span
+              className="rounded-full px-2.5 py-0.5 text-[10px] font-display font-bold tracking-wide"
+              style={{
+                background: 'rgba(250,204,21,0.1)',
+                color:      '#facc15',
+                border:     '1px solid rgba(250,204,21,0.3)',
+              }}
+            >
+              {fasciaObj.label}
             </span>
           )}
         </div>

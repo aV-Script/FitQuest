@@ -25,13 +25,15 @@ con terminologie, test e comportamenti UI diversi.
 - Profili: `tests_only` / `bia_only` / `complete`
 
 **soccer_academy** — accademie calcistiche
-- Nessuna categoria — ruolo è solo etichetta visiva
-- Test fissi per tutti: `y_balance`, `standing_long_jump`,
+- Fasce d'età: `soccer` (Senior ≥10 anni) / `soccer_youth` (Piccoli ≤9 anni)
+- Ruolo è solo etichetta visiva: `goalkeeper` / `defender` / `midfielder` / `forward`
+- Test fissi per entrambe le fasce: `y_balance`, `standing_long_jump`,
   `505_cod_agility`, `sprint_20m`, `beep_test`
 - Terminologia: Coach / Allievo / Squadra / Allenamento
-- Profili: `tests_only` / `bia_only` / `complete`
-- `client.categoria` è sempre `'soccer'` (usato come chiave
-  interna per `getTestsForCategoria`, non mostrato in UI)
+- Profili: `tests_only` (unico)
+- `client.categoria` = `'soccer'` o `'soccer_youth'` — chiave interna
+  per `getTestsForCategoria`. Non è mostrata in UI (il ruolo è il badge visivo)
+- Configurazione fasce: `SOCCER_AGE_GROUPS` in `config/modules.config.js`
 
 ### Profili cliente (`profileType`)
 ```
@@ -88,10 +90,12 @@ organizations/{orgId}
     role, name, email, joinedAt
 
   clients/{clientId}
+    notes/{noteId}       // thread + commenti — subcollection del cliente
   slots/{slotId}
   groups/{groupId}
   recurrences/{recId}
   notifications/{notId}
+  workoutPlans/{planId}
 
 audit_logs/{logId}
   action, uid, email, timestamp,
@@ -102,11 +106,13 @@ audit_logs/{logId}
 ### Path helpers
 Tutti i path Firestore passano da `src/firebase/paths.js`:
 ```js
-clientsPath(orgId)       → organizations/{orgId}/clients
-slotsPath(orgId)         → organizations/{orgId}/slots
-groupsPath(orgId)        → organizations/{orgId}/groups
-recurrencesPath(orgId)   → organizations/{orgId}/recurrences
-notificationsPath(orgId) → organizations/{orgId}/notifications
+clientsPath(orgId)            → organizations/{orgId}/clients
+slotsPath(orgId)              → organizations/{orgId}/slots
+groupsPath(orgId)             → organizations/{orgId}/groups
+recurrencesPath(orgId)        → organizations/{orgId}/recurrences
+notificationsPath(orgId)      → organizations/{orgId}/notifications
+notesPath(orgId, clientId)    → organizations/{orgId}/clients/{clientId}/notes
+workoutPlansPath(orgId)       → organizations/{orgId}/workoutPlans
 ```
 
 ### Firestore Rules — pattern corretto
@@ -183,7 +189,7 @@ import { getPlanLimits, isAtTrainerLimit, isAtClientLimit } from 'config/plans.c
 {
   name, eta, sesso, peso, altezza,
   email, clientAuthUid,
-  categoria,       // 'health'|'active'|'athlete'|'soccer'
+  categoria,       // 'health'|'active'|'athlete'|'soccer'|'soccer_youth'
   profileType,     // 'tests_only'|'bia_only'|'complete'
   ruolo,           // solo soccer: 'goalkeeper'|'defender'|'midfielder'|'forward'
   level, xp, xpNext,
@@ -196,6 +202,36 @@ import { getPlanLimits, isAtTrainerLimit, isAtClientLimit } from 'config/plans.c
   lastBia:         null,
 }
 ```
+
+### Nota (`clients/{clientId}/notes/{noteId}`)
+```js
+{
+  text,
+  authorId,    // Firebase Auth UID
+  authorName,  // nome visibile
+  authorRole,  // 'trainer'|'org_admin'|'staff_readonly'|'client'
+  parentId,    // null = thread root | noteId = commento del thread
+  createdAt,
+}
+```
+Pattern thread: `parentId === null` = nota principale; `parentId = noteId` = commento.
+**Regola:** il client può creare solo commenti (`parentId != null`) su thread esistenti.
+Il trainer gestisce la cancellazione a cascata (nota root + suoi commenti) lato app.
+
+### Scheda Allenamento (`workoutPlans/{planId}`)
+```js
+{
+  title, description,
+  clientId,    // cliente assegnato
+  exercises: [
+    { name, sets, reps, restSeconds, notes }
+  ],
+  status:    'active'|'archived',
+  createdAt, updatedAt,
+}
+```
+`exercises` è un array nel documento (max ~30 esercizi, ampiamente sotto il limite 1MB).
+Il client vede la scheda `active` assegnata a sé in read-only nella propria dashboard.
 
 ### Slot (`slots/{slotId}`)
 ```js
@@ -281,7 +317,8 @@ src/
 │       └── RankRing.jsx
 │
 ├── config/
-│   ├── modules.config.js    ← MODULES, TERMINOLOGIES, PLAYER_ROLES
+│   ├── modules.config.js    ← MODULES, TERMINOLOGIES, PLAYER_ROLES,
+│   │                           SOCCER_FIXED_TESTS, SOCCER_AGE_GROUPS
 │   ├── plans.config.js      ← PLAN_LIMITS, getPlanLimits,
 │   │                           isAtTrainerLimit, isAtClientLimit
 │   └── theme.js             ← palette colori RankEX
@@ -323,7 +360,7 @@ src/
 │   │   ├── useAuth.js       ← carica user + profile + org + terminology
 │   │   ├── useLoginForm.js
 │   │   └── components/
-│   │       ├── BrandingPanel.jsx   ← "PERFORMANCE PLATFORM" (generico)
+│   │       ├── BrandingPanel.jsx   ← semi-trasparente, credit "by Dr. Lamberti Valerio"
 │   │       ├── LoginForm.jsx
 │   │       └── ResetForm.jsx
 │   │
@@ -358,7 +395,10 @@ src/
 │   │   └── client-dashboard/
 │   │       ├── DashboardHeader.jsx
 │   │       ├── DeleteDialog.jsx
-│   │       └── ClientSessionsSummary.jsx
+│   │       ├── ClientSessionsSummary.jsx
+│   │       ├── NotesSection.jsx         ← thread note + commenti (trainer+client)
+│   │       ├── ClientWorkoutSection.jsx ← scheda allenamento read-only (client)
+│   │       └── ClientReportPrint.jsx    ← export PDF via window.print() (trainer)
 │   │
 │   ├── notification/
 │   │   └── NotificationsPanel.jsx
@@ -373,7 +413,7 @@ src/
 │   │
 │   └── trainer/             ← area trainer / staff_readonly
 │       ├── TrainerView.jsx
-│       ├── trainer.config.js
+│       ├── trainer.config.jsx
 │       ├── ClientsPage.jsx
 │       ├── GroupsPage.jsx
 │       ├── TrainerCalendar.jsx
@@ -381,10 +421,15 @@ src/
 │       ├── NewClientView.jsx      ← blocco se al limite clienti del piano
 │       ├── TestGuidePage.jsx
 │       ├── ProfilePage.jsx        ← modifica email e password
+│       ├── WorkoutPlansPage.jsx   ← lista schede con filtro cliente + archivio
 │       ├── clients-page/
-│       │   ├── ClientCard.jsx        ← badge categoria (PT) o ruolo (Soccer)
-│       │   ├── FiltersSidebar.jsx    ← filtro categoria o ruolo per moduleType
+│       │   ├── ClientCard.jsx        ← badge categoria (PT) / ruolo+fascia (Soccer)
+│       │   ├── FiltersSidebar.jsx    ← filtro categoria/ruolo/fascia per moduleType
 │       │   └── MobileControls.jsx
+│       ├── workout-plans/
+│       │   ├── WorkoutPlanCard.jsx
+│       │   ├── WorkoutPlanDetail.jsx ← dettaglio con archivio/elimina
+│       │   └── WorkoutPlanForm.jsx   ← form creazione esercizi
 │       ├── groups-page/
 │       │   ├── GroupCard.jsx
 │       │   ├── GroupDetailView.jsx
@@ -408,6 +453,7 @@ src/
 │   (wizard)
 │   components/modals/new-client-wizard/
 │       ├── steps/StepRuolo.jsx  ← step ruolo per soccer_academy
+│       └── steps/StepFascia.jsx ← step fascia d'età per soccer_academy
 │
 ├── firebase/
 │   ├── config.js
@@ -420,7 +466,9 @@ src/
 │       ├── db.js
 │       ├── groups.js        ← tutte le fn accettano orgId come primo arg
 │       ├── notifications.js ← tutte le fn accettano orgId come primo arg
+│       ├── notes.js         ← getNotes, addNote, deleteNoteItem (orgId, clientId)
 │       ├── org.js           ← addMember/removeMember usano batch + increment
+│       ├── workoutPlans.js  ← getWorkoutPlans, getWorkoutPlanForClient, addWorkoutPlan, update, delete (orgId)
 │       └── users.js
 │
 ├── hooks/
@@ -429,9 +477,11 @@ src/
 │   ├── useClients.js           ← useClients(orgId, userId?)
 │   ├── useGroups.js            ← useGroups(orgId)
 │   ├── useNotifications.js     ← useNotifications(orgId, clientId)
+│   ├── useNotes.js             ← useNotes(orgId, clientId, author) → threads
 │   ├── usePagination.js
 │   ├── useSessionTimeout.js    ← logout automatico per inattività
-│   └── useToast.js
+│   ├── useToast.js
+│   └── useWorkoutPlans.js      ← useWorkoutPlans(orgId) → plans + CRUD
 │
 └── utils/
     ├── auditLog.js          ← auditLog(action, details?) + AUDIT_ACTIONS
@@ -515,22 +565,26 @@ Il `moduleType` è disponibile in tutta l'area trainer tramite
 qualsiasi ramificazione condizionale.
 
 ### ClientsPage — differenze soccer vs PT
-| Aspetto               | personal_training        | soccer_academy           |
-|-----------------------|--------------------------|--------------------------|
-| Colonna identificativa| Categoria (health/active…)| Ruolo (portiere/…)       |
-| Filtro laterale       | per categoria            | per ruolo (PLAYER_ROLES) |
-| Badge sul client card | categoria colorata        | ruolo colorato           |
+| Aspetto               | personal_training        | soccer_academy                      |
+|-----------------------|--------------------------|-------------------------------------|
+| Colonna identificativa| Categoria (health/active…)| Ruolo (portiere/…)                 |
+| Badge sul client card | categoria colorata        | ruolo colorato + badge "Piccoli" (giallo) se soccer_youth |
+| Filtro laterale       | per categoria            | per ruolo + FASCIA (se presenti entrambe) |
+
+Filtro FASCIA in `FiltersSidebar` appare **solo** quando ci sono allievi sia Senior
+che Piccoli (cioè `fasce.length > 1`). Gestito in `useClientFilters.js`.
 
 ### NewClientView — differenze soccer vs PT
-| Campo                | personal_training         | soccer_academy            |
-|----------------------|---------------------------|---------------------------|
-| Categoria            | select obbligatorio        | NON mostrare              |
-| Ruolo                | NON mostrare               | StepRuolo da PLAYER_ROLES |
-| `categoria` salvato  | valore selezionato         | sempre `'soccer'`         |
-| `profileType`        | select (tests/bia/complete)| sempre `'tests_only'`     |
+| Campo                | personal_training         | soccer_academy               |
+|----------------------|---------------------------|------------------------------|
+| Categoria            | select obbligatorio        | NON mostrare                 |
+| Fascia d'età         | NON mostrare               | StepFascia (soccer/soccer_youth) |
+| Ruolo                | NON mostrare               | StepRuolo da PLAYER_ROLES    |
+| `categoria` salvato  | valore selezionato         | valore da StepFascia         |
+| `profileType`        | select (tests/bia/complete)| sempre `'tests_only'`        |
 
-Wizard soccer: 3 step fissi (anagrafica → ruolo → account).
-`TOTAL_STEPS_MAP.soccer = 3` in `wizard.config.js`.
+Wizard soccer: **4 step fissi** (anagrafica → fascia → ruolo → account).
+`TOTAL_STEPS_MAP.soccer = 4` in `wizard.config.js`.
 `isSoccer` viene da `useTrainerState()` → `getModule(moduleType).isSoccer`.
 
 **Blocco piano:** se `clients.length >= getPlanLimits(orgPlan).clients`,
@@ -571,6 +625,20 @@ come quinto argomento a `calcPercentile`.
 ---
 
 ## Design system
+
+### Background brand (CSS-only)
+Il background globale è definito su `html` in `src/index.css` — nessuna immagine esterna.
+Layer in ordine (dal basso all'alto):
+```
+1. Base color           #06080d
+2. Vignette perimetrale radial-gradient scuro ai bordi
+3. Green glow           bordo sinistro — rgba(15,214,90,0.20) — luce ambientale logo
+4. Cyan trace           angolo top-right — rgba(0,200,255,0.10) — fulmine elettrico
+5. Pentagon pattern     SVG tile 120×116px — stroke ciano 0.07 opacity
+6. Rectangular grid     linear-gradient orizzontale + verticale — 40×40px, 0.028 opacity
+```
+`body` e `#root` hanno `background: transparent` per lasciar vedere il layer html.
+La sidebar usa `bg-black/50 backdrop-blur-md` per effetto frosted glass sulla texture.
 
 ### Font
 ```
@@ -632,7 +700,8 @@ select.input-base option {
 .skeleton            → loading placeholder
 .text-gradient       → testo con gradiente logo
 .input-base          → input standard con focus verde
-.bg-hex              → pattern esagonale decorativo
+.rx-hex-bg           → pattern esagonale decorativo (usato in BrandingPanel)
+.bg-hex              → alias pattern esagonale
 ```
 
 ### Token principali (CSS variables)
@@ -662,12 +731,30 @@ athlete (5):  drop_jump_rsi, t_test_agility, yo_yo_ir1,
 `dinamometro_hand_grip` e `ymca_step_test` condivisi
 tra health e active → `categories: ['health', 'active']`
 
-### soccer_academy — fissi per tutti
+### soccer_academy — fissi per tutte le fasce
 ```
 y_balance, standing_long_jump, 505_cod_agility,
 sprint_20m, beep_test
 ```
-`categories: ['soccer']` (o `['active','soccer']` per test condivisi).
+Entrambe le fasce (Senior e Piccoli) usano gli stessi test per ora.
+Ogni test ha `categories: ['soccer', 'soccer_youth']`
+(o `['active', 'soccer', 'soccer_youth']` per test condivisi con PT).
+Quando verranno definiti test differenziati per Piccoli, basta aggiungere
+nuovi test con `categories: ['soccer_youth']` in `constants/tests.js`.
+
+### Y Balance Test — formula bilaterale
+Il test raccoglie i valori di **entrambi gli arti** (DX e SX) separatamente:
+```
+variables: ANT_dx, PM_dx, PL_dx, ANT_sx, PM_sx, PL_sx, lunghezzaArto
+formulaType: 'y_balance_composite'
+```
+La formula calcola il Composite Score per ciascun arto e ne restituisce la media:
+```js
+dx = (ANT_dx + PM_dx + PL_dx) / (3 × lunghezzaArto) × 100
+sx = (ANT_sx + PM_sx + PL_sx) / (3 × lunghezzaArto) × 100
+result = (dx + sx) / 2
+```
+`lunghezzaArto`: da ASIS al malleolo mediale (una sola misura, arto dominante).
 
 ---
 
@@ -792,6 +879,7 @@ calcMonthlyCompletion  → features/calendar/useCalendar
 getProfileCategory     → constants/bia
 getModule              → config/modules.config
 getTerminology         → config/modules.config
+SOCCER_AGE_GROUPS      → config/modules.config
 isSoccer               → getModule(moduleType).isSoccer
 getPlanLimits          → config/plans.config
 orgPlan                → useTrainerState().orgPlan
@@ -799,6 +887,9 @@ auditLog               → utils/auditLog
 AUDIT_ACTIONS          → utils/auditLog
 isDev / isProduction   → utils/env
 isAdminDomain          → utils/env
+useNotes               → hooks/useNotes
+useWorkoutPlans        → hooks/useWorkoutPlans
+getWorkoutPlanForClient → firebase/services/workoutPlans (lato client, query filtrata)
 ```
 
 ### Ordine sezioni in ogni file
@@ -818,14 +909,43 @@ isAdminDomain          → utils/env
 ### Nuovo test atletico
 1. Aggiungi in `constants/tests.js` con tutti i campi
 2. Aggiungi tabella percentili in `utils/tables.js`
-3. Se soccer → `categories: ['soccer']` (o aggiungilo a un test esistente)
+3. Se soccer → `categories: ['soccer', 'soccer_youth']` (entrambe le fasce)
 4. Nessun altro file da modificare
 
 ### Nuova pagina trainer
 1. Crea componente in `features/trainer/`
-2. Aggiungi in `features/trainer/trainer.config.js`
+2. Aggiungi in `features/trainer/trainer.config.jsx`
 3. Aggiungi in `trainer-shell/navItems.config.jsx` (NAV_ITEMS)
 4. Nessun altro file da modificare
+
+### Note/commenti per un cliente
+Struttura: `clients/{clientId}/notes/{noteId}` (subcollection del cliente).
+- Service: `firebase/services/notes.js`
+- Hook: `useNotes(orgId, clientId, { role, name })` in `hooks/useNotes.js`
+- UI trainer: `NotesSection` già integrata in `ClientDashboard`
+- UI client: `NotesSection` già integrata in `ClientDashboardPage`
+- Rules: già presenti in `firestore.rules` (client crea solo commenti)
+
+### Scheda allenamento
+Struttura: `organizations/{orgId}/workoutPlans/{planId}`.
+- Service: `firebase/services/workoutPlans.js`
+  - `getWorkoutPlans(orgId)` — usato dal trainer (legge tutta la collection)
+  - `getWorkoutPlanForClient(orgId, clientId)` — usato dal client (filtra per clientId, single-field index automatico)
+- Hook: `useWorkoutPlans(orgId)` in `hooks/useWorkoutPlans.js`
+- UI trainer: `WorkoutPlansPage` + subcomponenti in `workout-plans/`
+- UI client: `ClientWorkoutSection` in `client-dashboard/` (read-only, scheda attiva)
+- Rules: `allow read: if canRead(orgId) || isClientOfOrg(orgId)` — semplificato
+  perché `resource.data.clientId == userProfile().clientId` non è valutabile
+  da Firestore a query-plan time su collection query.
+
+### Export PDF atleta
+- Componente: `ClientReportPrint.jsx` in `client-dashboard/`
+- Trigger: pulsante "ESPORTA PDF" in `DashboardHeader` (prop `onExport`)
+- Tecnica: `window.print()` con `@media print` CSS iniettato in `document.head`
+  che nasconde tutto tranne `#rankex-print-root` durante la stampa
+- Zero dipendenze aggiuntive — il browser genera il PDF nativamente
+- Contenuto: anagrafica, status test con delta, BIA (se presente), storico campionamenti (ultimi 5)
+- Gestisce sia modulo PT che soccer (categoria/ruolo differenziati)
 
 ### Nuova pagina org_admin (solo)
 1. Crea componente in `features/org/org-pages/`
@@ -1008,10 +1128,64 @@ MFA via SMS e backup automatico Firestore richiedono Blaze.
 Evoluzioni pianificate, non ancora implementate.
 Queste feature non esistono nel codebase attuale — allinearsi con il team prima di iniziare.
 
+### Sistema Avatar + Negozio
+
+#### Valuta: Monete
+```
+Valuta separata dagli XP — XP misura progressione atletica (rank),
+le Monete sono valuta di spesa nel negozio avatar.
+Guadagnate con: sessioni, rank-up, achievement, streak.
+Nessun acquisto con denaro reale — solo attività in-app.
+```
+
+#### Struttura moduli avatar
+```
+Slot: testa · corpo · capelli · occhi · bocca · accessorio
+Ogni slot ha: pezzo equipaggiato + inventario pezzi sbloccati
+```
+
+#### Tipi di sblocco moduli
+```
+Default    → set base gratuito per tutti i clienti
+Livello    → si sblocca raggiungendo un livello XP specifico
+Rank       → si sblocca raggiungendo un rank specifico
+Acquisto   → spesa di Monete nel negozio
+Org custom → moduli esclusivi per i clienti di una specifica org
+             (gratuiti o a pagamento in Monete, prezzo definito da RankEX)
+```
+
+#### Moduli org custom — flusso B2B
+```
+1. Org admin fa richiesta in-app (form dedicato)
+2. Fuori dall'app: flusso commerciale tra org e RankEX
+   (contratto, design, produzione moduli)
+3. Super admin carica i moduli e li attiva per l'org specifica
+4. I clienti dell'org trovano i moduli nel proprio negozio
+```
+
+#### Impatto su Firestore (futuro)
+```
+avatar_modules/{moduleId}
+  slot, name, rarity, unlockType, unlockValue,
+  orgId (null = globale), price, imageUrl, createdAt
+
+clients/{clientId}
+  coins            → saldo monete
+  avatarEquipped   → { testa, corpo, capelli, ... }
+  avatarInventory  → [moduleId, ...]
+```
+
+#### Nuove aree UI (futuro)
+```
+Client area    → Negozio avatar, Builder avatar, saldo Monete
+Org admin      → Form richiesta moduli custom
+Super admin    → Gestione e upload moduli (globali + per org)
+```
+
+---
+
 ### Gamification avanzata
 ```
-Avatar cliente         → avatar visivo sbloccabile al salire di rank/livello XP
-                         mostrato nella card cliente e nell'area client
 Badge / Achievement    → traguardi automatici: prima sessione, 10 presenze
                          consecutive, primo rank-up, nuovo personal best su test
 Streak presenze        → moltiplicatore XP per settimane consecutive senza assenze
@@ -1023,8 +1197,11 @@ Obiettivi trainer      → coach fissa target su test specifico per un cliente
 
 ### Gestione allenamento
 ```
-Piano di allenamento   → trainer compone piano strutturato (esercizi, serie,
-                         recuperi) e lo assegna al cliente
-                         cliente lo vede nella propria area
-                         integrazione con calendario + bonus XP al completamento
+Scheda Allenamento     → IMPLEMENTATO (base) — apr 2026
+                         Trainer compone scheda strutturata (esercizi, serie,
+                         recuperi, note) e la assegna a un cliente.
+                         Il cliente la vede in read-only nella propria dashboard.
+                         Struttura: organizations/{orgId}/workoutPlans/{planId}
+                         Status: 'active' | 'archived'
+                         Roadmap: integrazione calendario + bonus XP al completamento
 ```

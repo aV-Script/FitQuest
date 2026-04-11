@@ -7,11 +7,13 @@ import { BiaSummary }                      from '../../bia/bia-view/BiaSummary'
 import { BiaHistoryChart }                 from '../../bia/bia-view/BiaHistoryChart'
 import { BiaLockedPanel }                  from '../../bia/BiaLockedPanel'
 import { getProfileCategory }              from '../../../constants/bia'
+import { NotesSection }                    from '../client-dashboard/NotesSection'
+import { ClientWorkoutSection }            from '../client-dashboard/ClientWorkoutSection'
 
 /**
  * Pagina dashboard del cliente — statistiche, grafico, attività.
  */
-export function ClientDashboardPage({ client, color, rankObj, biaRankObj }) {
+export function ClientDashboardPage({ client, orgId, color, rankObj, biaRankObj }) {
   const prevStats   = client.campionamenti?.[1]?.stats ?? null
   const categoria   = getCategoriaById(client.categoria)
   const profileType = client.profileType ?? 'tests_only'
@@ -118,6 +120,20 @@ export function ClientDashboardPage({ client, color, rankObj, biaRankObj }) {
       <section className="px-6 py-6">
         <ActivityLog log={client.log} color={color} />
       </section>
+
+      {orgId && (
+        <>
+          <Divider color={color} />
+          <ClientWorkoutSection orgId={orgId} clientId={client.id} color={color} />
+          <Divider color={color} />
+          <NotesSection
+            orgId={orgId}
+            clientId={client.id}
+            color={color}
+            author={{ role: 'client', name: client.name }}
+          />
+        </>
+      )}
 
       <div className="h-10" />
     </div>
