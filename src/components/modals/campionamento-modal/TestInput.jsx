@@ -4,7 +4,7 @@ import { Input } from '../../ui'
  * Card singolo test con input e percentile live.
  * Gestisce sia test semplici che test con variabili multiple.
  */
-export function TestInput({ test, testValues, livePercentile, prevValue, errors, onUpdate }) {
+export function TestInput({ test, testValues, livePercentile, prevValue, errors, ageWarning, onUpdate }) {
   const delta = livePercentile !== null && prevValue !== undefined
     ? livePercentile - prevValue
     : null
@@ -104,6 +104,19 @@ export function TestInput({ test, testValues, livePercentile, prevValue, errors,
           <span className="text-red-400">{errors[test.stat]}</span>
         )}
       </div>
+
+      {/* Warning età fuori fascia normativa */}
+      {ageWarning && livePercentile !== null && (
+        <div
+          className="mt-2 flex items-center gap-1.5 rounded-[3px] px-2 py-1"
+          style={{ background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.20)' }}
+        >
+          <span style={{ color: '#fbbf24', fontSize: 11 }}>⚠</span>
+          <span className="font-body text-[10px] leading-tight" style={{ color: '#fbbf24cc' }}>
+            Età fuori fascia normativa — percentile stimato dalla fascia più vicina disponibile
+          </span>
+        </div>
+      )}
     </div>
   )
 }

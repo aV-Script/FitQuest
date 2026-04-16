@@ -12,6 +12,7 @@ export function CampionamentoView({ client, color, onSave, onBack }) {
     loading,
     showConfirm,
     liveStats,
+    ageWarnings,
     statsForPreview,
     newMedia,
     newRankObj,
@@ -64,6 +65,7 @@ export function CampionamentoView({ client, color, onSave, onBack }) {
                 livePercentile={liveStats[test.stat]}
                 prevValue={client.stats?.[test.stat]}
                 errors={errors}
+                ageWarning={ageWarnings[test.stat]}
                 onUpdate={updateValue}
               />
             ))}

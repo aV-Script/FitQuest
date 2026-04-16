@@ -496,9 +496,12 @@ src/
     ├── gamification.js      ← calcSessionConfig, buildXPUpdate,
     │                           buildCampionamentoUpdate, buildNewClient,
     │                           buildBiaUpdate, buildProfileUpgrade
-    ├── percentile.js        ← calcPercentile(stat, val, sex, age, testKey?)
+    ├── percentile.js        ← calcPercentileEx(stat, val, sex, age, testKey?) → { value, outOfRange }
+    │                           calcPercentile(...)  → number|null  (wrapper backward-compat)
     │                           calcStatMedia
     ├── tables.js            ← TABLES (dati grezzi percentili)
+    │                           getAgeGroup(testKey, age) → string|null
+    │                           getAgeGroupClamped(testKey, age, sex) → { group, outOfRange }
     └── validation.js
 ```
 
@@ -615,15 +618,39 @@ La lista attive è paginata (10 per pagina).
 
 ## Calcolo percentili — nota tecnica
 
-`calcPercentile(stat, value, sex, age, testKey?)` in
-`utils/percentile.js` accetta un quinto parametro opzionale
-`testKey`. Quando fornito, cerca il test per `key` invece
-che per `stat`. Questo risolve l'ambiguità quando due test
+### API principale
+
+`calcPercentileEx(stat, value, sex, age, testKey?)` in `utils/percentile.js`
+è la funzione principale. Restituisce `{ value: number|null, outOfRange: boolean }`:
+- `value` è il percentile (0–100) o `null` se test/tabella inesistente.
+- `outOfRange: true` indica che l'età era fuori dalla fascia normativa e si è
+  usata la fascia più vicina (via `getAgeGroupClamped`).
+
+`calcPercentile(...)` è un wrapper backward-compat che restituisce solo `.value`.
+Usarlo dove il flag `outOfRange` non serve (es. `useWizard.js`).
+
+`getAgeGroupClamped(testKey, age, sex)` in `utils/tables.js`:
+- Se l'età rientra in una fascia → `{ group, outOfRange: false }`
+- Se l'età è fuori range → trova la fascia con il `lo` più vicino →
+  `{ group: 'fascia-più-vicina', outOfRange: true }`
+- Restituisce `{ group: null, outOfRange: false }` solo se non esiste
+  nessuna tabella per quel test/sesso.
+
+**Comportamento per età fuori fascia:**
+Invece di restituire `null` (e quindi ignorare il test), il sistema stima il
+percentile dalla fascia normativa più vicina e segnala l'anomalia.
+La segnalazione visiva (`ageWarning`) compare in `TestInput` come banner ambra.
+
+### Regola d'uso in useCampionamento.js
+Usare `calcPercentileEx` (non `calcPercentile`) per ottenere `outOfRange`.
+Passare sempre `test.key` come quinto argomento.
+Il hook espone `ageWarnings: { [stat]: boolean }` derivato da `liveResults`.
+
+### testKey — risoluzione ambiguità stat
+Il quinto parametro `testKey` risolve l'ambiguità quando due test
 diversi condividono lo stesso `stat`
 (es. `ymca_step_test` e `yo_yo_ir1` entrambi `stat:'resistenza'`).
-
-**Regola:** in `useCampionamento.js`, passare sempre `test.key`
-come quinto argomento a `calcPercentile`.
+Passare sempre `test.key` come quinto argomento in `useCampionamento.js`.
 
 ---
 
@@ -744,6 +771,31 @@ Ogni test ha `categories: ['soccer', 'soccer_youth']`
 (o `['active', 'soccer', 'soccer_youth']` per test condivisi con PT).
 Quando verranno definiti test differenziati per Piccoli, basta aggiungere
 nuovi test con `categories: ['soccer_youth']` in `constants/tests.js`.
+
+### Tabelle percentili — fasce giovani soccer (aggiornato apr 2026)
+
+Tabelle normative giovanili aggiunte in `utils/tables.js` basate su
+dati pubblicati in letteratura. Dove i dati femminili non esistono, si
+usano i valori maschili. Età 3-5: nessun dato disponibile → `getAgeGroupClamped`
+clampla alla fascia minima disponibile → `outOfRange: true` → il campionamento
+viene salvato con il percentile stimato e l'operatore vede il banner ambra di avviso.
+
+| Test               | Min età | Fasce aggiunte                  | Fonte dati                                        | F = M? |
+|--------------------|---------|----------------------------------|---------------------------------------------------|--------|
+| `y_balance`        | 10      | 10-11, 12-13, 14-15, 16-17      | Zwicker et al. 2020 (LQ Composite Score)          | Sì     |
+| `standing_long_jump`| 6      | 6-7, 8-9, 10-11, 12-13, 14-15, 16-17 | Thomas et al. 2020 (percentili reali M e F) | No — dati F reali |
+| `sprint_20m`       | 8       | 8-9, 10-11, 12-13, 14-15, 16-17| Nikolaidis et al. 2016 (soccer U10-U35)           | Sì     |
+| `505_cod_agility`  | 10      | 10-11, 12-13, 14-15, 16-17      | Haff & Triplett 2015 + soccer U11-U17             | Sì     |
+| `beep_test`        | 8       | 8-9, 10-11, 12-13, 14-15, 16-17| LeBlanc & Tomkinson 2016 (livelli, M e F separati)| No — dati F reali |
+
+**Regola ageGroup per test soccer:**
+```js
+y_balance:          age < 10 → null | 10-11 | 12-13 | 14-15 | 16-17 | 18-40 | 41-60
+standing_long_jump: age < 6  → null | 6-7 | 8-9 | 10-11 | 12-13 | 14-15 | 16-17 | 18-35 | 36-50
+sprint_20m:         age < 8  → null | 8-9 | 10-11 | 12-13 | 14-15 | 16-17 | 18-35 | 36-50
+505_cod_agility:    age < 10 → null | 10-11 | 12-13 | 14-15 | 16-17 | 18-35 | 36-50
+beep_test:          age < 8  → null | 8-9 | 10-11 | 12-13 | 14-15 | 16-17 | 18-35 | 36-50
+```
 
 ### Y Balance Test — formula bilaterale
 Il test raccoglie i valori di **entrambi gli arti** (DX e SX) separatamente:
@@ -998,7 +1050,7 @@ firebase/paths.js            → fonte di verità path Firestore
 firebase/services/auth.js    → auth instance + setPersistence + logout con audit
 firebase/services/clients.js → addClient/deleteClient usano batch + counter
 firebase/services/org.js     → addMember/removeMember usano batch + counter
-utils/percentile.js          → passare sempre testKey come 5° arg
+utils/percentile.js          → usare calcPercentileEx per ageWarnings; passare sempre testKey come 5° arg
 utils/auditLog.js            → getAuth lazy — non spostare a livello modulo
 utils/env.js                 → fonte di verità ambienti e domini
 components/common/DomainGuard.jsx → logica separazione domini
