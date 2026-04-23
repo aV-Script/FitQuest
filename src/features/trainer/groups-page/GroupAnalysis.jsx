@@ -1,4 +1,8 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
+import {
+  LineChart, Line, XAxis, YAxis, Tooltip,
+  ResponsiveContainer, CartesianGrid,
+} from 'recharts'
 import { ALL_TESTS, getRankFromMedia } from '../../../constants/index'
 
 function heatColor(val) {
@@ -90,6 +94,7 @@ export function GroupAnalysis({ clients }) {
   }
 
   return (
+    <>
     <div className="flex flex-col lg:flex-row gap-4 items-start">
 
       {/* ── Colonna sinistra: Riepilogo + Più migliorati ── */}
@@ -202,6 +207,10 @@ export function GroupAnalysis({ clients }) {
       </div>{/* fine colonna destra */}
 
     </div>
+
+    {/* ── Trend temporale ── */}
+    <GroupTrendChart clients={clients} />
+    </>
   )
 }
 
@@ -265,5 +274,127 @@ function Delta({ value, color, symbol }) {
       <span className="font-display font-black text-[14px] leading-none" style={{ color }}>{value}</span>
       <span className="font-display text-[11px]" style={{ color }}>{symbol}</span>
     </div>
+  )
+}
+
+function GroupTrendChart({ clients }) {
+  const [selected, setSelected] = useState('media')
+
+  const statOptions = useMemo(() => {
+    const keys = new Set()
+    clients.forEach(c =>
+      c.campionamenti?.forEach(camp =>
+        Object.keys(camp.stats ?? {}).forEach(k => keys.add(k))
+      )
+    )
+    return [
+      { key: 'media', label: 'Media' },
+      ...Array.from(keys).map(key => ({
+        key,
+        label: ALL_TESTS.find(t => t.stat === key)?.label ?? key,
+      })),
+    ]
+  }, [clients])
+
+  const chartData = useMemo(() => {
+    const dateMap = new Map()
+    clients.forEach(c => {
+      c.campionamenti?.forEach(camp => {
+        if (!camp.date) return
+        const val = selected === 'media' ? camp.media : camp.stats?.[selected]
+        if (val == null) return
+        const entry = dateMap.get(camp.date) ?? []
+        entry.push(val)
+        dateMap.set(camp.date, entry)
+      })
+    })
+    return Array.from(dateMap.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, vals]) => ({
+        date:   date.slice(5).replace('-', '/'),
+        valore: Math.round(vals.reduce((s, v) => s + v, 0) / vals.length),
+        n:      vals.length,
+      }))
+  }, [clients, selected])
+
+  const hasData = chartData.length >= 2
+
+  return (
+    <div className="mt-4 rounded-[4px] p-5 rx-card">
+      <div className="font-display text-[10px] tracking-[3px] uppercase mb-4" style={{ color: '#0fd65a' }}>◈ Andamento nel tempo</div>
+
+      <div className="flex gap-1.5 flex-wrap mb-4">
+        {statOptions.map(opt => (
+          <TrendPill key={opt.key} active={selected === opt.key} onClick={() => setSelected(opt.key)}>
+            {opt.label}
+          </TrendPill>
+        ))}
+      </div>
+
+      {!hasData ? (
+        <p className="font-body text-[13px] text-white/20 text-center py-4">
+          Servono almeno 2 campionamenti con questa metrica per visualizzare il trend.
+        </p>
+      ) : (
+        <div className="h-44">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={chartData} margin={{ top: 5, right: 8, bottom: 0, left: -20 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+              <XAxis
+                dataKey="date"
+                tick={{ fill: 'rgba(255,255,255,0.28)', fontSize: 10, fontFamily: 'Inter' }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                domain={[0, 100]}
+                tick={{ fill: 'rgba(255,255,255,0.28)', fontSize: 10, fontFamily: 'Inter' }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={v => `${v}°`}
+              />
+              <Tooltip
+                formatter={(v, _name, { payload }) => [
+                  `${v}° · ${payload?.n ?? 1} atleti`,
+                  statOptions.find(o => o.key === selected)?.label ?? selected,
+                ]}
+                contentStyle={{
+                  background:   '#0d1520',
+                  border:       '1px solid rgba(15,214,90,0.15)',
+                  borderRadius: 4,
+                  fontFamily:   'Inter',
+                  fontSize:     12,
+                }}
+                labelStyle={{ color: 'rgba(255,255,255,0.4)', fontWeight: 400 }}
+                itemStyle={{ color: '#0fd65a', fontWeight: 400 }}
+              />
+              <Line
+                type="monotone"
+                dataKey="valore"
+                stroke="#0fd65a"
+                strokeWidth={2}
+                dot={{ fill: '#0fd65a', r: 3 }}
+                activeDot={{ fill: '#0fd65a', r: 5 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function TrendPill({ active, onClick, children }) {
+  return (
+    <button
+      onClick={onClick}
+      className="px-3 py-1 rounded-[3px] font-display text-[11px] border cursor-pointer transition-all"
+      style={active
+        ? { background: 'rgba(15,214,90,0.12)', borderColor: 'rgba(15,214,90,0.35)', color: '#0fd65a' }
+        : { background: 'transparent', borderColor: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.28)' }
+      }
+    >
+      {children}
+    </button>
   )
 }

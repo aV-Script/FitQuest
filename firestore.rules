@@ -160,6 +160,16 @@ service cloud.firestore {
       match /groups/{groupId} {
         allow read:  if canRead(orgId);
         allow write: if canWrite(orgId);
+
+        match /notes/{noteId} {
+          allow read:   if canRead(orgId);
+          allow create: if canWrite(orgId) &&
+            request.resource.data.authorId == request.auth.uid;
+          allow delete: if canWrite(orgId) &&
+            (resource.data.authorId == request.auth.uid ||
+             memberRole(orgId) == 'org_admin');
+          allow update: if false;
+        }
       }
 
       // ── Recurrences ───────────────────────────────────────
