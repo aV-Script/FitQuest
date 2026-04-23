@@ -11,6 +11,7 @@ import { NotesSection }                    from '../client-dashboard/NotesSectio
 import { ClientWorkoutSection }            from '../client-dashboard/ClientWorkoutSection'
 import { ClientCalendar }                  from '../ClientCalendar'
 import { PLAYER_ROLES }                    from '../../../config/modules.config'
+import { ClientBadges }                   from '../ClientBadges'
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -78,13 +79,13 @@ export function ClientDashboardPage({ client, clientId, orgId, color, rankObj, b
     : null
 
   const TABS = [
-    { id: 'avatar',    label: 'Avatar',     icon: ICON_AVATAR,   mobileOnly: true },
-    profile.hasTests && { id: 'test',     label: 'Test',       icon: ICON_TEST },
-    { id: 'calendar', label: 'Calendario', icon: ICON_CALENDAR },
-    profile.hasBia   && { id: 'bia',      label: 'BIA',        icon: ICON_BIA },
-    orgId            && { id: 'workout',  label: 'Scheda',     icon: ICON_WORKOUT },
-    orgId            && { id: 'notes',    label: 'Note',       icon: ICON_NOTES },
-    { id: 'activity', label: 'Attività',  icon: ICON_ACTIVITY },
+    { id: 'avatar',    label: 'Avatar',     mobileLabel: 'Avatar', icon: ICON_AVATAR,   mobileOnly: true },
+    profile.hasTests && { id: 'test',     label: 'Test',       mobileLabel: 'Test',    icon: ICON_TEST },
+    { id: 'calendar', label: 'Calendario', mobileLabel: 'Cal.',    icon: ICON_CALENDAR },
+    profile.hasBia   && { id: 'bia',      label: 'BIA',        mobileLabel: 'BIA',     icon: ICON_BIA },
+    orgId            && { id: 'workout',  label: 'Scheda',     mobileLabel: 'Scheda',  icon: ICON_WORKOUT },
+    orgId            && { id: 'notes',    label: 'Note',       mobileLabel: 'Note',    icon: ICON_NOTES },
+    { id: 'activity', label: 'Attività',  mobileLabel: 'Log',     icon: ICON_ACTIVITY },
   ].filter(Boolean)
 
   const defaultTab = profile.hasTests ? 'test' : profile.hasBia ? 'bia' : 'calendar'
@@ -108,7 +109,7 @@ export function ClientDashboardPage({ client, clientId, orgId, color, rankObj, b
             <div className="rounded-[4px] p-5 rx-card flex flex-col items-center text-center">
               {/* Header card */}
               <div className="w-full flex items-center justify-between mb-5">
-                <div className="font-display text-[10px] tracking-[3px] uppercase" style={{ color: '#0fd65a' }}>◈ Atleta</div>
+                <div className="font-display text-[11px] font-semibold tracking-[3px] uppercase" style={{ color: '#0fd65a' }}>◈ Atleta</div>
               </div>
 
               {/* Avatar placeholder — visual principale */}
@@ -122,43 +123,21 @@ export function ClientDashboardPage({ client, clientId, orgId, color, rankObj, b
               />
 
               {/* Nome */}
-              <div className="mt-3 font-display font-black text-[20px] text-white leading-tight tracking-wide uppercase">
+              <div className="mt-3 font-display font-black text-[24px] text-white leading-tight tracking-wide uppercase">
                 {client.name}
               </div>
 
               {/* Badge categoria / ruolo */}
-              <div className="flex items-center gap-2 mt-2.5 flex-wrap justify-center">
-                {categoriaObj && (
-                  <span className="font-display text-[11px] px-3 py-1 rounded-[3px]"
-                    style={{ background: categoriaObj.color + '18', color: categoriaObj.color, border: `1px solid ${categoriaObj.color}44` }}>
-                    {categoriaObj.label.toUpperCase()}
-                  </span>
-                )}
-                {ruoloObj && (
-                  <span className="font-display text-[11px] px-3 py-1 rounded-[3px]"
-                    style={{ background: color + '18', color, border: `1px solid ${color}44` }}>
-                    {ruoloObj.label.toUpperCase()}
-                  </span>
-                )}
-                {client.categoria === 'soccer_youth' && (
-                  <span className="font-display text-[11px] px-3 py-1 rounded-[3px]"
-                    style={{ background: '#fbbf2420', color: '#fbbf24', border: '1px solid #fbbf2440' }}>
-                    PICCOLI
-                  </span>
-                )}
-                {profile.hasTests && (
-                  <span className="font-display font-bold text-[11px] px-3 py-1 rounded-[3px]"
-                    style={{ background: rankObj.color + '20', color: rankObj.color, border: `1px solid ${rankObj.color}50` }}>
-                    {rankObj.label}
-                  </span>
-                )}
-                {profile.hasBia && (
-                  <span className="font-display text-[11px] px-3 py-1 rounded-[3px]"
-                    style={{ background: (biaRankObj ?? rankObj).color + '20', color: (biaRankObj ?? rankObj).color, border: `1px solid ${(biaRankObj ?? rankObj).color}50` }}>
-                    BIA {(biaRankObj ?? rankObj).label}
-                  </span>
-                )}
-              </div>
+              <ClientBadges
+                categoriaObj={categoriaObj}
+                ruoloObj={ruoloObj}
+                color={color}
+                categoria={client.categoria}
+                hasTests={profile.hasTests}
+                hasBia={profile.hasBia}
+                rankObj={rankObj}
+                biaRankObj={biaRankObj ?? rankObj}
+              />
 
               {/* XP Bar — self-stretch forza larghezza piena nonostante items-center */}
               <div className="mt-5 self-stretch">
@@ -177,19 +156,20 @@ export function ClientDashboardPage({ client, clientId, orgId, color, rankObj, b
           className="px-4 pt-4 pb-2 sticky top-[49px] z-10 backdrop-blur-md"
         >
           <div className="rounded-[4px] rx-card overflow-hidden">
-            <div className="grid grid-flow-col auto-cols-fr px-1 py-2">
+            <div className="grid grid-flow-col auto-cols-fr px-1 py-1.5">
               {TABS.map(tab => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center justify-center gap-1.5 px-1 lg:px-3 py-2 rounded-[3px] font-display text-[11px] tracking-[0.5px] cursor-pointer border transition-all${tab.mobileOnly ? ' lg:hidden' : ''}`}
+                  className={`flex flex-col lg:flex-row items-center justify-center gap-1 lg:gap-1.5 px-0.5 lg:px-3 py-2.5 rounded-[3px] font-display tracking-[0.5px] cursor-pointer border transition-all${tab.mobileOnly ? ' lg:hidden' : ''}`}
                   style={activeTab === tab.id
-                    ? { background: color + '18', borderColor: color + '55', color }
-                    : { background: 'transparent', borderColor: 'transparent', color: 'rgba(255,255,255,0.35)' }
+                    ? { background: color + '18', borderColor: color + '55', color, fontWeight: 700 }
+                    : { background: 'transparent', borderColor: 'transparent', color: 'rgba(255,255,255,0.35)', fontWeight: 500 }
                   }
                 >
                   {tab.icon}
-                  <span className="hidden lg:inline">{tab.label}</span>
+                  <span className="text-[9px] leading-none lg:hidden">{tab.mobileLabel}</span>
+                  <span className="hidden lg:inline text-[11px]">{tab.label}</span>
                 </button>
               ))}
             </div>
@@ -198,49 +178,28 @@ export function ClientDashboardPage({ client, clientId, orgId, color, rankObj, b
 
         {/* Contenuto tab */}
         <div className="flex-1">
+        <div key={activeTab} className="rx-animate-in">
 
           {activeTab === 'avatar' && (
-            <section className="px-6 pt-6 lg:hidden">
+            <section className="px-4 pt-6 lg:hidden">
               <div className="rounded-[4px] p-5 rx-card flex flex-col items-center text-center">
                 <div className="w-full flex items-center justify-between mb-5">
-                  <div className="font-display text-[10px] tracking-[3px] uppercase" style={{ color: '#0fd65a' }}>◈ Atleta</div>
+                  <div className="font-display text-[11px] font-semibold tracking-[3px] uppercase" style={{ color: '#0fd65a' }}>◈ Atleta</div>
                 </div>
                 <AvatarPlaceholder color={color} rankObj={rankObj} xp={client.xp} xpNext={client.xpNext} level={client.level} small />
-                <div className="mt-3 font-display font-black text-[20px] text-white leading-tight tracking-wide uppercase">
+                <div className="mt-3 font-display font-black text-[24px] text-white leading-tight tracking-wide uppercase">
                   {client.name}
                 </div>
-                <div className="flex items-center gap-2 mt-2.5 flex-wrap justify-center">
-                  {categoriaObj && (
-                    <span className="font-display text-[11px] px-3 py-1 rounded-[3px]"
-                      style={{ background: categoriaObj.color + '18', color: categoriaObj.color, border: `1px solid ${categoriaObj.color}44` }}>
-                      {categoriaObj.label.toUpperCase()}
-                    </span>
-                  )}
-                  {ruoloObj && (
-                    <span className="font-display text-[11px] px-3 py-1 rounded-[3px]"
-                      style={{ background: color + '18', color, border: `1px solid ${color}44` }}>
-                      {ruoloObj.label.toUpperCase()}
-                    </span>
-                  )}
-                  {client.categoria === 'soccer_youth' && (
-                    <span className="font-display text-[11px] px-3 py-1 rounded-[3px]"
-                      style={{ background: '#fbbf2420', color: '#fbbf24', border: '1px solid #fbbf2440' }}>
-                      PICCOLI
-                    </span>
-                  )}
-                  {profile.hasTests && (
-                    <span className="font-display font-bold text-[11px] px-3 py-1 rounded-[3px]"
-                      style={{ background: rankObj.color + '20', color: rankObj.color, border: `1px solid ${rankObj.color}50` }}>
-                      {rankObj.label}
-                    </span>
-                  )}
-                  {profile.hasBia && (
-                    <span className="font-display text-[11px] px-3 py-1 rounded-[3px]"
-                      style={{ background: (biaRankObj ?? rankObj).color + '20', color: (biaRankObj ?? rankObj).color, border: `1px solid ${(biaRankObj ?? rankObj).color}50` }}>
-                      BIA {(biaRankObj ?? rankObj).label}
-                    </span>
-                  )}
-                </div>
+                <ClientBadges
+                  categoriaObj={categoriaObj}
+                  ruoloObj={ruoloObj}
+                  color={color}
+                  categoria={client.categoria}
+                  hasTests={profile.hasTests}
+                  hasBia={profile.hasBia}
+                  rankObj={rankObj}
+                  biaRankObj={biaRankObj ?? rankObj}
+                />
                 <div className="mt-5 self-stretch">
                   <XPBar xp={client.xp} xpNext={client.xpNext} color={color} fullWidth />
                 </div>
@@ -250,14 +209,14 @@ export function ClientDashboardPage({ client, clientId, orgId, color, rankObj, b
 
           {activeTab === 'test' && (
             <>
-              <section className="px-6 py-6">
+              <section className="px-4 py-6">
                 <div className="rounded-[4px] p-5 rx-card">
                   <div className="font-display text-[10px] tracking-[3px] uppercase mb-3.5" style={{ color: '#0fd65a' }}>◈ Status</div>
                   <StatsSection stats={client.stats} prevStats={prevStats} color={color} categoria={client.categoria} />
                 </div>
               </section>
-              <div className="mx-6 h-px" style={{ background: 'rgba(255,255,255,0.04)' }} />
-              <section className="px-6 py-6">
+              <div className="mx-4 h-px" style={{ background: 'rgba(255,255,255,0.04)' }} />
+              <section className="px-4 py-6">
                 <StatsChart campionamenti={client.campionamenti} color={color} categoria={client.categoria} />
               </section>
             </>
@@ -265,17 +224,17 @@ export function ClientDashboardPage({ client, clientId, orgId, color, rankObj, b
 
           {activeTab === 'calendar' && (
             <div className="px-4 py-6">
-              <ClientCalendar clientId={clientId} orgId={orgId} />
+            <ClientCalendar clientId={clientId} orgId={orgId} />
             </div>
           )}
 
           {activeTab === 'bia' && (
             <>
-              <section className="px-6 py-6">
+              <section className="px-4 py-6">
                 <BiaSummary bia={client.lastBia} prevBia={client.biaHistory?.[1] ?? null} sex={client.sesso} age={client.eta} color={color} />
               </section>
-              <div className="mx-6 h-px" style={{ background: 'rgba(255,255,255,0.04)' }} />
-              <section className="px-6 py-6">
+              <div className="mx-4 h-px" style={{ background: 'rgba(255,255,255,0.04)' }} />
+              <section className="px-4 py-6">
                 <BiaHistoryChart biaHistory={client.biaHistory} color={color} />
               </section>
             </>
@@ -291,11 +250,12 @@ export function ClientDashboardPage({ client, clientId, orgId, color, rankObj, b
           )}
 
           {activeTab === 'activity' && (
-            <section className="px-6 py-6">
+            <section className="px-4 py-6">
               <ActivityLog log={client.log} color={color} />
             </section>
           )}
 
+        </div>
         </div>
       </div>
     </div>

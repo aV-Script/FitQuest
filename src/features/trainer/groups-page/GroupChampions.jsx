@@ -21,7 +21,7 @@ export function GroupChampions({ clients }) {
 
   return (
     <div className="rounded-[4px] p-5 rx-card">
-      <div className="font-display text-[10px] tracking-[3px] uppercase mb-5" style={{ color: '#0fd65a' }}>
+      <div className="font-display text-[11px] font-semibold tracking-[2px] uppercase mb-5" style={{ color: '#0fd65a' }}>
         ◈ Campioni per disciplina
       </div>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -43,14 +43,14 @@ function ChampionCard({ label, maxVal, winners }) {
       }}
     >
       <div className="flex items-center justify-between gap-1">
-        <span className="font-display text-[9px] tracking-[1.5px] text-white/35 truncate uppercase">
+        <span className="font-display text-[10px] font-semibold tracking-[1.5px] text-white/35 truncate uppercase">
           {label}
         </span>
         <span className="text-[11px] shrink-0">🥇</span>
       </div>
       <div className="flex flex-col gap-0.5">
         {winners.map(w => (
-          <div key={w.id} className="font-body text-[12px] font-semibold text-white/80 truncate">
+          <div key={w.id} className="font-display font-bold text-[13px] text-white/80 truncate">
             {w.name}
           </div>
         ))}

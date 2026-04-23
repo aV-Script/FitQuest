@@ -1,6 +1,6 @@
-import { useState }     from 'react'
-import { SectionLabel } from '../../../components/ui'
-import { useNotes }     from '../../../hooks/useNotes'
+import { useState }                   from 'react'
+import { SectionLabel, EmptyState }  from '../../../components/ui'
+import { useNotes }                  from '../../../hooks/useNotes'
 
 const ROLE_LABELS = {
   trainer:      'Trainer',
@@ -55,14 +55,19 @@ export function NotesSection({ orgId, clientId, color, author, readonly = false 
   }
 
   return (
-    <section className="px-6 py-6">
+    <section className="px-4 py-6">
       <div className="rounded-[4px] p-5 rx-card">
         <SectionLabel className="mb-4">◈ Note</SectionLabel>
 
         {loading ? (
           <p className="font-body text-[13px] text-white/25">Caricamento…</p>
         ) : threads.length === 0 ? (
-          <p className="font-body text-[13px] text-white/25">Nessuna nota ancora.</p>
+          <EmptyState
+            color={color}
+            icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>}
+            title="Nessuna nota"
+            description="Aggiungi la prima nota per tenere traccia dei progressi o delle osservazioni."
+          />
         ) : (
           <div className="flex flex-col gap-3">
             {threads.map(thread => (

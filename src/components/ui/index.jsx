@@ -23,7 +23,7 @@ export function Card({ className = '', children, glow = 'green' }) {
 export function SectionLabel({ children, className = '' }) {
   return (
     <div
-      className={`font-display text-[10px] tracking-[3px] uppercase mb-3.5 ${className}`}
+      className={`font-display text-[11px] font-semibold tracking-[3px] uppercase mb-3.5 ${className}`}
       style={{ color: '#0fd65a' }}
     >
       {children}
@@ -172,6 +172,25 @@ export function Field({ label, error, htmlFor, children }) {
   )
 }
 
+// ─── EmptyState ───────────────────────────────────────────────────────────────
+export function EmptyState({ icon, title, description, color }) {
+  const accent = color ?? 'rgba(255,255,255,0.15)'
+  return (
+    <div className="flex flex-col items-center justify-center py-10 text-center gap-3">
+      <div
+        className="w-12 h-12 rounded-full flex items-center justify-center"
+        style={{ background: accent + '14', border: `1px solid ${accent}30` }}
+      >
+        <div style={{ color: accent + 'aa' }}>{icon}</div>
+      </div>
+      <div className="font-display font-bold text-[13px] text-white/50">{title}</div>
+      {description && (
+        <div className="font-body text-[12px] text-white/25 max-w-[200px] leading-relaxed">{description}</div>
+      )}
+    </div>
+  )
+}
+
 // ─── ActivityLog ──────────────────────────────────────────────────────────────
 export function ActivityLog({ log = [], color, limit = 5 }) {
   return (
@@ -180,7 +199,12 @@ export function ActivityLog({ log = [], color, limit = 5 }) {
     >
       <SectionLabel>◈ Attività recenti</SectionLabel>
       {log.length === 0 && (
-        <p className="m-0 font-body text-[13px] text-white/20">Nessuna attività ancora.</p>
+        <EmptyState
+          color={color}
+          icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>}
+          title="Nessuna attività"
+          description="Sessioni e campionamenti appariranno qui man mano che vengono registrati."
+        />
       )}
       {log.slice(0, limit).map((entry, i) => (
         <div key={i} className="flex gap-2.5 items-start mb-2.5">
@@ -235,7 +259,7 @@ export function StatsSection({ stats = {}, prevStats = null, categoria = 'health
                 />
               </div>
               <span
-                className="font-display text-[12px] w-7 text-right tabular-nums"
+                className="font-display text-[13px] font-bold w-7 text-right tabular-nums"
                 style={{ color }}
               >
                 {val}

@@ -234,7 +234,7 @@ export function WorkoutPlanForm({ clientId, clients, initialData, onSubmit, onBa
           {/* Esercizi giorno corrente */}
           <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
-              <span className="font-display text-[10px] tracking-[2px] text-white/30">ESERCIZI</span>
+              <span className="font-display text-[11px] font-semibold tracking-[2px] text-white/30">ESERCIZI</span>
               <button
                 onClick={() => addExercise(activeDay)}
                 className="font-display text-[11px] text-green-400 hover:text-green-300 transition-colors bg-transparent border-none cursor-pointer"
@@ -321,7 +321,7 @@ function ExerciseRow({ index, exercise, total, onChange, onRemove }) {
 function LabeledInput({ label, value, type = 'text', placeholder, onChange }) {
   return (
     <div className="flex flex-col gap-1">
-      <span className="font-display text-[9px] tracking-[1px] text-white/25">{label}</span>
+      <span className="font-display text-[10px] tracking-[1px] text-white/30">{label}</span>
       <input
         type={type}
         value={value}

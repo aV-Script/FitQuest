@@ -28,7 +28,7 @@ export function DashboardHeader({ client, rankObj, color, biaRankObj, onBack, on
     <div className="relative">
 
       {/* Barra azioni */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-white/[.05]">
+      <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-white/[.05]">
 
         <div className="flex items-center gap-2">
           {/* Esporta PDF */}
@@ -92,18 +92,18 @@ export function DashboardHeader({ client, rankObj, color, biaRankObj, onBack, on
       </div>
 
       {/* Hero */}
-      <div className="px-6 py-8 flex flex-col items-center text-center gap-4">
+      <div className="px-4 sm:px-6 py-8 flex flex-col items-center text-center gap-4">
 
         {/* Ring(s) rank */}
         {biaRankObj ? (
           <div className="flex items-end gap-6">
             <div className="flex flex-col items-center gap-1.5">
               <RankRing rankObj={rankObj} xp={client.xp} xpNext={client.xpNext} size={120} />
-              <span className="font-display text-[9px] tracking-[2px] text-white/30">TEST</span>
+              <span className="font-display text-[10px] font-semibold tracking-[2px] text-white/30">TEST</span>
             </div>
             <div className="flex flex-col items-center gap-1.5">
               <RankRing rankObj={biaRankObj} xp={client.xp} xpNext={client.xpNext} size={120} />
-              <span className="font-display text-[9px] tracking-[2px] text-white/30">BIA</span>
+              <span className="font-display text-[10px] font-semibold tracking-[2px] text-white/30">BIA</span>
             </div>
           </div>
         ) : (

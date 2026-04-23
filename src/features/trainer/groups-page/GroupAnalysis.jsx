@@ -102,7 +102,7 @@ export function GroupAnalysis({ clients }) {
 
         {/* Riepilogo */}
         <div className="rounded-[4px] p-5 rx-card">
-          <div className="font-display text-[10px] tracking-[3px] uppercase mb-5" style={{ color: '#0fd65a' }}>◈ Riepilogo gruppo</div>
+          <div className="font-display text-[11px] font-semibold tracking-[2px] uppercase mb-5" style={{ color: '#0fd65a' }}>◈ Riepilogo gruppo</div>
           <div className="grid grid-cols-2 gap-2">
             <StatTile label="ATLETI"      value={clients.length}             />
             {summary.avgLevel    != null && <StatTile label="LV. MEDIO"     value={`Lv.${summary.avgLevel}`}     />}
@@ -114,7 +114,7 @@ export function GroupAnalysis({ clients }) {
 
         {/* Più migliorati */}
         <div className="rounded-[4px] p-5 rx-card">
-          <div className="font-display text-[10px] tracking-[3px] uppercase mb-5" style={{ color: '#0fd65a' }}>◈ Più migliorati</div>
+          <div className="font-display text-[11px] font-semibold tracking-[2px] uppercase mb-5" style={{ color: '#0fd65a' }}>◈ Più migliorati</div>
           <div
             className="rounded-[3px] p-4 flex flex-col gap-2"
             style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}
@@ -136,7 +136,7 @@ export function GroupAnalysis({ clients }) {
       <div className="w-full lg:w-[58%]">
       {statCols.length > 0 && (
         <div className="rounded-[4px] p-5 rx-card">
-          <div className="font-display text-[10px] tracking-[3px] uppercase mb-5" style={{ color: '#0fd65a' }}>◈ Heatmap gruppo</div>
+          <div className="font-display text-[11px] font-semibold tracking-[2px] uppercase mb-5" style={{ color: '#0fd65a' }}>◈ Heatmap gruppo</div>
           <div
             className="rounded-[3px] p-4 overflow-x-auto"
             style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}
@@ -145,11 +145,11 @@ export function GroupAnalysis({ clients }) {
               <thead>
                 <tr>
                   <th className="text-left pb-3 pr-3" style={{ minWidth: 130 }}>
-                    <span className="font-display text-[9px] tracking-[1px] text-white/20">ATLETA</span>
+                    <span className="font-display text-[10px] font-semibold tracking-[1px] text-white/25">ATLETA</span>
                   </th>
                   {statCols.map(col => (
                     <th key={col.key} className="pb-3 px-1 text-center" style={{ minWidth: 64 }}>
-                      <span className="font-display text-[9px] tracking-[1px] text-white/20 uppercase">{col.label}</span>
+                      <span className="font-display text-[10px] font-semibold tracking-[1px] text-white/25 uppercase">{col.label}</span>
                     </th>
                   ))}
                 </tr>
@@ -158,7 +158,7 @@ export function GroupAnalysis({ clients }) {
                 {heatRows.map(({ client, vals }) => (
                   <tr key={client.id}>
                     <td className="pr-3 py-1" style={{ minWidth: 130 }}>
-                      <span className="font-body text-[12px] text-white/65 truncate block max-w-[120px]">{client.name}</span>
+                      <span className="font-display font-bold text-[12px] text-white/75 truncate block max-w-[120px]">{client.name}</span>
                     </td>
                     {vals.map((val, ci) => {
                       const { bg, text } = heatColor(val)
@@ -178,7 +178,7 @@ export function GroupAnalysis({ clients }) {
                 {/* Riga media */}
                 <tr>
                   <td className="pr-3 pt-4">
-                    <span className="font-display text-[9px] tracking-[1.5px] text-white/25">MEDIA</span>
+                    <span className="font-display text-[10px] font-semibold tracking-[1.5px] text-white/30">MEDIA</span>
                   </td>
                   {averageRow.map((val, ci) => {
                     const { bg, text } = heatColor(val)
@@ -223,7 +223,7 @@ function StatTile({ label, value, sub, gold, positive, negative }) {
 
   return (
     <div className="px-3 py-3 rounded-[3px] flex flex-col gap-1.5" style={{ background: bg, border: `1px solid ${bd}` }}>
-      <span className="font-display text-[9px] tracking-[1.5px]" style={{ color: 'rgba(255,255,255,0.28)' }}>{label}</span>
+      <span className="font-display text-[10px] font-semibold tracking-[1.5px]" style={{ color: 'rgba(255,255,255,0.28)' }}>{label}</span>
       <span className="font-display font-black text-[15px] leading-tight truncate" style={{ color }}>{value}</span>
       {sub && <span className="font-display text-[11px]" style={{ color: color + 'aa' }}>{sub}</span>}
     </div>
@@ -245,7 +245,7 @@ function ImprovementRow({ client, improved, stable, regressed, isFirst, noData }
       </div>
 
       <div className="flex-1 min-w-0">
-        <div className="font-body text-[13px] text-white/75 truncate">{client.name}</div>
+        <div className="font-display font-bold text-[13px] text-white/80 truncate">{client.name}</div>
         {rankObj && (
           <div className="font-display text-[10px] mt-0.5" style={{ color: rankObj.color }}>
             {rankObj.label} · Lv.{client.level}
@@ -321,7 +321,7 @@ function GroupTrendChart({ clients }) {
 
   return (
     <div className="mt-4 rounded-[4px] p-5 rx-card">
-      <div className="font-display text-[10px] tracking-[3px] uppercase mb-4" style={{ color: '#0fd65a' }}>◈ Andamento nel tempo</div>
+      <div className="font-display text-[11px] font-semibold tracking-[2px] uppercase mb-4" style={{ color: '#0fd65a' }}>◈ Andamento nel tempo</div>
 
       <div className="flex gap-1.5 flex-wrap mb-4">
         {statOptions.map(opt => (

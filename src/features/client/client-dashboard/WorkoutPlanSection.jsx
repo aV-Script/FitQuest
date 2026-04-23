@@ -92,7 +92,7 @@ export function WorkoutPlanSection({ orgId, clientId, color, readonly }) {
 
   if (view === 'form') {
     return (
-      <section className="px-6 py-6">
+      <section className="px-4 sm:px-6 py-6">
         <WorkoutPlanForm
           clientId={clientId}
           initialData={editing}
@@ -108,7 +108,7 @@ export function WorkoutPlanSection({ orgId, clientId, color, readonly }) {
   if (loading) return null
 
   return (
-    <section className="px-6 py-6">
+    <section className="px-4 sm:px-6 py-6">
       <div className="rounded-[4px] p-5 rx-card">
 
         {/* Header */}
@@ -341,8 +341,8 @@ function ArchivedPlanRow({ plan, color, readonly, onEdit, onDelete }) {
             {(days[Math.min(activeDay, days.length - 1)]?.exercises ?? []).map((ex, i) => (
               <div key={i} className="flex items-center gap-2">
                 <span className="font-display text-[10px] text-white/20 w-4 shrink-0">{i + 1}.</span>
-                <span className="font-display text-[12px] text-white/50">{ex.name}</span>
-                {ex.sets && <span className="font-body text-[11px] text-white/25">{ex.sets}×{ex.reps || '—'}</span>}
+                <span className="font-display font-bold text-[12px] text-white/55">{ex.name}</span>
+                {ex.sets && <span className="font-display text-[11px] text-white/25">{ex.sets}×{ex.reps || '—'}</span>}
               </div>
             ))}
           </div>
@@ -355,8 +355,8 @@ function ArchivedPlanRow({ plan, color, readonly, onEdit, onDelete }) {
 function Chip({ label, value }) {
   return (
     <div className="flex flex-col gap-0.5">
-      <span className="font-display text-[9px] tracking-[1px] text-white/25">{label}</span>
-      <span className="font-body text-[12px] text-white/60 font-bold">{value}</span>
+      <span className="font-display text-[10px] font-semibold tracking-[1px] text-white/25">{label}</span>
+      <span className="font-display font-bold text-[12px] text-white/65">{value}</span>
     </div>
   )
 }

@@ -72,7 +72,7 @@ export function GroupNotes({ orgId, groupId }) {
 
   return (
     <div className="rounded-[4px] p-5 rx-card">
-      <div className="font-display text-[10px] tracking-[3px] uppercase mb-5" style={{ color: '#0fd65a' }}>◈ Note di gruppo</div>
+      <div className="font-display text-[11px] font-semibold tracking-[2px] uppercase mb-5" style={{ color: '#0fd65a' }}>◈ Note di gruppo</div>
 
       {/* Composer */}
       <div className="mb-5">
@@ -146,9 +146,9 @@ function NoteCard({ note, currentUserId, userRole, deleting, onDelete }) {
             </span>
           </div>
           <div>
-            <span className="font-body text-[13px] text-white/75 font-semibold">{note.authorName}</span>
+            <span className="font-display font-bold text-[13px] text-white/80">{note.authorName}</span>
             <span
-              className="ml-2 font-display text-[9px] tracking-[1px] px-1.5 py-0.5 rounded-[2px]"
+              className="ml-2 font-display text-[10px] font-semibold tracking-[1px] px-1.5 py-0.5 rounded-[2px]"
               style={{ background: 'rgba(15,214,90,0.08)', color: '#0fd65a66' }}
             >
               {ROLE_LABELS[note.authorRole] ?? note.authorRole}

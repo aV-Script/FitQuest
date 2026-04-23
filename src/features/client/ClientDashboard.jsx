@@ -25,6 +25,7 @@ import { getClientSlots }                    from '../../firebase/services/calen
 import { getMonthRange, calcMonthlyCompletion } from '../calendar/useCalendar'
 import { resetPassword }                     from '../../firebase/services/auth'
 import { PLAYER_ROLES }                      from '../../config/modules.config'
+import { ClientBadges }                      from './ClientBadges'
 import { getAuth }                           from 'firebase/auth'
 import app                                   from '../../firebase/config'
 
@@ -138,17 +139,18 @@ export function ClientDashboard({ client, orgId, onBack, onCampionamento, onDele
   }
 
   const tabs = useMemo(() => [
-    { id: 'avatar',      label: 'Avatar',      icon: ICON_AVATAR,   mobileOnly: true },
-    profile.hasTests && { id: 'test',        label: 'Test',        icon: ICON_TEST },
-    profile.hasBia   && { id: 'bia',         label: 'BIA',         icon: ICON_BIA },
-    { id: 'allenamento', label: 'Allenamento', icon: ICON_WORKOUT },
-    { id: 'calendario',  label: 'Calendario',  icon: ICON_CALENDAR },
-    { id: 'note',        label: 'Note',         icon: ICON_NOTES },
-    { id: 'attivita',    label: 'Attività',     icon: ICON_ACTIVITY },
+    { id: 'avatar',      label: 'Avatar',      mobileLabel: 'Avatar', icon: ICON_AVATAR,   mobileOnly: true },
+    profile.hasTests && { id: 'test',        label: 'Test',        mobileLabel: 'Test',   icon: ICON_TEST },
+    profile.hasBia   && { id: 'bia',         label: 'BIA',         mobileLabel: 'BIA',    icon: ICON_BIA },
+    { id: 'allenamento', label: 'Allenamento', mobileLabel: 'Scheda', icon: ICON_WORKOUT },
+    { id: 'calendario',  label: 'Calendario',  mobileLabel: 'Cal.',   icon: ICON_CALENDAR },
+    { id: 'note',        label: 'Note',         mobileLabel: 'Note',  icon: ICON_NOTES },
+    { id: 'attivita',    label: 'Attività',     mobileLabel: 'Log',   icon: ICON_ACTIVITY },
   ].filter(Boolean), [profile.hasTests, profile.hasBia])
 
-  const defaultTab = profile.hasTests ? 'test' : profile.hasBia ? 'bia' : 'allenamento'
-  const tab        = activeTab ?? (window.innerWidth < 1024 ? 'avatar' : defaultTab)
+  const defaultTab      = profile.hasTests ? 'test' : profile.hasBia ? 'bia' : 'allenamento'
+  const tab             = activeTab ?? (window.innerWidth < 1024 ? 'avatar' : defaultTab)
+  const mobileHeaderTop = (!readonly && (profile.hasTests || profile.hasBia)) ? 'top-[80px]' : 'top-[41px]'
 
   const handleDelete = useCallback(async () => {
     await onDelete(client.id)
@@ -199,15 +201,78 @@ export function ClientDashboard({ client, orgId, onBack, onCampionamento, onDele
     <div className="min-h-screen text-white flex flex-col">
 
       {/* ── HEADER FULL-WIDTH ─────────────────────────────────────────────── */}
-      <header
-        className="flex items-center px-2 lg:px-5 py-3 border-b border-white/[.05] sticky top-0 z-30 backdrop-blur-md shrink-0"
-      >
-        {/* Azioni — su mobile occupano tutta la larghezza, su desktop compatti a destra */}
-        <div className="flex items-center gap-1 w-full lg:w-auto lg:justify-end">
+      <header className="border-b border-white/[.05] sticky top-0 z-30 backdrop-blur-md shrink-0">
+
+        {/* ── Mobile: riga 1 — navigazione ──────────────────────────────────── */}
+        <div className="flex lg:hidden items-center px-4 py-2.5 gap-2">
+          <button
+            onClick={onBack}
+            className="flex items-center gap-1.5 text-white/40 hover:text-white/70 transition-colors cursor-pointer bg-transparent border-none shrink-0"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 18 9 12 15 6"/>
+            </svg>
+            <span className="font-display text-[10px] tracking-[1.5px]">CLIENTI</span>
+          </button>
+          <div className="flex-1 text-center font-display font-black text-[13px] tracking-wide text-white truncate px-2">
+            {client.name}
+          </div>
+          <button
+            onClick={() => setShowReport(true)}
+            className="shrink-0 bg-transparent border-none cursor-pointer p-1 text-white/30 hover:text-white/60 transition-colors"
+            title="Esporta PDF"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="12" y1="18" x2="12" y2="12"/>
+              <polyline points="9 15 12 18 15 15"/>
+            </svg>
+          </button>
+        </div>
+
+        {/* ── Mobile: riga 2 — azioni principali ────────────────────────────── */}
+        {!readonly && (profile.hasTests || profile.hasBia) && (
+          <div className="flex lg:hidden items-center gap-1.5 px-4 pb-2.5">
+            {profile.hasTests && (
+              <button
+                onClick={() => setView('campionamento')}
+                className="flex-1 border rounded-[3px] px-3 py-2 font-display text-[10px] tracking-[1px] cursor-pointer transition-all hover:opacity-80 text-center"
+                style={{ color, borderColor: color + '55', background: color + '14' }}
+              >
+                CAMPIONAMENTO
+              </button>
+            )}
+            {profile.hasBia && (
+              <button
+                onClick={() => setView('bia')}
+                className="flex-1 border rounded-[3px] px-3 py-2 font-display text-[10px] tracking-[1px] cursor-pointer transition-all hover:opacity-80 text-center"
+                style={{ color: biaColor, borderColor: biaColor + '55', background: biaColor + '14' }}
+              >
+                BIA
+              </button>
+            )}
+            <button
+              onClick={() => setShowDelete(true)}
+              className="border border-red-500/20 rounded-[3px] px-3 py-2 text-red-400/50 font-display text-[10px] cursor-pointer hover:border-red-500/50 hover:text-red-400 transition-all bg-transparent"
+              title="Elimina cliente"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                <path d="M10 11v6M14 11v6"/>
+                <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+              </svg>
+            </button>
+          </div>
+        )}
+
+        {/* ── Desktop: riga unica — azioni compatte a destra ────────────────── */}
+        <div className="hidden lg:flex items-center justify-end gap-1.5 px-5 py-3">
           {!readonly && profile.hasTests && (
             <button
               onClick={() => setView('campionamento')}
-              className="flex-1 lg:flex-none border rounded-[3px] px-2.5 py-1.5 font-display text-[10px] cursor-pointer transition-all hover:opacity-80 text-center"
+              className="border rounded-[3px] px-2.5 py-1.5 font-display text-[10px] cursor-pointer transition-all hover:opacity-80"
               style={{ color, borderColor: color + '55', background: color + '14' }}
             >
               CAMPIONAMENTO
@@ -216,7 +281,7 @@ export function ClientDashboard({ client, orgId, onBack, onCampionamento, onDele
           {!readonly && profile.hasBia && (
             <button
               onClick={() => setView('bia')}
-              className="flex-1 lg:flex-none border rounded-[3px] px-2.5 py-1.5 font-display text-[10px] cursor-pointer transition-all hover:opacity-80 text-center"
+              className="border rounded-[3px] px-2.5 py-1.5 font-display text-[10px] cursor-pointer transition-all hover:opacity-80"
               style={{ color: biaColor, borderColor: biaColor + '55', background: biaColor + '14' }}
             >
               BIA
@@ -224,7 +289,7 @@ export function ClientDashboard({ client, orgId, onBack, onCampionamento, onDele
           )}
           <button
             onClick={() => setShowReport(true)}
-            className="flex-1 lg:flex-none bg-transparent border rounded-[3px] px-2.5 py-1.5 font-display text-[10px] cursor-pointer transition-all text-center"
+            className="bg-transparent border rounded-[3px] px-2.5 py-1.5 font-display text-[10px] cursor-pointer transition-all"
             style={{ borderColor: 'rgba(255,255,255,0.12)', color: 'rgba(200,212,224,0.45)' }}
             onMouseEnter={e => { e.currentTarget.style.color = 'rgba(200,212,224,0.75)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)' }}
             onMouseLeave={e => { e.currentTarget.style.color = 'rgba(200,212,224,0.45)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)' }}
@@ -234,7 +299,7 @@ export function ClientDashboard({ client, orgId, onBack, onCampionamento, onDele
           <button
             onClick={handleResetPassword}
             disabled={resetState === 'loading' || resetState === 'sent'}
-            className="flex-1 lg:flex-none bg-transparent border rounded-[3px] px-2.5 py-1.5 font-display text-[10px] cursor-pointer transition-all disabled:opacity-50 text-center"
+            className="bg-transparent border rounded-[3px] px-2.5 py-1.5 font-display text-[10px] cursor-pointer transition-all disabled:opacity-50"
             style={resetState === 'sent'
               ? { borderColor: 'rgba(15,214,90,0.4)', color: '#0fd65a' }
               : resetState === 'error'
@@ -245,15 +310,16 @@ export function ClientDashboard({ client, orgId, onBack, onCampionamento, onDele
             {resetState === 'loading' ? 'INVIO…'
              : resetState === 'sent'  ? '✓ INVIATA'
              : resetState === 'error' ? 'ERRORE'
-             : 'PR'}
+             : 'RESET PW'}
           </button>
           <button
             onClick={() => setShowDelete(true)}
-            className="flex-1 lg:flex-none bg-transparent border border-red-500/20 rounded-[3px] px-2.5 py-1.5 text-red-400/50 font-display text-[10px] cursor-pointer hover:border-red-500/50 hover:text-red-400 transition-all text-center"
+            className="bg-transparent border border-red-500/20 rounded-[3px] px-2.5 py-1.5 text-red-400/50 font-display text-[10px] cursor-pointer hover:border-red-500/50 hover:text-red-400 transition-all"
           >
             ELIMINA
           </button>
         </div>
+
       </header>
 
       {/* ── BODY: 2 colonne ──────────────────────────────────────────────────── */}
@@ -270,7 +336,7 @@ export function ClientDashboard({ client, orgId, onBack, onCampionamento, onDele
 
                 {/* Header card — come Status */}
                 <div className="w-full flex items-center justify-between mb-5">
-                  <div className="font-display text-[10px] tracking-[3px] uppercase" style={{ color: '#0fd65a' }}>◈ Atleta</div>
+                  <div className="font-display text-[11px] font-semibold tracking-[3px] uppercase" style={{ color: '#0fd65a' }}>◈ Atleta</div>
                 </div>
 
                 {/* Avatar */}
@@ -284,43 +350,21 @@ export function ClientDashboard({ client, orgId, onBack, onCampionamento, onDele
                 />
 
                 {/* Nome */}
-                <div className="mt-3 font-display font-black text-[20px] text-white leading-tight tracking-wide uppercase">
+                <div className="mt-3 font-display font-black text-[24px] text-white leading-tight tracking-wide uppercase">
                   {client.name}
                 </div>
 
                 {/* Badge categoria / ruolo */}
-                <div className="flex items-center gap-2 mt-2.5 flex-wrap justify-center">
-                  {categoriaObj && (
-                    <span className="font-display text-[11px] px-3 py-1 rounded-[3px]"
-                      style={{ background: categoriaObj.color + '18', color: categoriaObj.color, border: `1px solid ${categoriaObj.color}44` }}>
-                      {categoriaObj.label.toUpperCase()}
-                    </span>
-                  )}
-                  {ruoloObj && (
-                    <span className="font-display text-[11px] px-3 py-1 rounded-[3px]"
-                      style={{ background: color + '18', color, border: `1px solid ${color}44` }}>
-                      {ruoloObj.label.toUpperCase()}
-                    </span>
-                  )}
-                  {client.categoria === 'soccer_youth' && (
-                    <span className="font-display text-[11px] px-3 py-1 rounded-[3px]"
-                      style={{ background: '#fbbf2420', color: '#fbbf24', border: '1px solid #fbbf2440' }}>
-                      PICCOLI
-                    </span>
-                  )}
-                  {profile.hasTests && (
-                    <span className="font-display font-bold text-[11px] px-3 py-1 rounded-[3px]"
-                      style={{ background: testRankObj.color + '20', color: testRankObj.color, border: `1px solid ${testRankObj.color}50` }}>
-                      {testRankObj.label}
-                    </span>
-                  )}
-                  {profile.hasBia && (
-                    <span className="font-display text-[11px] px-3 py-1 rounded-[3px]"
-                      style={{ background: biaRankObj.color + '20', color: biaRankObj.color, border: `1px solid ${biaRankObj.color}50` }}>
-                      BIA {biaRankObj.label}
-                    </span>
-                  )}
-                </div>
+                <ClientBadges
+                  categoriaObj={categoriaObj}
+                  ruoloObj={ruoloObj}
+                  color={color}
+                  categoria={client.categoria}
+                  hasTests={profile.hasTests}
+                  hasBia={profile.hasBia}
+                  rankObj={testRankObj}
+                  biaRankObj={biaRankObj}
+                />
 
                 {/* XP Bar — self-stretch forza larghezza piena nonostante items-center */}
                 <div className="mt-5 self-stretch">
@@ -336,7 +380,7 @@ export function ClientDashboard({ client, orgId, onBack, onCampionamento, onDele
         <div className="flex-1 flex flex-col min-w-0 lg:pt-8">
 
           {/* Banner upgrade */}
-          <div className="px-6 pt-3">
+          <div className="px-4 pt-3">
             <UpgradeCategoryBanner
               client={client}
               color={color}
@@ -347,7 +391,7 @@ export function ClientDashboard({ client, orgId, onBack, onCampionamento, onDele
           {/* Banner educativo — solo al primo campionamento */}
           {campCount === 0 && !readonly && profile.hasTests && (
             <div
-              className="mx-6 mt-3 px-4 py-3 rounded-[4px] font-body text-[12px] text-white/50 leading-relaxed"
+              className="mx-4 mt-3 px-4 py-3 rounded-[4px] font-body text-[12px] text-white/50 leading-relaxed"
               style={{ background: 'rgba(14,196,82,0.04)', border: '1px solid rgba(14,196,82,0.14)' }}
             >
               <span
@@ -362,22 +406,23 @@ export function ClientDashboard({ client, orgId, onBack, onCampionamento, onDele
 
           {/* Tab navigation — rx-card section */}
           <section
-            className="px-4 pt-4 pb-2 sticky top-[49px] z-10 backdrop-blur-md"
+            className={`px-4 pt-4 pb-2 sticky ${mobileHeaderTop} lg:top-[49px] z-10 backdrop-blur-md`}
           >
             <div className="rounded-[4px] rx-card overflow-hidden">
-              <div className="grid grid-flow-col auto-cols-fr px-1 py-2">
+              <div className="grid grid-flow-col auto-cols-fr px-1 py-1.5">
                 {tabs.map(t => (
                   <button
                     key={t.id}
                     onClick={() => setActiveTab(t.id)}
-                    className={`flex items-center justify-center gap-1.5 px-1 lg:px-3 py-2 rounded-[3px] font-display text-[11px] tracking-[0.5px] cursor-pointer border transition-all${t.mobileOnly ? ' lg:hidden' : ''}`}
+                    className={`flex flex-col lg:flex-row items-center justify-center gap-1 lg:gap-1.5 px-0.5 lg:px-3 py-2.5 rounded-[3px] font-display tracking-[0.5px] cursor-pointer border transition-all${t.mobileOnly ? ' lg:hidden' : ''}`}
                     style={tab === t.id
-                      ? { background: color + '18', borderColor: color + '55', color }
-                      : { background: 'transparent', borderColor: 'transparent', color: 'rgba(255,255,255,0.35)' }
+                      ? { background: color + '18', borderColor: color + '55', color, fontWeight: 700 }
+                      : { background: 'transparent', borderColor: 'transparent', color: 'rgba(255,255,255,0.35)', fontWeight: 500 }
                     }
                   >
                     {t.icon}
-                    <span className="hidden lg:inline">{t.label}</span>
+                    <span className="text-[9px] leading-none lg:hidden">{t.mobileLabel}</span>
+                    <span className="hidden lg:inline text-[11px]">{t.label}</span>
                   </button>
                 ))}
               </div>
@@ -386,49 +431,28 @@ export function ClientDashboard({ client, orgId, onBack, onCampionamento, onDele
 
           {/* Contenuto tab */}
           <div className="flex-1 pb-12">
+          <div key={tab} className="rx-animate-in">
 
             {tab === 'avatar' && (
-              <section className="px-6 pt-6 lg:hidden">
+              <section className="px-4 pt-6 lg:hidden">
                 <div className="rounded-[4px] p-5 rx-card flex flex-col items-center text-center">
                   <div className="w-full flex items-center justify-between mb-5">
-                    <div className="font-display text-[10px] tracking-[3px] uppercase" style={{ color: '#0fd65a' }}>◈ Atleta</div>
+                    <div className="font-display text-[11px] font-semibold tracking-[3px] uppercase" style={{ color: '#0fd65a' }}>◈ Atleta</div>
                   </div>
                   <AvatarPlaceholder color={color} rankObj={rankObj} xp={client.xp} xpNext={client.xpNext} level={client.level} small />
-                  <div className="mt-3 font-display font-black text-[20px] text-white leading-tight tracking-wide uppercase">
+                  <div className="mt-3 font-display font-black text-[24px] text-white leading-tight tracking-wide uppercase">
                     {client.name}
                   </div>
-                  <div className="flex items-center gap-2 mt-2.5 flex-wrap justify-center">
-                    {categoriaObj && (
-                      <span className="font-display text-[11px] px-3 py-1 rounded-[3px]"
-                        style={{ background: categoriaObj.color + '18', color: categoriaObj.color, border: `1px solid ${categoriaObj.color}44` }}>
-                        {categoriaObj.label.toUpperCase()}
-                      </span>
-                    )}
-                    {ruoloObj && (
-                      <span className="font-display text-[11px] px-3 py-1 rounded-[3px]"
-                        style={{ background: color + '18', color, border: `1px solid ${color}44` }}>
-                        {ruoloObj.label.toUpperCase()}
-                      </span>
-                    )}
-                    {client.categoria === 'soccer_youth' && (
-                      <span className="font-display text-[11px] px-3 py-1 rounded-[3px]"
-                        style={{ background: '#fbbf2420', color: '#fbbf24', border: '1px solid #fbbf2440' }}>
-                        PICCOLI
-                      </span>
-                    )}
-                    {profile.hasTests && (
-                      <span className="font-display font-bold text-[11px] px-3 py-1 rounded-[3px]"
-                        style={{ background: testRankObj.color + '20', color: testRankObj.color, border: `1px solid ${testRankObj.color}50` }}>
-                        {testRankObj.label}
-                      </span>
-                    )}
-                    {profile.hasBia && (
-                      <span className="font-display text-[11px] px-3 py-1 rounded-[3px]"
-                        style={{ background: biaRankObj.color + '20', color: biaRankObj.color, border: `1px solid ${biaRankObj.color}50` }}>
-                        BIA {biaRankObj.label}
-                      </span>
-                    )}
-                  </div>
+                  <ClientBadges
+                    categoriaObj={categoriaObj}
+                    ruoloObj={ruoloObj}
+                    color={color}
+                    categoria={client.categoria}
+                    hasTests={profile.hasTests}
+                    hasBia={profile.hasBia}
+                    rankObj={testRankObj}
+                    biaRankObj={biaRankObj}
+                  />
                   <div className="mt-5 self-stretch">
                     <XPBar xp={client.xp} xpNext={client.xpNext} color={color} fullWidth />
                   </div>
@@ -437,10 +461,10 @@ export function ClientDashboard({ client, orgId, onBack, onCampionamento, onDele
             )}
 
             {tab === 'test' && profile.hasTests && (
-              <section className="px-6 pt-6">
+              <section className="px-4 pt-6">
                 <div className="rounded-[4px] p-5 rx-card">
                   <div className="flex items-center justify-between mb-4">
-                    <div className="font-display text-[10px] tracking-[3px] uppercase" style={{ color: '#0fd65a' }}>◈ Status</div>
+                    <div className="font-display text-[11px] font-semibold tracking-[3px] uppercase" style={{ color: '#0fd65a' }}>◈ Status</div>
                     {!readonly && (
                       <button onClick={() => setView('campionamento')}
                         className="text-[11px] font-display px-3 py-1.5 rounded-[3px] cursor-pointer border transition-all hover:opacity-80"
@@ -460,7 +484,7 @@ export function ClientDashboard({ client, orgId, onBack, onCampionamento, onDele
             )}
 
             {tab === 'bia' && profile.hasBia && (
-              <section className="px-6 pt-6">
+              <section className="px-4 pt-6">
                 <div className="rounded-[4px] p-5 rx-card">
                   <div className="font-display text-[10px] tracking-[3px] uppercase mb-4" style={{ color: '#0fd65a' }}>◈ BIA</div>
                   <BiaSummary bia={client.lastBia} prevBia={client.biaHistory?.[1] ?? null} sex={client.sesso} age={client.eta} color={biaColor} rank={biaRank.label} />
@@ -476,7 +500,7 @@ export function ClientDashboard({ client, orgId, onBack, onCampionamento, onDele
             )}
 
             {tab === 'calendario' && (
-              <section className="px-6 pt-6">
+              <section className="px-4 pt-6">
                 <div className="rounded-[4px] p-5 rx-card">
                   <div className="font-display text-[10px] tracking-[3px] uppercase mb-4" style={{ color: '#0fd65a' }}>◈ Calendario allenamenti</div>
                   <ClientCalendar clientId={client.id} orgId={orgId} />
@@ -489,11 +513,12 @@ export function ClientDashboard({ client, orgId, onBack, onCampionamento, onDele
             )}
 
             {tab === 'attivita' && (
-              <section className="px-6 pt-6">
+              <section className="px-4 pt-6">
                 <ActivityLog log={client.log} color={color} limit={10} />
               </section>
             )}
 
+          </div>
           </div>
         </div>
       </div>

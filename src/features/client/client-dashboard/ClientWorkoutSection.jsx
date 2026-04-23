@@ -1,6 +1,6 @@
-import { useState, useEffect }        from 'react'
-import { SectionLabel }              from '../../../components/ui'
-import { getWorkoutPlanForClient }   from '../../../firebase/services/workoutPlans'
+import { useState, useEffect }                from 'react'
+import { SectionLabel, EmptyState }          from '../../../components/ui'
+import { getWorkoutPlanForClient }           from '../../../firebase/services/workoutPlans'
 
 /**
  * Sezione scheda allenamento nella dashboard cliente.
@@ -20,7 +20,19 @@ export function ClientWorkoutSection({ orgId, clientId, color }) {
   }, [orgId, clientId])
 
   if (loading) return null
-  if (!plan)   return null
+  if (!plan) return (
+    <section className="px-4 py-6">
+      <div className="rounded-[4px] p-5 rx-card">
+        <SectionLabel className="mb-2">◈ Scheda allenamento</SectionLabel>
+        <EmptyState
+          color={color}
+          icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M6 4v6a6 6 0 0 0 12 0V4"/><line x1="6" y1="20" x2="18" y2="20"/></svg>}
+          title="Nessuna scheda assegnata"
+          description="Il tuo trainer non ha ancora assegnato una scheda di allenamento."
+        />
+      </div>
+    </section>
+  )
 
   // Normalizza: supporta sia il vecchio formato exercises[] che il nuovo days[]
   const days = plan.days?.length
@@ -32,7 +44,7 @@ export function ClientWorkoutSection({ orgId, clientId, color }) {
   const exercises = day?.exercises ?? []
 
   return (
-    <section className="px-6 py-6">
+    <section className="px-4 py-6">
       <div className="rounded-[4px] p-5 rx-card">
         <SectionLabel className="mb-4">◈ Scheda allenamento</SectionLabel>
 
@@ -94,8 +106,8 @@ export function ClientWorkoutSection({ orgId, clientId, color }) {
 function Chip({ label, value }) {
   return (
     <div className="flex flex-col gap-0.5">
-      <span className="font-display text-[9px] tracking-[1px] text-white/25">{label}</span>
-      <span className="font-body text-[12px] text-white/60 font-bold">{value}</span>
+      <span className="font-display text-[10px] font-semibold tracking-[1px] text-white/25">{label}</span>
+      <span className="font-display font-bold text-[12px] text-white/65">{value}</span>
     </div>
   )
 }

@@ -15,6 +15,7 @@ import {
   addClientToGroupSlots,
   removeClientFromGroupSlots,
 } from '../../../features/calendar/calendarGroupUtils'
+import { EmptyState } from '../../../components/ui'
 
 const CLIENTS_PAGE_SIZE = 8
 
@@ -144,7 +145,7 @@ export function GroupDetailView({ group, clients, orgId, onToggleClient, onRenam
     <div className="min-h-screen text-white flex flex-col">
 
       {/* ── Header sticky ── */}
-      <header className="flex items-center justify-between px-6 py-4 border-b border-white/[.05] sticky top-0 z-30 backdrop-blur-md shrink-0">
+      <header className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-white/[.05] sticky top-0 z-30 backdrop-blur-md shrink-0">
         <button
           onClick={onBack}
           className="flex items-center gap-1.5 bg-transparent border-none text-white/30 font-body text-[13px] cursor-pointer hover:text-white/60 transition-colors p-0"
@@ -170,7 +171,7 @@ export function GroupDetailView({ group, clients, orgId, onToggleClient, onRenam
               <ActionBtn onClick={() => { setIsEditing(false); setEditingName(group.name) }} muted>ANNULLA</ActionBtn>
             </>
           ) : (
-            <span className="font-display font-black text-[16px] text-white">{group.name}</span>
+            <span className="font-display font-black text-[16px] text-white truncate max-w-[140px] sm:max-w-xs">{group.name}</span>
           )}
         </div>
 
@@ -185,7 +186,7 @@ export function GroupDetailView({ group, clients, orgId, onToggleClient, onRenam
       <div className="max-w-5xl mx-auto w-full flex flex-col flex-1">
 
         {/* Info gruppo */}
-        <div className="flex items-center gap-4 px-6 pt-6 pb-4">
+        <div className="flex items-center gap-4 px-4 sm:px-6 pt-6 pb-4">
           <div
             className="w-14 h-14 rounded-[4px] flex items-center justify-center shrink-0"
             style={{ background: 'rgba(15,214,90,0.08)', border: '1px solid rgba(15,214,90,0.2)' }}
@@ -225,21 +226,21 @@ export function GroupDetailView({ group, clients, orgId, onToggleClient, onRenam
         </section>
 
         {/* ── Contenuto tab ── */}
+        <div key={subView} className="rx-animate-in flex-1">
 
         {subView === 'leaderboard' && (
           allClientsInGroup.length < 2 ? (
-            <div className="px-6 pt-8 text-center">
-              <p className="font-body text-[13px] text-white/25 mb-1">Classifica non disponibile.</p>
-              <p className="font-body text-[12px] text-white/18 max-w-xs mx-auto leading-relaxed">
-                Aggiungi almeno 2 atleti al gruppo per vedere la classifica e i campioni per disciplina.
-              </p>
-            </div>
+            <EmptyState
+              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 20 18 10"/><polyline points="12 20 12 4"/><polyline points="6 20 6 14"/></svg>}
+              title="Classifica non disponibile"
+              description="Aggiungi almeno 2 atleti al gruppo per vedere la classifica e i campioni per disciplina."
+            />
           ) : (
-            <div className="px-6 pt-4 pb-12">
+            <div className="px-4 sm:px-6 pt-4 pb-12">
               <div className="flex flex-col lg:flex-row gap-4 items-start">
                 <div className="w-full lg:w-[58%]">
                   <div className="rounded-[4px] p-5 rx-card">
-                    <div className="font-display text-[10px] tracking-[3px] uppercase mb-5" style={{ color: '#0fd65a' }}>◈ Classifica</div>
+                    <div className="font-display text-[11px] font-semibold tracking-[3px] uppercase mb-5" style={{ color: '#0fd65a' }}>◈ Classifica</div>
                     <GroupLeaderboard clients={allClientsInGroup} />
                   </div>
                 </div>
@@ -253,14 +254,13 @@ export function GroupDetailView({ group, clients, orgId, onToggleClient, onRenam
 
         {subView === 'analysis' && (
           allClientsInGroup.length < 2 ? (
-            <div className="px-6 pt-8 text-center">
-              <p className="font-body text-[13px] text-white/25 mb-1">Analisi non disponibile.</p>
-              <p className="font-body text-[12px] text-white/18 max-w-xs mx-auto leading-relaxed">
-                Aggiungi almeno 2 atleti al gruppo per sbloccare heatmap e report miglioramenti.
-              </p>
-            </div>
+            <EmptyState
+              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>}
+              title="Analisi non disponibile"
+              description="Aggiungi almeno 2 atleti al gruppo per sbloccare heatmap e report miglioramenti."
+            />
           ) : (
-            <div className="px-6 pt-4 pb-12">
+            <div className="px-4 sm:px-6 pt-4 pb-12">
               <GroupAnalysis clients={allClientsInGroup} />
             </div>
           )
@@ -268,21 +268,20 @@ export function GroupDetailView({ group, clients, orgId, onToggleClient, onRenam
 
         {subView === 'comparison' && (
           allClientsInGroup.length < 2 ? (
-            <div className="px-6 pt-8 text-center">
-              <p className="font-body text-[13px] text-white/25 mb-1">Confronto non disponibile.</p>
-              <p className="font-body text-[12px] text-white/18 max-w-xs mx-auto leading-relaxed">
-                Aggiungi almeno 2 atleti per confrontare le loro statistiche e l'andamento nel tempo.
-              </p>
-            </div>
+            <EmptyState
+              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>}
+              title="Confronto non disponibile"
+              description="Aggiungi almeno 2 atleti per confrontare le loro statistiche e l'andamento nel tempo."
+            />
           ) : (
-            <div className="px-6 pt-4 pb-12">
+            <div className="px-4 sm:px-6 pt-4 pb-12">
               <GroupComparison clients={allClientsInGroup} />
             </div>
           )
         )}
 
         {subView === 'manage' && (
-          <div className="px-6 pt-4 pb-12">
+          <div className="px-4 sm:px-6 pt-4 pb-12">
             {allClientsInGroup.length < 2 && (
               <div
                 className="mb-4 px-4 py-3 rounded-[4px] font-body text-[12px] text-white/35 leading-relaxed"
@@ -307,13 +306,15 @@ export function GroupDetailView({ group, clients, orgId, onToggleClient, onRenam
               {/* Nel gruppo */}
               <div className="w-full lg:flex-1">
                 <div className="rounded-[4px] p-5 rx-card">
-                  <div className="font-display text-[10px] tracking-[3px] uppercase mb-5" style={{ color: '#0fd65a' }}>
+                  <div className="font-display text-[11px] font-semibold tracking-[3px] uppercase mb-5" style={{ color: '#0fd65a' }}>
                     ◈ Nel gruppo <span className="text-white/25 ml-1">({clientsInGroup.length})</span>
                   </div>
                   {inGroupPagination.paginatedItems.length === 0 ? (
-                    <p className="font-body text-[13px] text-white/20">
-                      {clientSearch ? 'Nessun risultato.' : 'Nessun atleta in questo gruppo.'}
-                    </p>
+                    <EmptyState
+                      icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>}
+                      title={clientSearch ? 'Nessun risultato' : 'Nessun atleta nel gruppo'}
+                      description={clientSearch ? undefined : 'Aggiungi atleti dalla colonna "Da aggiungere".'}
+                    />
                   ) : (
                     <>
                       <div className="flex flex-col gap-2">
@@ -330,13 +331,15 @@ export function GroupDetailView({ group, clients, orgId, onToggleClient, onRenam
               {/* Da aggiungere */}
               <div className="w-full lg:flex-1">
                 <div className="rounded-[4px] p-5 rx-card">
-                  <div className="font-display text-[10px] tracking-[3px] uppercase mb-5" style={{ color: 'rgba(255,255,255,0.3)' }}>
+                  <div className="font-display text-[11px] font-semibold tracking-[3px] uppercase mb-5" style={{ color: 'rgba(255,255,255,0.3)' }}>
                     ◈ Da aggiungere <span className="text-white/25 ml-1">({clientsNotInGroup.length})</span>
                   </div>
                   {notInGroupPagination.paginatedItems.length === 0 ? (
-                    <p className="font-body text-[13px] text-white/20">
-                      {clientSearch ? 'Nessun risultato.' : 'Tutti gli atleti sono già nel gruppo.'}
-                    </p>
+                    <EmptyState
+                      icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>}
+                      title={clientSearch ? 'Nessun risultato' : 'Tutti nel gruppo'}
+                      description={clientSearch ? undefined : 'Tutti gli atleti sono già in questo gruppo.'}
+                    />
                   ) : (
                     <>
                       <div className="flex flex-col gap-2">
@@ -356,16 +359,18 @@ export function GroupDetailView({ group, clients, orgId, onToggleClient, onRenam
         )}
 
         {subView === 'sessions' && (
-          <div className="px-6 pt-4 pb-12">
+          <div className="px-4 sm:px-6 pt-4 pb-12">
             <GroupSessionsPanel slots={slots} loading={slotsLoading} />
           </div>
         )}
 
         {subView === 'notes' && (
-          <div className="px-6 pt-4 pb-12">
+          <div className="px-4 sm:px-6 pt-4 pb-12">
             <GroupNotes orgId={orgId} groupId={group.id} />
           </div>
         )}
+
+        </div> {/* fine rx-animate-in */}
       </div>
 
       {showPrint && (
@@ -449,7 +454,7 @@ function GroupSessionsPanel({ slots, loading }) {
 
   if (loading) return (
     <div className="rounded-[4px] p-5 rx-card">
-      <div className="font-display text-[10px] tracking-[3px] uppercase mb-4" style={{ color: '#0fd65a' }}>◈ Sessioni</div>
+      <div className="font-display text-[11px] font-semibold tracking-[3px] uppercase mb-4" style={{ color: '#0fd65a' }}>◈ Sessioni</div>
       <div className="flex flex-col gap-2">
         {[...Array(3)].map((_, i) => (
           <div key={i} className="skeleton h-10 rounded-[3px]" />
@@ -462,7 +467,7 @@ function GroupSessionsPanel({ slots, loading }) {
 
   return (
     <div className="rounded-[4px] p-5 rx-card">
-      <div className="font-display text-[10px] tracking-[3px] uppercase mb-4" style={{ color: '#0fd65a' }}>◈ Sessioni</div>
+      <div className="font-display text-[11px] font-semibold tracking-[3px] uppercase mb-4" style={{ color: '#0fd65a' }}>◈ Sessioni</div>
 
       {/* Stats row */}
       <div className="grid grid-cols-3 gap-2 mb-5">
@@ -476,16 +481,18 @@ function GroupSessionsPanel({ slots, loading }) {
       </div>
 
       {isEmpty ? (
-        <p className="font-body text-[13px] text-white/20">
-          Nessuna sessione registrata per questo gruppo.
-        </p>
+        <EmptyState
+          icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>}
+          title="Nessuna sessione"
+          description="Le sessioni del gruppo appariranno qui dopo la chiusura dal calendario."
+        />
       ) : (
         <div className="flex flex-col lg:flex-row gap-4">
 
           {/* Prossime */}
           {upcoming.length > 0 && (
             <div className="flex-1">
-              <div className="font-display text-[9px] tracking-[1.5px] text-white/25 mb-2">PROSSIME</div>
+              <div className="font-display text-[10px] tracking-[1.5px] text-white/30 mb-2">PROSSIME</div>
               <div
                 className="rounded-[3px] overflow-hidden"
                 style={{ border: '1px solid rgba(255,255,255,0.05)' }}
@@ -500,7 +507,7 @@ function GroupSessionsPanel({ slots, loading }) {
           {/* Recenti */}
           {recent.length > 0 && (
             <div className="flex-1">
-              <div className="font-display text-[9px] tracking-[1.5px] text-white/25 mb-2">RECENTI</div>
+              <div className="font-display text-[10px] tracking-[1.5px] text-white/30 mb-2">RECENTI</div>
               <div
                 className="rounded-[3px] overflow-hidden"
                 style={{ border: '1px solid rgba(255,255,255,0.05)' }}
@@ -524,7 +531,7 @@ function SessionStat({ label, value, highlight }) {
       className="px-3 py-2.5 rounded-[3px] flex flex-col gap-1"
       style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}
     >
-      <span className="font-display text-[9px] tracking-[1px] text-white/25">{label}</span>
+      <span className="font-display text-[10px] tracking-[1px] text-white/30">{label}</span>
       <span
         className="font-display font-black text-[17px] leading-tight"
         style={{ color: highlight ? '#0fd65a' : 'rgba(255,255,255,0.75)' }}
@@ -600,9 +607,9 @@ function ClientRow({ client, inGroup, loading, onToggle }) {
           </span>
         </div>
         <div>
-          <div className="font-body text-[13px] text-white/70">{client.name}</div>
+          <div className="font-display font-bold text-[13px] text-white/80">{client.name}</div>
           {client.rank && (
-            <div className="font-display text-[10px] text-white/25 mt-0.5">
+            <div className="font-display text-[10px] text-white/30 mt-0.5">
               {client.rank} · Lv.{client.level}
             </div>
           )}

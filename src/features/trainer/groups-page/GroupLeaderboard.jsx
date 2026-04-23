@@ -84,7 +84,7 @@ export function GroupLeaderboard({ clients }) {
         {/* Separatore "nessun dato" */}
         {sorted.length > 0 && sortedNoData.length > 0 && (
           <div className="mt-3 mb-1">
-            <div className="font-display text-[9px] text-white/18 tracking-[2px] uppercase">
+            <div className="font-display text-[10px] font-semibold text-white/25 tracking-[2px] uppercase">
               Nessun dato ({sortedNoData.length})
             </div>
           </div>
@@ -169,8 +169,8 @@ function LeaderboardRow({ position, client, score, sortStat }) {
 
       {/* Nome + livello */}
       <div className="flex-1 min-w-0">
-        <div className="font-body text-[13px] text-white/75 truncate">{client.name}</div>
-        <div className="font-display text-[10px] text-white/22 mt-0.5">Lv.{client.level}</div>
+        <div className="font-display font-bold text-[13px] text-white/80 truncate">{client.name}</div>
+        <div className="font-display text-[10px] text-white/30 mt-0.5">Lv.{client.level}</div>
       </div>
 
       {/* Rank badge (sempre dal media complessivo) */}
@@ -197,7 +197,7 @@ function LeaderboardRow({ position, client, score, sortStat }) {
             >
               {Math.round(score)}
             </div>
-            <div className="font-display text-[9px] text-white/20 mt-0.5 tracking-[1px]">
+            <div className="font-display text-[10px] font-semibold text-white/25 mt-0.5 tracking-[1px]">
               {sortStat === 'media' ? 'MEDIA' : 'PERC.'}
             </div>
           </>

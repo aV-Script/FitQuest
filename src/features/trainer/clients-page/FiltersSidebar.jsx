@@ -110,7 +110,7 @@ export function FiltersSidebar({
 function FilterSection({ label, children }) {
   return (
     <div>
-      <p className="font-display text-[10px] text-white/30 tracking-[3px] mb-2">{label}</p>
+      <p className="font-display text-[11px] font-semibold text-white/30 tracking-[3px] mb-2">{label}</p>
       <div className="flex flex-col gap-1">{children}</div>
     </div>
   )

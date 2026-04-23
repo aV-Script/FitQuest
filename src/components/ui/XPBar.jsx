@@ -15,8 +15,8 @@ export function XPBar({ xp, xpNext, color, size = 'lg', fullWidth = false }) {
   return (
     <div className={`w-full ${fullWidth ? '' : 'max-w-sm'}`}>
       <div className="flex justify-between mb-1.5">
-        <span className="font-display text-[10px] text-white/30 tracking-[0.2em]">EXP</span>
-        <span className="font-display text-[11px]" style={{ color }}>
+        <span className="font-display text-[11px] text-white/30 tracking-[0.2em]">EXP</span>
+        <span className="font-display text-[12px] font-semibold" style={{ color }}>
           {xp.toLocaleString()} / {xpNext.toLocaleString()}
         </span>
       </div>

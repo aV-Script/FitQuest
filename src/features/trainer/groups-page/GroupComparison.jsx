@@ -52,14 +52,14 @@ export function GroupComparison({ clients }) {
 
         {/* Selettore */}
         <div className="rounded-[4px] p-5 rx-card">
-          <div className="font-display text-[10px] tracking-[3px] uppercase mb-5" style={{ color: '#0fd65a' }}>
+          <div className="font-display text-[11px] font-semibold tracking-[2px] uppercase mb-5" style={{ color: '#0fd65a' }}>
             ◈ Confronto atleti
           </div>
           <div
             className="rounded-[3px] p-4"
             style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}
           >
-            <div className="font-display text-[9px] text-white/25 tracking-[1.5px] mb-3">
+            <div className="font-display text-[10px] font-semibold text-white/25 tracking-[1.5px] mb-3">
               SELEZIONA ATLETI (max {MAX_SELECTED})
             </div>
             <div className="flex gap-2 flex-wrap">
@@ -73,7 +73,7 @@ export function GroupComparison({ clients }) {
                     key={c.id}
                     onClick={() => handleToggle(c.id)}
                     disabled={disabled}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-[3px] font-body text-[12px] cursor-pointer border transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-[3px] font-display font-bold text-[12px] cursor-pointer border transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                     style={isActive
                       ? { background: `${color}18`, borderColor: `${color}55`, color }
                       : { background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.45)' }
@@ -91,13 +91,13 @@ export function GroupComparison({ clients }) {
         {/* Tabella valori (visibile solo se ci sono dati) */}
         {selectedClients.length > 0 && statCols.length > 0 && (
           <div className="rounded-[4px] p-5 rx-card">
-            <div className="font-display text-[10px] tracking-[3px] uppercase mb-4" style={{ color: '#0fd65a' }}>◈ Valori</div>
+            <div className="font-display text-[11px] font-semibold tracking-[2px] uppercase mb-4" style={{ color: '#0fd65a' }}>◈ Valori</div>
             {/* Legenda colori */}
             <div className="flex gap-3 flex-wrap mb-4">
               {selectedClients.map((c, i) => (
                 <div key={c.id} className="flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full shrink-0" style={{ background: COMPARISON_COLORS[i] }} />
-                  <span className="font-body text-[12px]" style={{ color: COMPARISON_COLORS[i] }}>{c.name}</span>
+                  <span className="font-display font-bold text-[12px]" style={{ color: COMPARISON_COLORS[i] }}>{c.name}</span>
                 </div>
               ))}
             </div>
@@ -116,7 +116,7 @@ export function GroupComparison({ clients }) {
       <div className="w-full lg:w-[60%]">
         {selectedClients.length > 0 && statCols.length > 0 ? (
           <div className="rounded-[4px] p-5 rx-card flex flex-col items-center gap-5">
-            <div className="w-full font-display text-[10px] tracking-[3px] uppercase" style={{ color: '#0fd65a' }}>◈ Radar</div>
+            <div className="w-full font-display text-[11px] font-semibold tracking-[2px] uppercase" style={{ color: '#0fd65a' }}>◈ Radar</div>
             <div style={{ width: '100%', maxWidth: 360, aspectRatio: '1 / 1' }}>
               <PentagonMulti
                 clients={selectedClients}
@@ -211,11 +211,11 @@ function ComparisonTable({ clients, statCols }) {
       <thead>
         <tr>
           <th className="text-left pb-3" style={{ minWidth: 90 }}>
-            <span className="font-display text-[9px] tracking-[1px] text-white/20">STAT</span>
+            <span className="font-display text-[10px] font-semibold tracking-[1px] text-white/25">STAT</span>
           </th>
           {clients.map((c, i) => (
             <th key={c.id} className="pb-3 px-2 text-right" style={{ minWidth: 60 }}>
-              <span className="font-display text-[9px] tracking-[1px]" style={{ color: COMPARISON_COLORS[i] }}>
+              <span className="font-display text-[10px] font-semibold tracking-[1px]" style={{ color: COMPARISON_COLORS[i] }}>
                 {c.name.split(' ')[0].toUpperCase()}
               </span>
             </th>

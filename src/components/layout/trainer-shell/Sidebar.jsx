@@ -26,7 +26,7 @@ export function Sidebar({ page, onNavigate, onLogout }) {
     >
       {/* Logo */}
       <div className="mb-4">
-        <span className="rx-glow-text font-display font-black text-[14px] leading-none tracking-wider">
+        <span className="rx-glow-text font-display font-black text-[16px] leading-none tracking-wider">
           RX
         </span>
       </div>
