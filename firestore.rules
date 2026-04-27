@@ -105,15 +105,24 @@ service cloud.firestore {
       allow read:   if isSuperAdmin() || isOrgMember(orgId) || isClientOfOrg(orgId);
       allow create, delete: if isSuperAdmin() ||
         (isOrgMember(orgId) && memberRole(orgId) == 'org_admin');
-      // org_admin: update completo.
-      // trainer: solo clientCount, delta esattamente ±1, valore >= 0 (no bypass limiti piano).
+      // 1. org_admin aggiorna campi org — NON può toccare i counter direttamente
+      // 2. org_admin aggiorna memberCount ±1 (addMember/removeMember)
+      // 3. org_admin o trainer aggiornano clientCount ±1 (addClient/deleteClient)
       allow update: if isSuperAdmin() ||
-        (isOrgMember(orgId) && memberRole(orgId) == 'org_admin') ||
-        (isOrgMember(orgId) && memberRole(orgId) == 'trainer' &&
+        (isOrgMember(orgId) && memberRole(orgId) == 'org_admin' &&
+         !request.resource.data.diff(resource.data).affectedKeys().hasAny(['memberCount', 'clientCount'])) ||
+        (isOrgMember(orgId) && memberRole(orgId) == 'org_admin' &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberCount']) &&
+         request.resource.data.memberCount >= 0 &&
+         (!('memberCount' in resource.data) && request.resource.data.memberCount == 1 ||
+          request.resource.data.memberCount == resource.data.memberCount + 1 ||
+          request.resource.data.memberCount == resource.data.memberCount - 1)) ||
+        (isOrgMember(orgId) && memberRole(orgId) in ['org_admin', 'trainer'] &&
          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['clientCount']) &&
-         (request.resource.data.clientCount == resource.data.clientCount + 1 ||
-          request.resource.data.clientCount == resource.data.clientCount - 1) &&
-         request.resource.data.clientCount >= 0);
+         request.resource.data.clientCount >= 0 &&
+         (!('clientCount' in resource.data) && request.resource.data.clientCount == 1 ||
+          request.resource.data.clientCount == resource.data.clientCount + 1 ||
+          request.resource.data.clientCount == resource.data.clientCount - 1));
 
       // ── Members ───────────────────────────────────────────
 
