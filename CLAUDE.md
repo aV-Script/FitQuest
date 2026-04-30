@@ -196,7 +196,7 @@ import { getPlanLimits, isAtTrainerLimit, isAtClientLimit } from 'config/plans.c
   rank, rankColor, media,
   stats:           {},
   campionamenti:   [],
-  log:             [],
+  log:             [],   // ogni entry: { date, action, xp, ts } — ts: Date.now() usato da XPTrendChart
   sessionsPerWeek,
   biaHistory:      [],
   lastBia:         null,
@@ -398,6 +398,7 @@ src/
 │   │   │   ├── ClientDashboardPage.jsx  ← vista client: stesso layout, AVATAR tab mobile
 │   │   │   ├── ClientProfilePage.jsx
 │   │   │   └── client.config.jsx
+│   │   ├── useMisure.js                 ← hook CRUD peso+altezza su cliente
 │   │   └── client-dashboard/
 │   │       ├── DashboardHeader.jsx
 │   │       ├── DeleteDialog.jsx
@@ -405,6 +406,8 @@ src/
 │   │       ├── NotesSection.jsx          ← thread note + commenti (trainer+client)
 │   │       ├── WorkoutPlanSection.jsx    ← schede allenamento (trainer): CRUD + storico
 │   │       ├── ClientWorkoutSection.jsx  ← scheda allenamento read-only (client)
+│   │       ├── MisureSection.jsx         ← tab Misure: storico peso+altezza con trend inline
+│   │       ├── XPTrendChart.jsx          ← grafico XP accumulato Giorno/Settimana/Mese
 │   │       └── ClientReportPrint.jsx     ← export PDF via window.print() (trainer)
 │   │
 │   ├── notification/
@@ -436,7 +439,13 @@ src/
 │       │   └── WorkoutPlanForm.jsx   ← form multi-giorno creazione/modifica scheda
 │       ├── groups-page/
 │       │   ├── GroupCard.jsx
-│       │   ├── GroupDetailView.jsx
+│       │   ├── GroupDetailView.jsx        ← hub 6 tab (Gestione/Classifica/Analisi/Confronto/Sessioni/Note)
+│       │   ├── GroupLeaderboard.jsx       ← classifica ordinabile per media o stat, paginata
+│       │   ├── GroupChampions.jsx         ← campioni per disciplina (griglia)
+│       │   ├── GroupAnalysis.jsx          ← riepilogo + trend LineChart + heatmap + più migliorati
+│       │   ├── GroupComparison.jsx        ← confronto 3 atleti: selettore paginato + radar SVG + tabella
+│       │   ├── GroupNotes.jsx             ← note di gruppo: publish/delete, paginazione
+│       │   ├── GroupReportPrint.jsx       ← export PDF gruppo via window.print()
 │       │   ├── GroupsSidebar.jsx
 │       │   └── GroupToggleDialog.jsx
 │       ├── trainer-calendar/
@@ -1056,6 +1065,13 @@ className={`... ${t.mobileOnly ? 'lg:hidden' : ''}`}
 </div>
 ```
 
+### Tab Misure e XP Trend (client dashboard — apr 2026)
+- **Tab Misure**: `MisureSection.jsx` + `useMisure.js` — storico peso e altezza del cliente con trend inline
+  - `useMisure(orgId, clientId)` → `{ misure, handleUpdateMisure }` — salva su `clients/{clientId}.misure[]`
+- **XPTrendChart**: `XPTrendChart.jsx` — grafico XP accumulato per Giorno/Settimana/Mese
+  - Legge `client.log[]` (ogni entry ha `ts: Date.now()` da `gamification.js`)
+  - `scripts/migrate-logTimestamps.mjs` — script one-shot per backfill `ts` sui log esistenti pre-apr 2026
+
 ### Export PDF atleta
 - Componente: `ClientReportPrint.jsx` in `client-dashboard/`
 - Trigger: pulsante "ESPORTA PDF" in `DashboardHeader` (prop `onExport`)
@@ -1307,10 +1323,13 @@ Super admin    → Gestione e upload moduli (globali + per org)
 Badge / Achievement    → traguardi automatici: prima sessione, 10 presenze
                          consecutive, primo rank-up, nuovo personal best su test
 Streak presenze        → moltiplicatore XP per settimane consecutive senza assenze
-Leaderboard gruppo     → IMPLEMENTATO — apr 2026
-                         Tab "CLASSIFICA" in GroupDetailView, ordinabile per media
-                         o per singola stat. Top 3 oro/argento/bronzo.
-                         Componente: GroupLeaderboard.jsx
+Groups Analytics Hub   → IMPLEMENTATO — apr 2026
+                         GroupDetailView con 6 tab: Gestione (3 col + ricerca + paginazione),
+                         Classifica (GroupLeaderboard — sort per media/stat, top 3 podio),
+                         Analisi (GroupAnalysis — riepilogo + trend LineChart + heatmap + più migliorati),
+                         Confronto (GroupComparison — selettore paginato, radar SVG multi-overlay, tabella),
+                         Sessioni (slot del gruppo), Note (GroupNotes — publish/delete, paginazione).
+                         Export PDF: GroupReportPrint.jsx via window.print().
 Obiettivi trainer      → coach fissa target su test specifico per un cliente
                          (es. "70° percentile sprint entro fine mese")
                          sistema monitora e notifica al raggiungimento
