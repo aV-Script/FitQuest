@@ -10,6 +10,7 @@ export const AUDIT_ACTIONS = {
   LOGOUT:           'auth.logout',
   LOGIN_FAILED:     'auth.login_failed',
   PASSWORD_CHANGED: 'auth.password_changed',
+  EMAIL_CHANGED:    'auth.email_changed',
 
   // Clienti
   CLIENT_CREATED:  'client.created',
