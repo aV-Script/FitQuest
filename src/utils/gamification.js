@@ -50,7 +50,8 @@ export function buildSessionUpdate(client, baseXP, label = 'Sessione') {
   const logEntry = {
     date: todayStr,
     action: `${label} (streak ${streak})`,
-    xp: xpGain
+    xp: xpGain,
+    ts: Date.now(),
   }
 
   const log = [logEntry, ...(client.log ?? [])].slice(0, LOG_MAX_ENTRIES)
@@ -104,7 +105,7 @@ function calcLevelProgression(xp, xpNext, level) {
 export function buildXPUpdate(client, xpToAdd, note) {
   const { xp, xpNext, level } = calcLevelProgression(client.xp + xpToAdd, client.xpNext, client.level)
   const today = new Date().toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })
-  const entry = { date: today, action: note || `+${xpToAdd} XP aggiunto dal trainer`, xp: xpToAdd }
+  const entry = { date: today, action: note || `+${xpToAdd} XP aggiunto dal trainer`, xp: xpToAdd, ts: Date.now() }
   const log   = [entry, ...(client.log ?? [])].slice(0, LOG_MAX_ENTRIES)
   return { update: { xp, xpNext, level, log } }
 }
@@ -154,7 +155,8 @@ export function buildCampionamentoUpdate(client, newStats, testValues) {
   const logEntry = {
     date: today,
     action: `Campionamento — ${valStr}`,
-    xp: xpGain
+    xp: xpGain,
+    ts: Date.now(),
   }
 
   const log = [logEntry, ...(client.log ?? [])].slice(0, LOG_MAX_ENTRIES)
@@ -196,6 +198,7 @@ export function buildBiaUpdate(client, newBia) {
     date:   today,
     action: `BIA — ${prevBia ? 'Aggiornamento composizione corporea' : 'Prima misurazione'}`,
     xp:     xpToAdd,
+    ts:     Date.now(),
   }
   const log = [logEntry, ...(client.log ?? [])].slice(0, LOG_MAX_ENTRIES)
 
@@ -244,6 +247,7 @@ export function buildProfileUpgrade(client, newProfileType) {
     date:   today,
     action: `Profilo aggiornato → ${newProfileType === 'complete' ? 'Test + BIA' : newProfileType}`,
     xp:     0,
+    ts:     Date.now(),
   }
   update.log = [logEntry, ...(client.log ?? [])].slice(0, LOG_MAX_ENTRIES)
 
@@ -283,6 +287,6 @@ export function buildNewClient(trainerId, formData, defaults) {
     rankColor:     hasTests ? rankObj.color : '#4a5568',
     media:         hasTests ? media : 0,
     campionamenti: hasTests ? [{ date: today, stats, tests: testValues, media }] : [],
-    log: [{ date: today, action: 'Primo campionamento effettuato', xp: hasTests ? FIRST_CAMP_XP : 0 }],
+    log: [{ date: today, action: 'Primo campionamento effettuato', xp: hasTests ? FIRST_CAMP_XP : 0, ts: Date.now() }],
   }
 }

@@ -14,6 +14,9 @@ import { ClientReportPrint }                 from './client-dashboard/ClientRepo
 import { ClientCalendar }                    from './ClientCalendar'
 import { CampionamentoView }                 from './CampionamentoView'
 import { useBia }                            from '../bia/useBia'
+import { useMisure }                         from './useMisure'
+import { XPTrendChart }                      from './client-dashboard/XPTrendChart'
+import { MisureSection }                     from './client-dashboard/MisureSection'
 import { BiaView }                           from '../bia/BiaView'
 import { BiaSummary }                        from '../bia/bia-view/BiaSummary'
 import { BiaHistoryChart }                   from '../bia/bia-view/BiaHistoryChart'
@@ -76,6 +79,12 @@ const ICON_AVATAR = (
     <circle cx="12" cy="7" r="4"/>
   </svg>
 )
+const ICON_MISURE = (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 3v1M6.2 6.2l.7.7M17.8 6.2l-.7.7M3 13h18M5 13a7 7 0 0 1 14 0"/>
+    <path d="M8 21h8M12 17v4"/>
+  </svg>
+)
 
 
 /**
@@ -112,6 +121,7 @@ export function ClientDashboard({ client, orgId, onBack, onCampionamento, onDele
   }, [orgId, client.id])
 
   const { handleSaveBia, handleUpgradeProfile } = useBia()
+  const { handleUpdateMisure }                  = useMisure()
 
   const profileType = client.profileType ?? 'tests_only'
   const profile     = getProfileCategory(profileType)
@@ -147,6 +157,7 @@ export function ClientDashboard({ client, orgId, onBack, onCampionamento, onDele
     { id: 'calendario',  label: 'Calendario',  mobileLabel: 'Cal.',   icon: ICON_CALENDAR },
     { id: 'note',        label: 'Note',         mobileLabel: 'Note',  icon: ICON_NOTES },
     { id: 'attivita',    label: 'Attività',     mobileLabel: 'Log',   icon: ICON_ACTIVITY },
+    { id: 'misure',      label: 'Misure',       mobileLabel: 'Mis.',  icon: ICON_MISURE },
   ].filter(Boolean), [profile.hasTests, profile.hasBia])
 
   const defaultTab      = profile.hasTests ? 'test' : profile.hasBia ? 'bia' : 'allenamento'
@@ -514,9 +525,20 @@ export function ClientDashboard({ client, orgId, onBack, onCampionamento, onDele
             )}
 
             {tab === 'attivita' && (
-              <section className="px-4 pt-6">
+              <section className="px-4 pt-6 flex flex-col gap-4">
+                <XPTrendChart log={client.log ?? []} color={color} />
                 <ActivityLog log={client.log} color={color} limit={10} />
               </section>
+            )}
+
+            {tab === 'misure' && (
+              <MisureSection
+                client={client}
+                color={color}
+                isSoccer={isSoccer}
+                readonly={readonly}
+                onUpdate={handleUpdateMisure}
+              />
             )}
 
           </div>

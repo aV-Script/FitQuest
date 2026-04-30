@@ -94,26 +94,28 @@ export function GroupAnalysis({ clients }) {
   }
 
   return (
-    <>
-    <div className="flex flex-col lg:flex-row gap-4 items-start">
+    <div className="flex flex-col gap-4">
 
-      {/* ── Colonna sinistra: Riepilogo + Più migliorati ── */}
-      <div className="flex flex-col gap-4 w-full lg:w-[42%]">
-
-        {/* Riepilogo */}
-        <div className="rounded-[4px] p-5 rx-card">
-          <div className="font-display text-[11px] font-semibold tracking-[2px] uppercase mb-5" style={{ color: '#0fd65a' }}>◈ Riepilogo gruppo</div>
-          <div className="grid grid-cols-2 gap-2">
-            <StatTile label="ATLETI"      value={clients.length}             />
-            {summary.avgLevel    != null && <StatTile label="LV. MEDIO"     value={`Lv.${summary.avgLevel}`}     />}
-            {summary.topRankLabel         && <StatTile label="RANK COMUNE"  value={summary.topRankLabel}         gold />}
-            {summary.best                 && <StatTile label="STAT FORTE"   value={summary.best.label}   sub={`${Math.round(summary.best.mean)}°`}  positive />}
-            {summary.worst                && <StatTile label="STAT DEBOLE"  value={summary.worst.label}  sub={`${Math.round(summary.worst.mean)}°`} negative />}
-          </div>
+      {/* Riga 1 — Riepilogo gruppo (full width) */}
+      <div className="rounded-[4px] p-5 rx-card">
+        <div className="font-display text-[11px] font-semibold tracking-[2px] uppercase mb-5" style={{ color: '#0fd65a' }}>◈ Riepilogo gruppo</div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+          <StatTile label="ATLETI"      value={clients.length}             />
+          {summary.avgLevel    != null && <StatTile label="LV. MEDIO"     value={`Lv.${summary.avgLevel}`}     />}
+          {summary.topRankLabel         && <StatTile label="RANK COMUNE"  value={summary.topRankLabel}         gold />}
+          {summary.best                 && <StatTile label="STAT FORTE"   value={summary.best.label}   sub={`${Math.round(summary.best.mean)}°`}  positive />}
+          {summary.worst                && <StatTile label="STAT DEBOLE"  value={summary.worst.label}  sub={`${Math.round(summary.worst.mean)}°`} negative />}
         </div>
+      </div>
 
-        {/* Più migliorati */}
-        <div className="rounded-[4px] p-5 rx-card">
+      {/* Riga 2 — Andamento nel tempo (full width) */}
+      <GroupTrendChart clients={clients} />
+
+      {/* Riga 3 — 1/3 Più migliorati + 2/3 Heatmap */}
+      <div className="flex flex-col lg:flex-row gap-4 items-start">
+
+        {/* Più migliorati — 1/3 */}
+        <div className="w-full lg:w-[33%] rounded-[4px] p-5 rx-card">
           <div className="font-display text-[11px] font-semibold tracking-[2px] uppercase mb-5" style={{ color: '#0fd65a' }}>◈ Più migliorati</div>
           <div
             className="rounded-[3px] p-4 flex flex-col gap-2"
@@ -130,96 +132,97 @@ export function GroupAnalysis({ clients }) {
           </div>
         </div>
 
-      </div>
-
-      {/* ── Colonna destra: Heatmap ── */}
-      <div className="w-full lg:w-[58%]">
-      {statCols.length > 0 && (
-        <div className="rounded-[4px] p-5 rx-card">
+        {/* Heatmap — 2/3 */}
+        <div className="w-full lg:w-[67%] rounded-[4px] p-5 rx-card">
           <div className="font-display text-[11px] font-semibold tracking-[2px] uppercase mb-5" style={{ color: '#0fd65a' }}>◈ Heatmap gruppo</div>
-          <div
-            className="rounded-[3px] p-4 overflow-x-auto"
-            style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}
-          >
-            <table style={{ borderCollapse: 'separate', borderSpacing: 0, minWidth: statCols.length * 72 + 140 }}>
-              <thead>
-                <tr>
-                  <th className="text-left pb-3 pr-3" style={{ minWidth: 130 }}>
-                    <span className="font-display text-[10px] font-semibold tracking-[1px] text-white/25">ATLETA</span>
-                  </th>
-                  {statCols.map(col => (
-                    <th key={col.key} className="pb-3 px-1 text-center" style={{ minWidth: 64 }}>
-                      <span className="font-display text-[10px] font-semibold tracking-[1px] text-white/25 uppercase">{col.label}</span>
+          {statCols.length > 0 ? (
+            <div
+              className="rounded-[3px] p-4 overflow-x-auto"
+              style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}
+            >
+              <table style={{ borderCollapse: 'separate', borderSpacing: 0, minWidth: statCols.length * 72 + 140 }}>
+                <thead>
+                  <tr>
+                    <th className="text-left pb-3 pr-3" style={{ minWidth: 130 }}>
+                      <span className="font-display text-[10px] font-semibold tracking-[1px] text-white/25">ATLETA</span>
                     </th>
+                    {statCols.map(col => (
+                      <th key={col.key} className="pb-3 px-1 text-center" style={{ minWidth: 64 }}>
+                        <span className="font-display text-[10px] font-semibold tracking-[1px] text-white/25 uppercase">{col.label}</span>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {heatRows.map(({ client, vals }) => (
+                    <tr key={client.id}>
+                      <td className="pr-3 py-1" style={{ minWidth: 130 }}>
+                        <span className="font-display font-bold text-[12px] text-white/75 truncate block max-w-[120px]">{client.name}</span>
+                      </td>
+                      {vals.map((val, ci) => {
+                        const { bg, text } = heatColor(val)
+                        return (
+                          <td key={ci} className="px-1 py-1 text-center">
+                            <div
+                              className="rounded-[3px] font-display font-black text-[12px] leading-none py-1.5"
+                              style={{ background: bg, color: text, minWidth: 48 }}
+                            >
+                              {val != null ? Math.round(val) : '—'}
+                            </div>
+                          </td>
+                        )
+                      })}
+                    </tr>
                   ))}
-                </tr>
-              </thead>
-              <tbody>
-                {heatRows.map(({ client, vals }) => (
-                  <tr key={client.id}>
-                    <td className="pr-3 py-1" style={{ minWidth: 130 }}>
-                      <span className="font-display font-bold text-[12px] text-white/75 truncate block max-w-[120px]">{client.name}</span>
+                  <tr>
+                    <td className="pr-3 pt-4">
+                      <span className="font-display text-[10px] font-semibold tracking-[1.5px] text-white/30">MEDIA</span>
                     </td>
-                    {vals.map((val, ci) => {
+                    {averageRow.map((val, ci) => {
                       const { bg, text } = heatColor(val)
                       return (
-                        <td key={ci} className="px-1 py-1 text-center">
+                        <td key={ci} className="px-1 pt-4 text-center">
                           <div
                             className="rounded-[3px] font-display font-black text-[12px] leading-none py-1.5"
-                            style={{ background: bg, color: text, minWidth: 48 }}
+                            style={{
+                              background: val != null ? bg : 'transparent',
+                              color: val != null ? text : 'rgba(255,255,255,0.15)',
+                              border: val != null ? `1px solid ${text}33` : 'none',
+                              minWidth: 48,
+                            }}
                           >
-                            {val != null ? Math.round(val) : '—'}
+                            {val != null ? val : '—'}
                           </div>
                         </td>
                       )
                     })}
                   </tr>
-                ))}
-                {/* Riga media */}
-                <tr>
-                  <td className="pr-3 pt-4">
-                    <span className="font-display text-[10px] font-semibold tracking-[1.5px] text-white/30">MEDIA</span>
-                  </td>
-                  {averageRow.map((val, ci) => {
-                    const { bg, text } = heatColor(val)
-                    return (
-                      <td key={ci} className="px-1 pt-4 text-center">
-                        <div
-                          className="rounded-[3px] font-display font-black text-[12px] leading-none py-1.5"
-                          style={{
-                            background: val != null ? bg : 'transparent',
-                            color: val != null ? text : 'rgba(255,255,255,0.15)',
-                            border: val != null ? `1px solid ${text}33` : 'none',
-                            minWidth: 48,
-                          }}
-                        >
-                          {val != null ? val : '—'}
-                        </div>
-                      </td>
-                    )
-                  })}
-                </tr>
-              </tbody>
-            </table>
-          </div>
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="font-body text-[13px] text-white/20">Nessun campionamento registrato.</p>
+          )}
         </div>
-      )}
-      </div>{/* fine colonna destra */}
+
+      </div>
 
     </div>
-
-    {/* ── Trend temporale ── */}
-    <GroupTrendChart clients={clients} />
-    </>
   )
 }
 
 // ── Componenti locali ──────────────────────────────────────────────────────────
 
+const STAT_TILE_VARIANTS = {
+  gold:     { color: '#ffd700',               bg: 'rgba(255,215,0,0.06)',      bd: 'rgba(255,215,0,0.18)'      },
+  positive: { color: '#0fd65a',               bg: 'rgba(15,214,90,0.06)',      bd: 'rgba(15,214,90,0.18)'      },
+  negative: { color: '#f87171',               bg: 'rgba(248,113,113,0.06)',    bd: 'rgba(248,113,113,0.18)'    },
+  default:  { color: 'rgba(255,255,255,0.75)', bg: 'rgba(255,255,255,0.03)',   bd: 'rgba(255,255,255,0.06)'    },
+}
+
 function StatTile({ label, value, sub, gold, positive, negative }) {
-  const color = gold ? '#ffd700' : positive ? '#0fd65a' : negative ? '#f87171' : 'rgba(255,255,255,0.75)'
-  const bg    = gold ? 'rgba(255,215,0,0.06)' : positive ? 'rgba(15,214,90,0.06)' : negative ? 'rgba(248,113,113,0.06)' : 'rgba(255,255,255,0.03)'
-  const bd    = gold ? 'rgba(255,215,0,0.18)' : positive ? 'rgba(15,214,90,0.18)' : negative ? 'rgba(248,113,113,0.18)' : 'rgba(255,255,255,0.06)'
+  const variant = gold ? 'gold' : positive ? 'positive' : negative ? 'negative' : 'default'
+  const { color, bg, bd } = STAT_TILE_VARIANTS[variant]
 
   return (
     <div className="px-3 py-3 rounded-[3px] flex flex-col gap-1.5" style={{ background: bg, border: `1px solid ${bd}` }}>
@@ -320,7 +323,7 @@ function GroupTrendChart({ clients }) {
   const hasData = chartData.length >= 2
 
   return (
-    <div className="mt-4 rounded-[4px] p-5 rx-card">
+    <div className="rounded-[4px] p-5 rx-card">
       <div className="font-display text-[11px] font-semibold tracking-[2px] uppercase mb-4" style={{ color: '#0fd65a' }}>◈ Andamento nel tempo</div>
 
       <div className="flex gap-1.5 flex-wrap mb-4">

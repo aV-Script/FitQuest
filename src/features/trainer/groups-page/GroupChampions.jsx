@@ -24,7 +24,7 @@ export function GroupChampions({ clients }) {
       <div className="font-display text-[11px] font-semibold tracking-[2px] uppercase mb-5" style={{ color: '#0fd65a' }}>
         ◈ Campioni per disciplina
       </div>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         {champions.map(({ stat, label, maxVal, winners }) => (
           <ChampionCard key={stat} label={label} maxVal={maxVal} winners={winners} />
         ))}

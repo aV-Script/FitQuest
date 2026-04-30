@@ -1,5 +1,9 @@
 import { useState, useMemo } from 'react'
 import { ALL_TESTS, getRankFromMedia } from '../../../constants/index'
+import { usePagination }               from '../../../hooks/usePagination'
+import { Pagination }                  from '../../../components/common/Pagination'
+
+const LEADERBOARD_PAGE_SIZE = 10
 
 const POSITION_COLORS = ['#ffd700', '#c0c0c0', '#cd7f32'] // oro, argento, bronzo
 
@@ -39,6 +43,9 @@ export function GroupLeaderboard({ clients }) {
     return { sorted, sortedNoData, getScore }
   }, [clients, sortStat])
 
+  const rankedPagination  = usePagination(sorted,      LEADERBOARD_PAGE_SIZE, sortStat)
+  const noDataPagination  = usePagination(sortedNoData, LEADERBOARD_PAGE_SIZE, sortStat)
+
   if (clients.length === 0) {
     return (
       <div className="flex items-center justify-center py-16">
@@ -71,35 +78,43 @@ export function GroupLeaderboard({ clients }) {
 
       {/* Lista classifica */}
       <div className="flex flex-col gap-2">
-        {sorted.map((client, idx) => (
+        {rankedPagination.paginatedItems.map((client, idx) => (
           <LeaderboardRow
             key={client.id}
-            position={idx + 1}
+            position={(rankedPagination.page - 1) * LEADERBOARD_PAGE_SIZE + idx + 1}
             client={client}
             score={getScore(client)}
             sortStat={sortStat}
           />
         ))}
+      </div>
+      <Pagination {...rankedPagination} />
 
         {/* Separatore "nessun dato" */}
         {sorted.length > 0 && sortedNoData.length > 0 && (
-          <div className="mt-3 mb-1">
+          <div className="mt-4 mb-2">
             <div className="font-display text-[10px] font-semibold text-white/25 tracking-[2px] uppercase">
               Nessun dato ({sortedNoData.length})
             </div>
           </div>
         )}
 
-        {sortedNoData.map(client => (
-          <LeaderboardRow
-            key={client.id}
-            position={null}
-            client={client}
-            score={null}
-            sortStat={sortStat}
-          />
-        ))}
-      </div>
+        {sortedNoData.length > 0 && (
+          <>
+            <div className="flex flex-col gap-2">
+              {noDataPagination.paginatedItems.map(client => (
+                <LeaderboardRow
+                  key={client.id}
+                  position={null}
+                  client={client}
+                  score={null}
+                  sortStat={sortStat}
+                />
+              ))}
+            </div>
+            <Pagination {...noDataPagination} />
+          </>
+        )}
 
       {/* Empty state — nessun dato in nessun cliente */}
       {sorted.length === 0 && (
