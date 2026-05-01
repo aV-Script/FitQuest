@@ -14,6 +14,9 @@ import { ClientReportPrint }                 from './client-dashboard/ClientRepo
 import { ClientCalendar }                    from './ClientCalendar'
 import { CampionamentoView }                 from './CampionamentoView'
 import { useBia }                            from '../bia/useBia'
+import { useMisure }                         from './useMisure'
+import { XPTrendChart }                      from './client-dashboard/XPTrendChart'
+import { MisureSection }                     from './client-dashboard/MisureSection'
 import { BiaView }                           from '../bia/BiaView'
 import { BiaSummary }                        from '../bia/bia-view/BiaSummary'
 import { BiaHistoryChart }                   from '../bia/bia-view/BiaHistoryChart'
@@ -76,6 +79,12 @@ const ICON_AVATAR = (
     <circle cx="12" cy="7" r="4"/>
   </svg>
 )
+const ICON_MISURE = (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 3v1M6.2 6.2l.7.7M17.8 6.2l-.7.7M3 13h18M5 13a7 7 0 0 1 14 0"/>
+    <path d="M8 21h8M12 17v4"/>
+  </svg>
+)
 
 
 /**
@@ -112,6 +121,7 @@ export function ClientDashboard({ client, orgId, onBack, onCampionamento, onDele
   }, [orgId, client.id])
 
   const { handleSaveBia, handleUpgradeProfile } = useBia()
+  const { handleUpdateMisure }                  = useMisure()
 
   const profileType = client.profileType ?? 'tests_only'
   const profile     = getProfileCategory(profileType)
@@ -124,7 +134,7 @@ export function ClientDashboard({ client, orgId, onBack, onCampionamento, onDele
   const color   = profileType === 'bia_only' ? biaColor : testColor
   const rankObj = profileType === 'bia_only' ? biaRankObj : testRankObj
 
-  const isSoccer    = ['soccer', 'soccer_youth'].includes(client.categoria)
+  const isSoccer    = ['soccer', 'soccer_youth', 'soccer_junior'].includes(client.categoria)
   const categoriaObj = !isSoccer ? getCategoriaById(client.categoria) : null
   const ruoloObj     = isSoccer
     ? PLAYER_ROLES.find(r => r.value === client.ruolo) ?? null
@@ -147,6 +157,7 @@ export function ClientDashboard({ client, orgId, onBack, onCampionamento, onDele
     { id: 'calendario',  label: 'Calendario',  mobileLabel: 'Cal.',   icon: ICON_CALENDAR },
     { id: 'note',        label: 'Note',         mobileLabel: 'Note',  icon: ICON_NOTES },
     { id: 'attivita',    label: 'Attività',     mobileLabel: 'Log',   icon: ICON_ACTIVITY },
+    { id: 'misure',      label: 'Misure',       mobileLabel: 'Mis.',  icon: ICON_MISURE },
   ].filter(Boolean), [profile.hasTests, profile.hasBia])
 
   const defaultTab      = profile.hasTests ? 'test' : profile.hasBia ? 'bia' : 'allenamento'
@@ -255,7 +266,8 @@ export function ClientDashboard({ client, orgId, onBack, onCampionamento, onDele
             )}
             <button
               onClick={() => setShowDelete(true)}
-              className="border border-red-500/20 rounded-[3px] px-3 py-2 text-red-400/50 font-display text-[10px] cursor-pointer hover:border-red-500/50 hover:text-red-400 transition-all bg-transparent"
+              className="border rounded-[3px] px-3 py-2 font-display text-[10px] cursor-pointer bg-transparent transition-all hover:opacity-85"
+              style={{ color: '#f87171', borderColor: 'rgba(248,113,113,0.2)' }}
               title="Elimina cliente"
             >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -315,7 +327,8 @@ export function ClientDashboard({ client, orgId, onBack, onCampionamento, onDele
           </button>
           <button
             onClick={() => setShowDelete(true)}
-            className="bg-transparent border border-red-500/20 rounded-[3px] px-2.5 py-1.5 text-red-400/50 font-display text-[10px] cursor-pointer hover:border-red-500/50 hover:text-red-400 transition-all"
+            className="bg-transparent border rounded-[3px] px-2.5 py-1.5 font-display text-[10px] cursor-pointer transition-all hover:opacity-85"
+            style={{ color: '#f87171', borderColor: 'rgba(248,113,113,0.2)' }}
           >
             ELIMINA
           </button>
@@ -514,9 +527,20 @@ export function ClientDashboard({ client, orgId, onBack, onCampionamento, onDele
             )}
 
             {tab === 'attivita' && (
-              <section className="px-4 pt-6">
+              <section className="px-4 pt-6 flex flex-col gap-4">
+                <XPTrendChart log={client.log ?? []} color={color} />
                 <ActivityLog log={client.log} color={color} limit={10} />
               </section>
+            )}
+
+            {tab === 'misure' && (
+              <MisureSection
+                client={client}
+                color={color}
+                isSoccer={isSoccer}
+                readonly={readonly}
+                onUpdate={handleUpdateMisure}
+              />
             )}
 
           </div>

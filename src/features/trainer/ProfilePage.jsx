@@ -265,8 +265,10 @@ export function ProfilePage() {
               {/* Requisiti */}
               <div className="flex flex-col gap-1">
                 {[
-                  ['Almeno 8 caratteri e un numero', form.password.length >= 8 && /[0-9]/.test(form.password)],
-                  ['Le password coincidono',         form.password.length > 0  && form.password === form.confirm],
+                  ['Almeno 8 caratteri',           form.password.length >= 8],
+                  ['Almeno un numero',              /[0-9]/.test(form.password)],
+                  ['Almeno una lettera maiuscola',  /[A-Z]/.test(form.password)],
+                  ['Le password coincidono',        form.password.length > 0  && form.password === form.confirm],
                 ].map(([label, ok]) => (
                   <div key={label}
                     className="flex items-center gap-2 font-body text-[12px]"

@@ -43,6 +43,7 @@ export async function changeTrainerPassword(currentPw, newPw) {
   const credential = EmailAuthProvider.credential(user.email, currentPw)
   await reauthenticateWithCredential(user, credential)
   await updatePassword(user, newPw)
+  await auditLog(AUDIT_ACTIONS.PASSWORD_CHANGED)
 }
 
 export async function changeUserEmail(currentPw, newEmail) {
@@ -50,6 +51,7 @@ export async function changeUserEmail(currentPw, newEmail) {
   const credential = EmailAuthProvider.credential(user.email, currentPw)
   await reauthenticateWithCredential(user, credential)
   await verifyBeforeUpdateEmail(user, newEmail)
+  await auditLog(AUDIT_ACTIONS.EMAIL_CHANGED, { newEmail })
 }
 
 export async function createClientAccount(email, password) {

@@ -6,7 +6,7 @@ const TIMEOUT_MS = {
   org_admin:       2 * 60 * 60 * 1000,    //   2 ore
   trainer:         8 * 60 * 60 * 1000,    //   8 ore
   staff_readonly:  8 * 60 * 60 * 1000,    //   8 ore
-  client:          7 * 24 * 60 * 60 * 1000, // 7 giorni
+  client:          24 * 60 * 60 * 1000,       // 24 ore
 }
 
 const ACTIVITY_EVENTS = ['mousemove', 'mousedown', 'keypress', 'touchstart', 'scroll']

@@ -5,6 +5,7 @@ import { ConfirmDialog }                    from '../../../components/common/Con
 import { CreateMemberForm }                 from './CreateMemberForm'
 import { getPlanLimits }                    from '../../../config/plans.config'
 import { EmptyState }                       from '../../../components/ui'
+import { auditLog, AUDIT_ACTIONS }          from '../../../utils/auditLog'
 
 const ROLE_OPTIONS = [
   { value: 'trainer',        label: 'Trainer' },
@@ -34,6 +35,11 @@ export function MembersPage({ orgId, org }) {
 
   const handleRemove = useCallback(async () => {
     await removeMember(orgId, confirmRemove.id)
+    auditLog(AUDIT_ACTIONS.MEMBER_REMOVED, {
+      memberId:   confirmRemove.id,
+      memberName: confirmRemove.name ?? confirmRemove.email ?? confirmRemove.id,
+      orgId,
+    })
     setMembers(prev => prev.filter(m => m.id !== confirmRemove.id))
     setConfirmRemove(null)
   }, [orgId, confirmRemove])
@@ -46,6 +52,13 @@ export function MembersPage({ orgId, org }) {
         updateMember(orgId, member.id, { role: newRole }),
         updateUserProfile(member.id, { role: newRole }),
       ])
+      auditLog(AUDIT_ACTIONS.ROLE_CHANGED, {
+        memberId:   member.id,
+        memberName: member.name ?? member.email ?? member.id,
+        oldRole:    snapshot,
+        newRole,
+        orgId,
+      })
     } catch {
       setMembers(prev => prev.map(m => m.id === member.id ? { ...m, role: snapshot } : m))
     }

@@ -1,8 +1,11 @@
 import { useState, useMemo, memo } from 'react'
-import { ALL_TESTS } from '../../../constants/index'
+import { ALL_TESTS }               from '../../../constants/index'
+import { usePagination }           from '../../../hooks/usePagination'
+import { Pagination }              from '../../../components/common/Pagination'
 
-const COMPARISON_COLORS = ['#0fd65a', '#2ecfff', '#ffd700']
-const MAX_SELECTED = 3
+const COMPARISON_COLORS  = ['#0fd65a', '#2ecfff', '#ffd700']
+const MAX_SELECTED       = 3
+const SELECTOR_PAGE_SIZE = 6
 
 export function GroupComparison({ clients }) {
   const defaultSelected = useMemo(() => {
@@ -28,6 +31,8 @@ export function GroupComparison({ clients }) {
     }))
   }, [selectedClients])
 
+  const selectorPagination = usePagination(clients, SELECTOR_PAGE_SIZE)
+
   const handleToggle = (id) => {
     setSelected(prev => {
       if (prev.includes(id)) return prev.filter(x => x !== id)
@@ -45,54 +50,62 @@ export function GroupComparison({ clients }) {
   }
 
   return (
-    <div className="flex flex-col lg:flex-row gap-4 items-start">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
 
-      {/* ── Colonna sinistra: selettore + tabella valori ── */}
-      <div className="flex flex-col gap-4 w-full lg:w-[40%]">
-
-        {/* Selettore */}
-        <div className="rounded-[4px] p-5 rx-card">
-          <div className="font-display text-[11px] font-semibold tracking-[2px] uppercase mb-5" style={{ color: '#0fd65a' }}>
-            ◈ Confronto atleti
-          </div>
-          <div
-            className="rounded-[3px] p-4"
-            style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}
-          >
-            <div className="font-display text-[10px] font-semibold text-white/25 tracking-[1.5px] mb-3">
-              SELEZIONA ATLETI (max {MAX_SELECTED})
-            </div>
-            <div className="flex gap-2 flex-wrap">
-              {clients.map(c => {
-                const selIdx   = selected.indexOf(c.id)
-                const isActive = selIdx !== -1
-                const color    = isActive ? COMPARISON_COLORS[selIdx] : null
-                const disabled = !isActive && selected.length >= MAX_SELECTED
-                return (
-                  <button
-                    key={c.id}
-                    onClick={() => handleToggle(c.id)}
-                    disabled={disabled}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-[3px] font-display font-bold text-[12px] cursor-pointer border transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                    style={isActive
-                      ? { background: `${color}18`, borderColor: `${color}55`, color }
-                      : { background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.45)' }
-                    }
-                  >
-                    {isActive && <span className="w-2 h-2 rounded-full shrink-0" style={{ background: color }} />}
-                    {c.name}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
+      {/* Col 1: Selettore atleti */}
+      <div className="rounded-[4px] p-5 rx-card">
+        <div className="font-display text-[11px] font-semibold tracking-[2px] uppercase mb-1" style={{ color: '#0fd65a' }}>
+          ◈ Confronto atleti
         </div>
+        <div className="font-display text-[10px] text-white/25 tracking-[1px] mb-4">
+          MAX {MAX_SELECTED} · {selected.length} selezionati
+        </div>
+        <div className="flex flex-col gap-2">
+          {selectorPagination.paginatedItems.map(c => {
+            const selIdx  = selected.indexOf(c.id)
+            const disabled = selIdx === -1 && selected.length >= MAX_SELECTED
+            return (
+              <ComparisonAthleteRow
+                key={c.id}
+                client={c}
+                selIdx={selIdx}
+                disabled={disabled}
+                onToggle={() => handleToggle(c.id)}
+              />
+            )
+          })}
+        </div>
+        <Pagination {...selectorPagination} />
+      </div>
 
-        {/* Tabella valori (visibile solo se ci sono dati) */}
-        {selectedClients.length > 0 && statCols.length > 0 && (
-          <div className="rounded-[4px] p-5 rx-card">
-            <div className="font-display text-[11px] font-semibold tracking-[2px] uppercase mb-4" style={{ color: '#0fd65a' }}>◈ Valori</div>
-            {/* Legenda colori */}
+      {/* Col 2: Radar (centro) */}
+      <div className="rounded-[4px] p-5 rx-card flex flex-col items-center gap-4">
+        <div className="w-full font-display text-[11px] font-semibold tracking-[2px] uppercase" style={{ color: '#0fd65a' }}>◈ Radar</div>
+        {selectedClients.length > 0 && statCols.length > 0 ? (
+          <div style={{ width: '100%', aspectRatio: '1 / 1' }}>
+            <PentagonMulti
+              clients={selectedClients}
+              statKeys={statCols.map(s => s.key)}
+              statLabels={statCols.map(s => s.label)}
+              colors={selectedClients.map((_, i) => COMPARISON_COLORS[i])}
+            />
+          </div>
+        ) : (
+          <div className="flex items-center justify-center py-12">
+            <span className="font-body text-white/20 text-[13px] text-center">
+              {selectedClients.length === 0
+                ? 'Seleziona almeno un atleta.'
+                : 'Nessun campionamento per gli atleti selezionati.'}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Col 3: Tabella valori */}
+      <div className="rounded-[4px] p-5 rx-card">
+        <div className="font-display text-[11px] font-semibold tracking-[2px] uppercase mb-4" style={{ color: '#0fd65a' }}>◈ Valori</div>
+        {selectedClients.length > 0 && statCols.length > 0 ? (
+          <>
             <div className="flex gap-3 flex-wrap mb-4">
               {selectedClients.map((c, i) => (
                 <div key={c.id} className="flex items-center gap-1.5">
@@ -107,33 +120,13 @@ export function GroupComparison({ clients }) {
             >
               <ComparisonTable clients={selectedClients} statCols={statCols} />
             </div>
-          </div>
-        )}
-
-      </div>
-
-      {/* ── Colonna destra: pentagon ── */}
-      <div className="w-full lg:w-[60%]">
-        {selectedClients.length > 0 && statCols.length > 0 ? (
-          <div className="rounded-[4px] p-5 rx-card flex flex-col items-center gap-5">
-            <div className="w-full font-display text-[11px] font-semibold tracking-[2px] uppercase" style={{ color: '#0fd65a' }}>◈ Radar</div>
-            <div style={{ width: '100%', maxWidth: 360, aspectRatio: '1 / 1' }}>
-              <PentagonMulti
-                clients={selectedClients}
-                statKeys={statCols.map(s => s.key)}
-                statLabels={statCols.map(s => s.label)}
-                colors={selectedClients.map((_, i) => COMPARISON_COLORS[i])}
-              />
-            </div>
-          </div>
+          </>
         ) : (
-          <div className="rounded-[4px] p-8 rx-card flex items-center justify-center min-h-[200px]">
-            <span className="font-body text-white/20 text-[13px] text-center">
-              {selectedClients.length === 0
-                ? 'Seleziona almeno un atleta.'
-                : 'Nessun campionamento per gli atleti selezionati.'}
-            </span>
-          </div>
+          <p className="font-body text-[13px] text-white/20">
+            {selectedClients.length === 0
+              ? 'Seleziona atleti per vedere i valori.'
+              : 'Nessun dato disponibile.'}
+          </p>
         )}
       </div>
 
@@ -202,6 +195,57 @@ const PentagonMulti = memo(function PentagonMulti({ clients, statKeys, statLabel
     </svg>
   )
 })
+
+// ── Riga selettore atleta ─────────────────────────────────────────────────────
+
+function ComparisonAthleteRow({ client, selIdx, disabled, onToggle }) {
+  const isSelected = selIdx !== -1
+  const color      = isSelected ? COMPARISON_COLORS[selIdx] : null
+
+  return (
+    <div
+      className="flex items-center justify-between px-4 py-3 rounded-[3px] transition-all"
+      style={isSelected
+        ? { background: `${color}0d`, border: `1px solid ${color}33` }
+        : { background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }
+      }
+    >
+      <div className="flex items-center gap-3">
+        <div
+          className="w-2 h-2 rounded-full shrink-0"
+          style={{ background: isSelected ? color : 'transparent', border: isSelected ? 'none' : '1px solid rgba(255,255,255,0.1)' }}
+        />
+        <div
+          className="w-8 h-8 rounded-[3px] flex items-center justify-center shrink-0"
+          style={{ background: isSelected ? `${color}18` : 'rgba(255,255,255,0.05)' }}
+        >
+          <span className="font-display text-[11px] font-bold" style={{ color: isSelected ? color : 'rgba(255,255,255,0.35)' }}>
+            {client.name?.[0]?.toUpperCase()}
+          </span>
+        </div>
+        <div>
+          <div className="font-display font-bold text-[13px] text-white/80">{client.name}</div>
+          {client.rank && (
+            <div className="font-display text-[10px] text-white/30 mt-0.5">
+              {client.rank} · Lv.{client.level}
+            </div>
+          )}
+        </div>
+      </div>
+      <button
+        onClick={onToggle}
+        disabled={disabled}
+        className="font-display text-[10px] px-3 py-1.5 rounded-[3px] cursor-pointer border transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+        style={isSelected
+          ? { color: '#f87171', borderColor: 'rgba(248,113,113,0.2)', background: 'transparent' }
+          : { color: '#0fd65a', borderColor: 'rgba(15,214,90,0.2)',   background: 'rgba(15,214,90,0.06)' }
+        }
+      >
+        {isSelected ? 'RIMUOVI' : 'AGGIUNGI'}
+      </button>
+    </div>
+  )
+}
 
 // ── Tabella confronto ──────────────────────────────────────────────────────────
 

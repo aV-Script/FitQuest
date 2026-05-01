@@ -25,14 +25,20 @@ con terminologie, test e comportamenti UI diversi.
 - Profili: `tests_only` / `bia_only` / `complete`
 
 **soccer_academy** — accademie calcistiche
-- Fasce d'età: `soccer` (Senior ≥10 anni) / `soccer_youth` (Piccoli ≤9 anni)
+- Fasce d'età: 3 gruppi con test differenziati
+  - `soccer_youth`  → Pulcini    (7-9 anni)
+  - `soccer_junior` → Esordienti (10-13 anni)
+  - `soccer`        → Senior     (14+ anni)
 - Ruolo è solo etichetta visiva: `goalkeeper` / `defender` / `midfielder` / `forward`
-- Test fissi per entrambe le fasce: `y_balance`, `standing_long_jump`,
-  `505_cod_agility`, `sprint_20m`, `beep_test`
+- Test per fascia (definiti in `SOCCER_FIXED_TESTS` dict in `config/modules.config.js`):
+  - Pulcini (7-9):      `single_leg_stance`, `sprint_10m`, `shuttle_run_30m`, `standing_long_jump`, `t_test_mini`
+  - Esordienti (10-13): `y_balance_anterior`, `sprint_20m`, `t_test_soccer_junior`, `standing_long_jump`, `six_minute_run`
+  - Senior (14+):       `y_balance`, `standing_long_jump`, `505_cod_agility`, `sprint_20m`, `beep_test`
 - Terminologia: Coach / Allievo / Squadra / Allenamento
 - Profili: `tests_only` (unico)
-- `client.categoria` = `'soccer'` o `'soccer_youth'` — chiave interna
-  per `getTestsForCategoria`. Non è mostrata in UI (il ruolo è il badge visivo)
+- `client.categoria` = `'soccer_youth'` | `'soccer_junior'` | `'soccer'` — chiave interna
+  per `getTestsForCategoria`. Non è mostrata in UI (il ruolo è il badge visivo).
+  Badge fascia: Pulcini → giallo `#fbbf24`, Esordienti → viola `#a78bfa`, Senior → nessun badge.
 - Configurazione fasce: `SOCCER_AGE_GROUPS` in `config/modules.config.js`
 
 ### Profili cliente (`profileType`)
@@ -196,7 +202,7 @@ import { getPlanLimits, isAtTrainerLimit, isAtClientLimit } from 'config/plans.c
   rank, rankColor, media,
   stats:           {},
   campionamenti:   [],
-  log:             [],
+  log:             [],   // ogni entry: { date, action, xp, ts } — ts: Date.now() usato da XPTrendChart
   sessionsPerWeek,
   biaHistory:      [],
   lastBia:         null,
@@ -398,6 +404,7 @@ src/
 │   │   │   ├── ClientDashboardPage.jsx  ← vista client: stesso layout, AVATAR tab mobile
 │   │   │   ├── ClientProfilePage.jsx
 │   │   │   └── client.config.jsx
+│   │   ├── useMisure.js                 ← hook CRUD peso+altezza su cliente
 │   │   └── client-dashboard/
 │   │       ├── DashboardHeader.jsx
 │   │       ├── DeleteDialog.jsx
@@ -405,6 +412,8 @@ src/
 │   │       ├── NotesSection.jsx          ← thread note + commenti (trainer+client)
 │   │       ├── WorkoutPlanSection.jsx    ← schede allenamento (trainer): CRUD + storico
 │   │       ├── ClientWorkoutSection.jsx  ← scheda allenamento read-only (client)
+│   │       ├── MisureSection.jsx         ← tab Misure: storico peso+altezza con trend inline
+│   │       ├── XPTrendChart.jsx          ← grafico XP accumulato Giorno/Settimana/Mese
 │   │       └── ClientReportPrint.jsx     ← export PDF via window.print() (trainer)
 │   │
 │   ├── notification/
@@ -436,7 +445,13 @@ src/
 │       │   └── WorkoutPlanForm.jsx   ← form multi-giorno creazione/modifica scheda
 │       ├── groups-page/
 │       │   ├── GroupCard.jsx
-│       │   ├── GroupDetailView.jsx
+│       │   ├── GroupDetailView.jsx        ← hub 6 tab (Gestione/Classifica/Analisi/Confronto/Sessioni/Note)
+│       │   ├── GroupLeaderboard.jsx       ← classifica ordinabile per media o stat, paginata
+│       │   ├── GroupChampions.jsx         ← campioni per disciplina (griglia)
+│       │   ├── GroupAnalysis.jsx          ← riepilogo + trend LineChart + heatmap + più migliorati
+│       │   ├── GroupComparison.jsx        ← confronto 3 atleti: selettore paginato + radar SVG + tabella
+│       │   ├── GroupNotes.jsx             ← note di gruppo: publish/delete, paginazione
+│       │   ├── GroupReportPrint.jsx       ← export PDF gruppo via window.print()
 │       │   ├── GroupsSidebar.jsx
 │       │   └── GroupToggleDialog.jsx
 │       ├── trainer-calendar/
@@ -460,7 +475,7 @@ src/
 │       └── steps/StepFascia.jsx ← step fascia d'età per soccer_academy
 │
 ├── firebase/
-│   ├── config.js
+│   ├── config.js            ← initializeApp + App Check (ReCaptchaV3Provider, dev debug token)
 │   ├── paths.js             ← path helpers subcollection
 │   └── services/
 │       ├── auth.js          ← changeTrainerPassword, changeUserEmail
@@ -1056,6 +1071,13 @@ className={`... ${t.mobileOnly ? 'lg:hidden' : ''}`}
 </div>
 ```
 
+### Tab Misure e XP Trend (client dashboard — apr 2026)
+- **Tab Misure**: `MisureSection.jsx` + `useMisure.js` — storico peso e altezza del cliente con trend inline
+  - `useMisure(orgId, clientId)` → `{ misure, handleUpdateMisure }` — salva su `clients/{clientId}.misure[]`
+- **XPTrendChart**: `XPTrendChart.jsx` — grafico XP accumulato per Giorno/Settimana/Mese
+  - Legge `client.log[]` (ogni entry ha `ts: Date.now()` da `gamification.js`)
+  - `scripts/migrate-logTimestamps.mjs` — script one-shot per backfill `ts` sui log esistenti pre-apr 2026
+
 ### Export PDF atleta
 - Componente: `ClientReportPrint.jsx` in `client-dashboard/`
 - Trigger: pulsante "ESPORTA PDF" in `DashboardHeader` (prop `onExport`)
@@ -1117,6 +1139,47 @@ config/plans.config.js       → fonte di verità limiti piano
 
 ---
 
+## Sicurezza
+
+### Hardening implementato (apr 2026)
+
+**Firestore Rules:**
+- `memberRole()` null-safe — ritorna `null` se il documento membro non esiste
+- `isOrgAdminForMember()` valida il valore del nuovo `role` (solo `org_admin`, `trainer`, `staff_readonly` — impedisce escalation a `super_admin`)
+- `mustChangePassword` scrivibile dal client solo con valore `false` (non può reimpostarlo a `true`)
+- `memberCount` / `clientCount` modificabili solo in ±1 per batch — nessun reset diretto
+
+**Auth & Session:**
+- `ChangePasswordScreen` richiede re-auth con password temporanea prima di `updatePassword`
+- Session timeout client: 24 ore (era 7 giorni)
+- Audit log su: login, logout, creazione/eliminazione cliente, cambio password, cambio email, cambio ruolo membro, rimozione membro
+
+**Password policy** (`utils/validation.js`):
+```
+validatePassword → minimo 8 caratteri + almeno 1 numero + almeno 1 lettera maiuscola
+```
+
+**HTTP Security Headers** (entrambi i target Firebase Hosting):
+```
+Content-Security-Policy   → script 'self', style 'unsafe-inline', connect Firebase/Google
+X-Frame-Options           → DENY
+X-Content-Type-Options    → nosniff
+Referrer-Policy           → strict-origin-when-cross-origin
+Permissions-Policy        → camera=(), microphone=(), geolocation=()
+```
+
+**App Check** (`firebase/config.js`):
+- Provider: `ReCaptchaV3Provider` con `VITE_RECAPTCHA_SITE_KEY`
+- Prod: enforcement attivo su Firestore e Authentication
+- Dev: App Check non inizializzato (chiave vuota in `.env.development`)
+- Guard: `if (recaptchaKey)` — se la chiave non è presente, App Check non parte
+
+**Limitazioni note (strutturali — richiedono backend):**
+- Session timeout solo client-side (Firebase puro frontend)
+- `signOut()` non revoca il refresh token server-side (~1h residua)
+
+---
+
 ## Ambienti e infrastruttura
 
 ### Progetti Firebase
@@ -1131,6 +1194,12 @@ fitquest-60a09  → produzione     (npm run build / deploy)
 .env.production   → VITE_ENV=production,  credenziali fitquest-60a09
 ```
 Entrambi gitignored. Template: `.env.example`.
+
+Variabili richieste in `.env.production` (non in dev):
+```
+VITE_RECAPTCHA_SITE_KEY=   ← chiave pubblica sito reCAPTCHA v3 (google.com/recaptcha/admin)
+```
+In dev la chiave è vuota → App Check non inizializzato → nessun enforcement su rankex-dev.
 
 ### Hosting Firebase — multisito
 ```
@@ -1153,7 +1222,7 @@ super_admin:    30 min
 org_admin:       2 ore
 trainer:         8 ore
 staff_readonly:  8 ore
-client:          7 giorni
+client:          24 ore
 ```
 Timer si azzera su mousemove / keypress / touchstart / scroll.
 Chiamato in `App.jsx` con `profile?.role`.
@@ -1169,6 +1238,11 @@ AUDIT_ACTIONS.LOGIN / LOGIN_FAILED  → useLoginForm.js
 AUDIT_ACTIONS.LOGOUT                → firebase/services/auth.js
 AUDIT_ACTIONS.CLIENT_CREATED        → usecases/createClientUseCase.js
 AUDIT_ACTIONS.CLIENT_DELETED        → hooks/useClients.js
+AUDIT_ACTIONS.PASSWORD_CHANGED      → firebase/services/auth.js (changeTrainerPassword)
+                                       + features/client/ChangePasswordScreen.jsx
+AUDIT_ACTIONS.EMAIL_CHANGED         → firebase/services/auth.js (changeUserEmail)
+AUDIT_ACTIONS.ROLE_CHANGED          → features/org/org-pages/MembersPage.jsx
+AUDIT_ACTIONS.MEMBER_REMOVED        → features/org/org-pages/MembersPage.jsx
 ```
 **IMPORTANTE:** `getAuth(app)` in `auditLog.js` è chiamato dentro la
 funzione (lazy), non a livello di modulo. Non spostarlo — causerebbe
@@ -1307,10 +1381,13 @@ Super admin    → Gestione e upload moduli (globali + per org)
 Badge / Achievement    → traguardi automatici: prima sessione, 10 presenze
                          consecutive, primo rank-up, nuovo personal best su test
 Streak presenze        → moltiplicatore XP per settimane consecutive senza assenze
-Leaderboard gruppo     → IMPLEMENTATO — apr 2026
-                         Tab "CLASSIFICA" in GroupDetailView, ordinabile per media
-                         o per singola stat. Top 3 oro/argento/bronzo.
-                         Componente: GroupLeaderboard.jsx
+Groups Analytics Hub   → IMPLEMENTATO — apr 2026
+                         GroupDetailView con 6 tab: Gestione (3 col + ricerca + paginazione),
+                         Classifica (GroupLeaderboard — sort per media/stat, top 3 podio),
+                         Analisi (GroupAnalysis — riepilogo + trend LineChart + heatmap + più migliorati),
+                         Confronto (GroupComparison — selettore paginato, radar SVG multi-overlay, tabella),
+                         Sessioni (slot del gruppo), Note (GroupNotes — publish/delete, paginazione).
+                         Export PDF: GroupReportPrint.jsx via window.print().
 Obiettivi trainer      → coach fissa target su test specifico per un cliente
                          (es. "70° percentile sprint entro fine mese")
                          sistema monitora e notifica al raggiungimento

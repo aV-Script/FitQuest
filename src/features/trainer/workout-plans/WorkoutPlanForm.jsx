@@ -214,7 +214,10 @@ export function WorkoutPlanForm({ clientId, clients, initialData, onSubmit, onBa
                 {days.length > 1 && activeDay === i && (
                   <button
                     onClick={() => removeDay(i)}
-                    className="text-white/20 hover:text-red-400 transition-colors text-[11px] bg-transparent border-none cursor-pointer"
+                    className="text-[11px] bg-transparent border-none cursor-pointer transition-colors"
+                    style={{ color: 'rgba(255,255,255,0.2)' }}
+                    onMouseEnter={e => { e.currentTarget.style.color = '#f87171' }}
+                    onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.2)' }}
                   >
                     ✕
                   </button>
@@ -224,7 +227,8 @@ export function WorkoutPlanForm({ clientId, clients, initialData, onSubmit, onBa
             {days.length < 7 && (
               <button
                 onClick={addDay}
-                className="font-display text-[11px] text-green-400 hover:text-green-300 transition-colors bg-transparent border-none cursor-pointer px-1"
+                className="font-display text-[11px] bg-transparent border-none cursor-pointer px-1 transition-opacity hover:opacity-70"
+                style={{ color: '#0fd65a' }}
               >
                 + giorno
               </button>
@@ -237,7 +241,8 @@ export function WorkoutPlanForm({ clientId, clients, initialData, onSubmit, onBa
               <span className="font-display text-[11px] font-semibold tracking-[2px] text-white/30">ESERCIZI</span>
               <button
                 onClick={() => addExercise(activeDay)}
-                className="font-display text-[11px] text-green-400 hover:text-green-300 transition-colors bg-transparent border-none cursor-pointer"
+                className="font-display text-[11px] bg-transparent border-none cursor-pointer transition-opacity hover:opacity-70"
+                style={{ color: '#0fd65a' }}
               >
                 + aggiungi
               </button>
@@ -294,7 +299,10 @@ function ExerciseRow({ index, exercise, total, onChange, onRemove }) {
         {total > 1 && (
           <button
             onClick={onRemove}
-            className="text-white/20 hover:text-red-400 transition-colors text-[12px] bg-transparent border-none cursor-pointer shrink-0"
+            className="text-[12px] bg-transparent border-none cursor-pointer shrink-0 transition-colors"
+            style={{ color: 'rgba(255,255,255,0.2)' }}
+            onMouseEnter={e => { e.currentTarget.style.color = '#f87171' }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.2)' }}
           >
             ✕
           </button>

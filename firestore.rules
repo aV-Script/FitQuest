@@ -29,7 +29,8 @@ service cloud.firestore {
     }
 
     function memberRole(orgId) {
-      return get(/databases/$(database)/documents/organizations/$(orgId)/members/$(request.auth.uid)).data.role;
+      let doc = get(/databases/$(database)/documents/organizations/$(orgId)/members/$(request.auth.uid));
+      return doc == null ? null : doc.data.role;
     }
 
     function canWrite(orgId) {
@@ -63,7 +64,8 @@ service cloud.firestore {
         admin.role == 'org_admin' &&
         admin.orgId != null &&
         exists(/databases/$(database)/documents/organizations/$(admin.orgId)/members/$(targetUid)) &&
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role']);
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role']) &&
+        request.resource.data.role in ['org_admin', 'trainer', 'staff_readonly'];
     }
 
     function isOwnClient(orgId, clientId) {
@@ -88,12 +90,13 @@ service cloud.firestore {
          memberRole(request.resource.data.orgId) in ['org_admin', 'trainer']);
 
       // UPDATE: super_admin può tutto.
-      // L'utente può aggiornare solo mustChangePassword sul proprio profilo.
-      // Org_admin può cambiare il role dei propri membri.
+      // L'utente può azzerare solo mustChangePassword (non impostarlo a true).
+      // Org_admin può cambiare il role dei propri membri (valori ammessi: vedere isOrgAdminForMember).
       allow update: if isSuperAdmin() ||
         (request.auth.uid == uid &&
          request.resource.data.diff(resource.data).affectedKeys()
-           .hasOnly(['mustChangePassword'])) ||
+           .hasOnly(['mustChangePassword']) &&
+         request.resource.data.mustChangePassword == false) ||
         isOrgAdminForMember(uid);
 
       allow delete: if isSuperAdmin();

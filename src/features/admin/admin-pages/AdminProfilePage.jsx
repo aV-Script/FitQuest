@@ -217,8 +217,10 @@ export function AdminProfilePage({ user }) {
               )}
               <div className="flex flex-col gap-1">
                 {[
-                  ['Almeno 8 caratteri e un numero', pwForm.password.length >= 8 && /[0-9]/.test(pwForm.password)],
-                  ['Le password coincidono',         pwForm.password.length > 0  && pwForm.password === pwForm.confirm],
+                  ['Almeno 8 caratteri',           pwForm.password.length >= 8],
+                  ['Almeno un numero',              /[0-9]/.test(pwForm.password)],
+                  ['Almeno una lettera maiuscola',  /[A-Z]/.test(pwForm.password)],
+                  ['Le password coincidono',        pwForm.password.length > 0  && pwForm.password === pwForm.confirm],
                 ].map(([label, ok]) => (
                   <div key={label} className="flex items-center gap-2 font-body text-[12px]"
                     style={{ color: ok ? '#f87171' : 'rgba(255,255,255,0.2)' }}>

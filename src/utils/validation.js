@@ -44,6 +44,8 @@ export function validatePassword(password) {
     return { valid: false, error: 'Minimo 8 caratteri' }
   if (!/[0-9]/.test(password))
     return { valid: false, error: 'Deve contenere almeno un numero' }
+  if (!/[A-Z]/.test(password))
+    return { valid: false, error: 'Deve contenere almeno una lettera maiuscola' }
   return { valid: true, error: null }
 }
 

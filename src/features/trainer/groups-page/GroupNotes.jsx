@@ -2,10 +2,15 @@ import { useState, useEffect, useCallback } from 'react'
 import { getAuth }                           from 'firebase/auth'
 import { getGroupNotes, addGroupNote, deleteGroupNote } from '../../../firebase/services/groupNotes'
 import { useTrainerState }                   from '../../../context/TrainerContext'
+import { usePagination }                     from '../../../hooks/usePagination'
+import { Pagination }                        from '../../../components/common/Pagination'
+
+const NOTES_PAGE_SIZE = 8
 
 const ROLE_LABELS = {
-  trainer:   'Trainer',
-  org_admin: 'Admin',
+  trainer:        'Trainer',
+  org_admin:      'Admin',
+  staff_readonly: 'Staff',
 }
 
 export function GroupNotes({ orgId, groupId }) {
@@ -15,6 +20,9 @@ export function GroupNotes({ orgId, groupId }) {
   const [text,        setText]        = useState('')
   const [submitting,  setSubmitting]  = useState(false)
   const [deletingId,  setDeletingId]  = useState(null)
+
+  const notesPagination  = usePagination(notes, NOTES_PAGE_SIZE)
+  const currentUserId    = getAuth().currentUser?.uid
 
   const fetchNotes = useCallback(async () => {
     setLoading(true)
@@ -107,18 +115,21 @@ export function GroupNotes({ orgId, groupId }) {
           Nessuna nota pubblicata per questo gruppo.
         </p>
       ) : (
-        <div className="flex flex-col gap-3">
-          {notes.map(note => (
-            <NoteCard
-              key={note.id}
-              note={note}
-              currentUserId={getAuth().currentUser?.uid}
-              userRole={userRole}
-              deleting={deletingId === note.id}
-              onDelete={() => handleDelete(note.id, note.authorId)}
-            />
-          ))}
-        </div>
+        <>
+          <div className="flex flex-col gap-3">
+            {notesPagination.paginatedItems.map(note => (
+              <NoteCard
+                key={note.id}
+                note={note}
+                currentUserId={currentUserId}
+                userRole={userRole}
+                deleting={deletingId === note.id}
+                onDelete={() => handleDelete(note.id, note.authorId)}
+              />
+            ))}
+          </div>
+          <Pagination {...notesPagination} />
+        </>
       )}
     </div>
   )

@@ -1,19 +1,11 @@
 import { useState, useMemo, useEffect } from 'react'
 
-/**
- * Hook generico per la paginazione client-side.
- * Riusabile per qualsiasi lista di elementi.
- *
- * @param {Array}  items    — lista completa degli elementi
- * @param {number} pageSize — elementi per pagina (default 12)
- */
-export function usePagination(items, pageSize = 12) {
+export function usePagination(items, pageSize = 12, resetKey = undefined) {
   const [page, setPage] = useState(1)
 
-  // Resetta alla prima pagina quando cambia la lista
   useEffect(() => {
     setPage(1)
-  }, [items.length])
+  }, [items.length, resetKey])
 
   const totalPages = Math.max(1, Math.ceil(items.length / pageSize))
 

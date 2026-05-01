@@ -98,6 +98,12 @@ export function GroupDetailView({ group, clients, orgId, onToggleClient, onRenam
     clients.filter(c => group.clientIds.includes(c.id))
   , [clients, group.clientIds])
 
+  const SOCCER_CATS = ['soccer_youth', 'soccer_junior', 'soccer']
+  const mixedFascia = useMemo(() => {
+    const fasce = new Set(allClientsInGroup.map(c => c.categoria).filter(v => SOCCER_CATS.includes(v)))
+    return fasce.size > 1
+  }, [allClientsInGroup])
+
   const filteredClients = useMemo(() =>
     clients.filter(c => c.name.toLowerCase().includes(clientSearch.toLowerCase()))
   , [clients, clientSearch])
@@ -167,11 +173,14 @@ export function GroupDetailView({ group, clients, orgId, onToggleClient, onRenam
                 className="input-base text-center font-display font-black text-[16px]"
                 style={{ minWidth: 200 }}
               />
-              <ActionBtn onClick={handleRename} color="#34d399">SALVA</ActionBtn>
+              <ActionBtn onClick={handleRename} color="#0fd65a">SALVA</ActionBtn>
               <ActionBtn onClick={() => { setIsEditing(false); setEditingName(group.name) }} muted>ANNULLA</ActionBtn>
             </>
           ) : (
-            <span className="font-display font-black text-[16px] text-white truncate max-w-[140px] sm:max-w-xs">{group.name}</span>
+            <div className="flex flex-col items-center">
+              <span className="font-display font-black text-[16px] text-white truncate max-w-[140px] sm:max-w-xs">{group.name}</span>
+              <span className="font-body text-[11px] text-white/25">{group.clientIds.length} {group.clientIds.length === 1 ? 'atleta' : 'atleti'}</span>
+            </div>
           )}
         </div>
 
@@ -185,26 +194,8 @@ export function GroupDetailView({ group, clients, orgId, onToggleClient, onRenam
       {/* ── Body ── */}
       <div className="max-w-5xl mx-auto w-full flex flex-col flex-1">
 
-        {/* Info gruppo */}
-        <div className="flex items-center gap-4 px-4 sm:px-6 pt-6 pb-4">
-          <div
-            className="w-14 h-14 rounded-[4px] flex items-center justify-center shrink-0"
-            style={{ background: 'rgba(15,214,90,0.08)', border: '1px solid rgba(15,214,90,0.2)' }}
-          >
-            <span className="font-display font-black text-[20px]" style={{ color: '#0fd65a' }}>
-              {group.name[0].toUpperCase()}
-            </span>
-          </div>
-          <div>
-            <div className="font-display font-black text-[20px] text-white">{group.name}</div>
-            <div className="font-body text-[13px] text-white/30 mt-0.5">
-              {group.clientIds.length} {group.clientIds.length === 1 ? 'atleta' : 'atleti'}
-            </div>
-          </div>
-        </div>
-
         {/* ── Tab nav — rx-card sticky ── */}
-        <section className="px-4 pb-3 sticky top-[57px] z-10 backdrop-blur-md">
+        <section className="px-4 pb-2 pt-3 sticky top-[57px] z-10 backdrop-blur-md">
           <div className="rounded-[4px] rx-card overflow-hidden">
             <div className="grid grid-flow-col auto-cols-fr px-1 py-2">
               {TABS.map(t => (
@@ -225,6 +216,14 @@ export function GroupDetailView({ group, clients, orgId, onToggleClient, onRenam
           </div>
         </section>
 
+        {/* ── Avviso fascia mista ── */}
+        {mixedFascia && (
+          <div className="mx-4 sm:mx-6 mt-3 px-4 py-3 rounded-[3px] font-body text-[12px] leading-relaxed"
+            style={{ background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.3)', color: '#fbbf24' }}>
+            ⚠ Questo gruppo contiene atleti di fasce d'età diverse. Classifica, Analisi e Confronto potrebbero non essere significativi.
+          </div>
+        )}
+
         {/* ── Contenuto tab ── */}
         <div key={subView} className="rx-animate-in flex-1">
 
@@ -236,18 +235,12 @@ export function GroupDetailView({ group, clients, orgId, onToggleClient, onRenam
               description="Aggiungi almeno 2 atleti al gruppo per vedere la classifica e i campioni per disciplina."
             />
           ) : (
-            <div className="px-4 sm:px-6 pt-4 pb-12">
-              <div className="flex flex-col lg:flex-row gap-4 items-start">
-                <div className="w-full lg:w-[58%]">
-                  <div className="rounded-[4px] p-5 rx-card">
-                    <div className="font-display text-[11px] font-semibold tracking-[3px] uppercase mb-5" style={{ color: '#0fd65a' }}>◈ Classifica</div>
-                    <GroupLeaderboard clients={allClientsInGroup} />
-                  </div>
-                </div>
-                <div className="w-full lg:w-[42%]">
-                  <GroupChampions clients={allClientsInGroup} />
-                </div>
+            <div className="px-4 sm:px-6 pt-4 pb-12 flex flex-col gap-4">
+              <div className="rounded-[4px] p-5 rx-card">
+                <div className="font-display text-[11px] font-semibold tracking-[3px] uppercase mb-5" style={{ color: '#0fd65a' }}>◈ Classifica</div>
+                <GroupLeaderboard clients={allClientsInGroup} />
               </div>
+              <GroupChampions clients={allClientsInGroup} />
             </div>
           )
         )}
@@ -281,76 +274,85 @@ export function GroupDetailView({ group, clients, orgId, onToggleClient, onRenam
         )}
 
         {subView === 'manage' && (
-          <div className="px-4 sm:px-6 pt-4 pb-12">
-            {allClientsInGroup.length < 2 && (
-              <div
-                className="mb-4 px-4 py-3 rounded-[4px] font-body text-[12px] text-white/35 leading-relaxed"
-                style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}
-              >
-                {allClientsInGroup.length === 0
-                  ? 'Aggiungi almeno 2 atleti per sbloccare Classifica, Analisi e Confronto.'
-                  : 'Aggiungi un altro atleta per sbloccare Classifica, Analisi e Confronto.'}
-              </div>
-            )}
+          <div className="px-4 sm:px-6 pt-4 pb-12 flex flex-col gap-4">
+
             {/* Search bar full-width */}
             <input
               value={clientSearch}
               onChange={e => setClientSearch(e.target.value)}
               placeholder="Cerca atleta per nome..."
-              className="input-base w-full mb-4"
+              className="input-base w-full"
             />
 
-            {/* Due colonne */}
-            <div className="flex flex-col lg:flex-row gap-4 items-start">
+            {/* Tre colonne */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
 
-              {/* Nel gruppo */}
-              <div className="w-full lg:flex-1">
-                <div className="rounded-[4px] p-5 rx-card">
-                  <div className="font-display text-[11px] font-semibold tracking-[3px] uppercase mb-5" style={{ color: '#0fd65a' }}>
-                    ◈ Nel gruppo <span className="text-white/25 ml-1">({clientsInGroup.length})</span>
-                  </div>
-                  {inGroupPagination.paginatedItems.length === 0 ? (
-                    <EmptyState
-                      icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>}
-                      title={clientSearch ? 'Nessun risultato' : 'Nessun atleta nel gruppo'}
-                      description={clientSearch ? undefined : 'Aggiungi atleti dalla colonna "Da aggiungere".'}
-                    />
-                  ) : (
-                    <>
-                      <div className="flex flex-col gap-2">
-                        {inGroupPagination.paginatedItems.map(c => (
-                          <ClientRow key={c.id} client={c} inGroup loading={toggling === c.id} onToggle={() => handleRequestToggle(c, true)} />
-                        ))}
-                      </div>
-                      <Pagination {...inGroupPagination} />
-                    </>
-                  )}
+              {/* Col 1: Nel gruppo */}
+              <div className="rounded-[4px] p-5 rx-card">
+                <div className="font-display text-[11px] font-semibold tracking-[3px] uppercase mb-5" style={{ color: '#0fd65a' }}>
+                  ◈ Nel gruppo <span className="text-white/25 ml-1">({clientsInGroup.length})</span>
                 </div>
+                {inGroupPagination.paginatedItems.length === 0 ? (
+                  <EmptyState
+                    icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>}
+                    title={clientSearch ? 'Nessun risultato' : 'Nessun atleta nel gruppo'}
+                    description={clientSearch ? undefined : 'Aggiungi atleti dalla colonna destra.'}
+                  />
+                ) : (
+                  <>
+                    <div className="flex flex-col gap-2">
+                      {inGroupPagination.paginatedItems.map(c => (
+                        <ClientRow key={c.id} client={c} inGroup loading={toggling === c.id} onToggle={() => handleRequestToggle(c, true)} />
+                      ))}
+                    </div>
+                    <Pagination {...inGroupPagination} />
+                  </>
+                )}
               </div>
 
-              {/* Da aggiungere */}
-              <div className="w-full lg:flex-1">
-                <div className="rounded-[4px] p-5 rx-card">
-                  <div className="font-display text-[11px] font-semibold tracking-[3px] uppercase mb-5" style={{ color: 'rgba(255,255,255,0.3)' }}>
-                    ◈ Da aggiungere <span className="text-white/25 ml-1">({clientsNotInGroup.length})</span>
-                  </div>
-                  {notInGroupPagination.paginatedItems.length === 0 ? (
-                    <EmptyState
-                      icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>}
-                      title={clientSearch ? 'Nessun risultato' : 'Tutti nel gruppo'}
-                      description={clientSearch ? undefined : 'Tutti gli atleti sono già in questo gruppo.'}
-                    />
-                  ) : (
-                    <>
-                      <div className="flex flex-col gap-2">
-                        {notInGroupPagination.paginatedItems.map(c => (
-                          <ClientRow key={c.id} client={c} inGroup={false} loading={toggling === c.id} onToggle={() => handleRequestToggle(c, false)} />
-                        ))}
-                      </div>
-                      <Pagination {...notInGroupPagination} />
-                    </>
-                  )}
+              {/* Col 2: Riepilogo gruppo */}
+              <div className="rounded-[4px] p-5 rx-card">
+                <div className="font-display text-[11px] font-semibold tracking-[3px] uppercase mb-5" style={{ color: '#0fd65a' }}>
+                  ◈ Riepilogo
                 </div>
+                <div className="flex flex-col gap-2 mb-4">
+                  <ManageStat label="Nel gruppo"    value={allClientsInGroup.length}                        color="#0fd65a" />
+                  <ManageStat label="Disponibili"   value={clients.length - allClientsInGroup.length}       />
+                  <ManageStat label="Totale atleti" value={clients.length}                                  />
+                </div>
+                {allClientsInGroup.length < 2 && (
+                  <div
+                    className="px-3 py-3 rounded-[3px] font-body text-[12px] text-white/35 leading-relaxed"
+                    style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}
+                  >
+                    {allClientsInGroup.length === 0
+                      ? 'Aggiungi almeno 2 atleti per sbloccare Classifica, Analisi e Confronto.'
+                      : 'Aggiungi un altro atleta per sbloccare Classifica, Analisi e Confronto.'}
+                  </div>
+                )}
+              </div>
+
+              {/* Col 3: Da aggiungere */}
+              <div className="rounded-[4px] p-5 rx-card">
+                <div className="font-display text-[11px] font-semibold tracking-[3px] uppercase mb-5" style={{ color: 'rgba(255,255,255,0.3)' }}>
+                  ◈ Da aggiungere <span className="text-white/25 ml-1">({clientsNotInGroup.length})</span>
+                </div>
+                {notInGroupPagination.paginatedItems.length === 0 ? (
+                  <EmptyState
+                    icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>}
+                    title={clientSearch ? 'Nessun risultato' : 'Tutti nel gruppo'}
+                    description={clientSearch ? undefined : 'Tutti gli atleti sono già in questo gruppo.'}
+                  />
+                ) : (
+                  <>
+                    <div className="flex flex-col gap-2">
+                      {notInGroupPagination.paginatedItems.map(c => (
+                        <ClientRow key={c.id} client={c} inGroup={false} loading={toggling === c.id} onToggle={() => handleRequestToggle(c, false)} />
+                      ))}
+                    </div>
+                    <Pagination {...notInGroupPagination} />
+                  </>
+                )}
               </div>
 
             </div>
@@ -413,15 +415,17 @@ function GroupSessionsPanel({ slots, loading }) {
   const upcoming = useMemo(() =>
     slots
       .filter(s => s.date >= today && s.status === SLOT_STATUS.PLANNED)
-      .slice(0, 3)
+      .sort((a, b) => a.date.localeCompare(b.date))
   , [slots, today])
 
   const recent = useMemo(() =>
     slots
       .filter(s => s.date < today && s.status === SLOT_STATUS.COMPLETED)
       .sort((a, b) => b.date.localeCompare(a.date))
-      .slice(0, 5)
   , [slots, today])
+
+  const upcomingPagination = usePagination(upcoming, 5)
+  const recentPagination   = usePagination(recent,   10)
 
   const stats = useMemo(() => {
     const month30ago = new Date()
@@ -492,30 +496,36 @@ function GroupSessionsPanel({ slots, loading }) {
           {/* Prossime */}
           {upcoming.length > 0 && (
             <div className="flex-1">
-              <div className="font-display text-[10px] tracking-[1.5px] text-white/30 mb-2">PROSSIME</div>
+              <div className="font-display text-[10px] tracking-[1.5px] text-white/30 mb-2">
+                PROSSIME ({upcoming.length})
+              </div>
               <div
                 className="rounded-[3px] overflow-hidden"
                 style={{ border: '1px solid rgba(255,255,255,0.05)' }}
               >
-                {upcoming.map((slot, i) => (
-                  <SlotRow key={slot.id} slot={slot} upcoming border={i < upcoming.length - 1} />
+                {upcomingPagination.paginatedItems.map((slot, i) => (
+                  <SlotRow key={slot.id} slot={slot} upcoming border={i < upcomingPagination.paginatedItems.length - 1} />
                 ))}
               </div>
+              <Pagination {...upcomingPagination} />
             </div>
           )}
 
           {/* Recenti */}
           {recent.length > 0 && (
             <div className="flex-1">
-              <div className="font-display text-[10px] tracking-[1.5px] text-white/30 mb-2">RECENTI</div>
+              <div className="font-display text-[10px] tracking-[1.5px] text-white/30 mb-2">
+                RECENTI ({recent.length})
+              </div>
               <div
                 className="rounded-[3px] overflow-hidden"
                 style={{ border: '1px solid rgba(255,255,255,0.05)' }}
               >
-                {recent.map((slot, i) => (
-                  <SlotRow key={slot.id} slot={slot} border={i < recent.length - 1} />
+                {recentPagination.paginatedItems.map((slot, i) => (
+                  <SlotRow key={slot.id} slot={slot} border={i < recentPagination.paginatedItems.length - 1} />
                 ))}
               </div>
+              <Pagination {...recentPagination} />
             </div>
           )}
 
@@ -631,17 +641,33 @@ function ClientRow({ client, inGroup, loading, onToggle }) {
   )
 }
 
+function ManageStat({ label, value, color }) {
+  return (
+    <div
+      className="flex items-center justify-between px-3 py-2 rounded-[3px]"
+      style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}
+    >
+      <span className="font-display text-[10px] tracking-[1px] text-white/30">{label}</span>
+      <span className="font-display font-black text-[16px]" style={{ color: color ?? 'rgba(255,255,255,0.55)' }}>
+        {value}
+      </span>
+    </div>
+  )
+}
+
+function actionBtnStyle(danger, muted, color) {
+  if (danger) return { color: '#f87171',                  borderColor: 'rgba(248,113,113,0.2)', background: 'transparent' }
+  if (muted)  return { color: 'rgba(255,255,255,0.3)',    borderColor: 'rgba(255,255,255,0.1)', background: 'transparent' }
+  if (color)  return { color,                             borderColor: color + '44',            background: color + '11'  }
+  return              { color: 'rgba(255,255,255,0.4)',   borderColor: 'rgba(255,255,255,0.1)', background: 'transparent' }
+}
+
 function ActionBtn({ onClick, children, color, danger, muted }) {
   return (
     <button
       onClick={onClick}
       className="font-display text-[10px] px-2.5 py-1.5 rounded-[3px] cursor-pointer border transition-all"
-      style={
-        danger ? { color: '#f87171', borderColor: 'rgba(248,113,113,0.2)', background: 'transparent' } :
-        muted  ? { color: 'rgba(255,255,255,0.3)', borderColor: 'rgba(255,255,255,0.1)', background: 'transparent' } :
-        color  ? { color, borderColor: color + '44', background: color + '11' } :
-                 { color: 'rgba(255,255,255,0.4)', borderColor: 'rgba(255,255,255,0.1)', background: 'transparent' }
-      }
+      style={actionBtnStyle(danger, muted, color)}
     >
       {children}
     </button>
